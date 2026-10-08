@@ -5880,6 +5880,29 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DocumentFulltextRequest'
+            examples:
+              jsonAttribute:
+                summary: Search nested JSON fields
+                value:
+                  query:
+                    attributes:
+                    - key: invoiceDetails
+                      json:
+                        path: $.customer.name
+                        eq: Acme
+                    - key: invoiceDetails
+                      json:
+                        path: $.approved
+                        eq: "true"
+                    - key: invoiceDetails
+                      json:
+                        path: $.total
+                        gte: 1000
+                        lt: 2000
+                    - key: invoiceDetails
+                      json:
+                        path: $.lineItems.sku
+                        eq: HOSTING
       responses:
         "200":
           description: 200 OK
@@ -14442,17 +14465,39 @@ components:
       required:
       - key
       type: object
+      description: |-
+        Full-text attribute search criteria. Use eq or eqOr for scalar attributes and json
+        for nested fields of JSON attributes. json cannot be combined with eq or eqOr.
+        To compare multiple paths in one JSON attribute, use separate criteria with the same key.
+        JSON searches use native OpenSearch indexes. Property paths through arrays match any
+        element; array positions are not supported, and criteria may match different elements.
+        Dotted property names use OpenSearch field-path semantics. Field types are inferred
+        from stored values and must remain compatible across documents. Date-like strings may
+        be indexed as dates, and numeric comparisons use the inferred numeric precision.
+        Exact string and prefix searches use keyword fields; the default dynamic mapping does
+        not index strings longer than 256 characters in keyword fields.
+      not:
+        allOf:
+        - required:
+          - json
+        - anyOf:
+          - required:
+            - eq
+          - required:
+            - eqOr
       properties:
         eq:
           $ref: '#/components/schemas/DocumentFulltextAttributeEq'
         eqOr:
           type: array
-          description: Searches for ANY strings that eq
+          description: Searches for any of the supplied typed attribute values
           items:
             $ref: '#/components/schemas/DocumentFulltextAttributeEq'
+        json:
+          $ref: '#/components/schemas/JsonAttributeSearchFilter'
         key:
           type: string
-          description: Tag key to search
+          description: Attribute key to search
     DocumentFulltextTag:
       required:
       - key
@@ -14585,6 +14630,9 @@ components:
         $.lineItems[0].quantity. Quoted names may escape characters using a backslash.
         At least one property or array position is required. Wildcards, recursive descent,
         slices, and filter expressions are not supported.
+        For /searchFulltext, only property paths are supported: $.lineItems.sku matches any
+        array element, while $.lineItems[0].sku is rejected. Dotted property names are treated
+        as OpenSearch field paths rather than distinct literal keys.
       pattern: ^\$(?:\.[A-Za-z_][A-Za-z0-9_]*|\[(?:0|[1-9][0-9]*)\]|\['(?:[^'\\]|\\.)+'\]|\["(?:[^"\\]|\\.)+"\])+$
       example: $.customer.name
     JsonAttributeSearchFilter:
@@ -14599,9 +14647,12 @@ components:
         All supplied predicates are combined with AND; eqOr matches any supplied value.
         eq and eqOr accept strings and match string fields or boolean fields represented
         by the lowercase strings "true" and "false". Numeric fields do not match eq or eqOr;
-        use numeric bounds instead. Missing fields, null, objects, and arrays do not match.
+        use numeric bounds instead. Missing fields, null, and objects do not match.
+        Arrays do not match in /search; /searchFulltext can match scalar elements of arrays.
         beginsWith applies to string fields and gt/gte/lt/lte apply to numeric fields.
         The legacy range operator is not supported inside a json filter.
+        /searchFulltext uses native OpenSearch field types and indexing limits as described
+        by DocumentFulltextAttribute, including date detection and numeric precision.
       properties:
         path:
           $ref: '#/components/schemas/JsonAttributeSearchPath'
@@ -15000,6 +15051,16 @@ components:
             $ref: '#/components/schemas/FulltextAttribute'
     FulltextAttribute:
       type: object
+      description: |-
+        Full-text attribute value. JSON attributes use valueType JSON and jsonValue containing
+        one JSON object. jsonValue cannot be combined with other attribute value forms.
+        The JSON object is stored directly in OpenSearch. Its field types are inferred using
+        the existing index mappings and must remain compatible across documents. Arrays must
+        contain values compatible with one OpenSearch field type; arbitrary mixed-type arrays
+        may fail indexing. The original object, including nulls and array order, is returned
+        by GET and search responses, while searches use native indexed field semantics.
+      allOf:
+      - $ref: '#/components/schemas/JsonAttributeValueExclusive'
       properties:
         insertedDate:
           type: string
@@ -15022,8 +15083,20 @@ components:
           description: Attribute with date values
           items:
             type: string
+        jsonValue:
+          $ref: '#/components/schemas/JsonAttributeValue'
         valueType:
           $ref: '#/components/schemas/AttributeValueType'
+      example:
+        valueType: JSON
+        jsonValue:
+          total: 1250.5
+          approved: true
+          customer:
+            name: Acme
+          lineItems:
+          - sku: HOSTING
+            quantity: 2
     QueryFulltextRequest:
       description: OpenSearch search API request (https://opensearch.org/docs/latest/opensearch/rest-api/search/)
       type: object

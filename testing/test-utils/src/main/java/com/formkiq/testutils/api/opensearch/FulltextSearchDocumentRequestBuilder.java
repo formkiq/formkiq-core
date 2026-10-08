@@ -97,6 +97,17 @@ public class FulltextSearchDocumentRequestBuilder
   }
 
   /**
+   * Select the result page, starting at one.
+   *
+   * @param page result page
+   * @return this builder
+   */
+  public FulltextSearchDocumentRequestBuilder page(final Integer page) {
+    this.request.getQuery().page(page);
+    return this;
+  }
+
+  /**
    * Set the fields included in search results.
    *
    * @param fields response fields
