@@ -5711,7 +5711,7 @@ paths:
     post:
       operationId: DocumentSearch
       summary: Document search
-      description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nFor attributes defined with dataType JSON, use an attribute criterion's json filter\nwith a path to compare a nested field. Equality values inside json retain their JSON\nstring, number, or boolean type. Numeric bounds inside json use gt, gte, lt, and lte.\nExisting attribute eq and eqOr operators continue to accept strings.\nPaths support object properties and explicit array positions;\nwildcard, recursive, and array any-element matching are not supported.\nMultiple conditions on different paths under the same attribute key are supported.\nAll conditions must match the same document or artifact.\n\nJSON path filtering is applied after candidate records are read and does not reduce\nread capacity consumed for those candidates. A stored JSON value does not automatically\ncreate an index for its nested fields. Continue through empty filtered pages until the\nnext token is absent; candidate and time-budget limits still apply.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nWhen `documentIds` is supplied, all supplied IDs are checked against the search criteria and all matching documents are returned. The `limit` query parameter is ignored. Up to 100 document IDs are accepted.\n\nUse the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.\nMulti-attribute searches requiring additional attribute filtering use a 25-second processing budget\nfor index batches, attribute filtering, and document loading. The budget starts after index selection and empty-index prechecks. Searches with explicit\n`documentIds` or a composite key covering every search attribute are exempt.\nThe budget is checked before starting each read; an in-flight read is allowed to finish.\nIf the budget expires, document searches return completed matches with `truncated=true` and a `next` token;\ncount searches return a partial lower bound with `truncated=true`.\n\nSee requestBody examples below for commmon examples."
+      description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nFor attributes defined with dataType JSON, use an attribute criterion's json filter\nwith a path to compare a nested field. The eq and eqOr operators accept strings,\nincluding inside json filters. Match JSON boolean fields using the strings \"true\"\nor \"false\". Compare JSON numeric fields using gt, gte, lt, and lte.\nPaths support object properties and explicit array positions;\nwildcard, recursive, and array any-element matching are not supported.\nMultiple conditions on different paths under the same attribute key are supported.\nAll conditions must match the same document or artifact.\n\nJSON path filtering is applied after candidate records are read and does not reduce\nread capacity consumed for those candidates. A stored JSON value does not automatically\ncreate an index for its nested fields. Continue through empty filtered pages until the\nnext token is absent; candidate and time-budget limits still apply.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nWhen `documentIds` is supplied, all supplied IDs are checked against the search criteria and all matching documents are returned. The `limit` query parameter is ignored. Up to 100 document IDs are accepted.\n\nUse the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.\nMulti-attribute searches requiring additional attribute filtering use a 25-second processing budget\nfor index batches, attribute filtering, and document loading. The budget starts after index selection and empty-index prechecks. Searches with explicit\n`documentIds` or a composite key covering every search attribute are exempt.\nThe budget is checked before starting each read; an in-flight read is allowed to finish.\nIf the budget expires, document searches return completed matches with `truncated=true` and a `next` token;\ncount searches return a partial lower bound with `truncated=true`.\n\nSee requestBody examples below for commmon examples."
       tags:
       - Document Search
       parameters:
@@ -5777,7 +5777,7 @@ paths:
                     - key: invoiceDetails
                       json:
                         path: $.approved
-                        eq: true
+                        eq: "true"
                     - key: invoiceDetails
                       json:
                         path: $.total
@@ -10381,8 +10381,9 @@ components:
       additionalProperties: true
       nullable: true
       not:
-        enum:
-        - null
+        anyOf:
+        - enum:
+          - null
       example:
         total: 1250.5
         approved: true
@@ -14575,16 +14576,6 @@ components:
         key:
           type: string
           description: Tag key to search
-    JsonAttributeSearchValue:
-      description: |-
-        A scalar JSON field comparison value. Types are compared without coercion: true is
-        different from "true", and numbers are compared numerically. Objects, arrays, and
-        null are not accepted as comparison values. Missing fields or incompatible field
-        types do not match.
-      oneOf:
-      - type: string
-      - type: number
-      - type: boolean
     JsonAttributeSearchPath:
       type: string
       description: |-
@@ -14606,19 +14597,23 @@ components:
         Compare a nested scalar field of an attribute defined with dataType JSON.
         A path and at least one field comparison are required.
         All supplied predicates are combined with AND; eqOr matches any supplied value.
+        eq and eqOr accept strings and match string fields or boolean fields represented
+        by the lowercase strings "true" and "false". Numeric fields do not match eq or eqOr;
+        use numeric bounds instead. Missing fields, null, objects, and arrays do not match.
         beginsWith applies to string fields and gt/gte/lt/lte apply to numeric fields.
         The legacy range operator is not supported inside a json filter.
       properties:
         path:
           $ref: '#/components/schemas/JsonAttributeSearchPath'
         eq:
-          $ref: '#/components/schemas/JsonAttributeSearchValue'
+          type: string
+          description: Match a JSON string field or a boolean field using "true" or "false".
         eqOr:
           type: array
           minItems: 1
-          description: Match the field against any provided string, number, or boolean without type coercion.
+          description: Match a JSON string field or a boolean field against any provided string; use "true" or "false" for booleans.
           items:
-            $ref: '#/components/schemas/JsonAttributeSearchValue'
+            type: string
         beginsWith:
           type: string
           description: JSON string field must begin with this value.

@@ -15,9 +15,9 @@ paths:
         If using Enteprise Composite Keys feature then multiple tag(s) can be searched for.
 
         For attributes defined with dataType JSON, use an attribute criterion's json filter
-        with a path to compare a nested field. Equality values inside json retain their JSON
-        string, number, or boolean type. Numeric bounds inside json use gt, gte, lt, and lte.
-        Existing attribute eq and eqOr operators continue to accept strings.
+        with a path to compare a nested field. The eq and eqOr operators accept strings,
+        including inside json filters. Match JSON boolean fields using the strings "true"
+        or "false". Compare JSON numeric fields using gt, gte, lt, and lte.
         Paths support object properties and explicit array positions;
         wildcard, recursive, and array any-element matching are not supported.
         Multiple conditions on different paths under the same attribute key are supported.
@@ -108,7 +108,7 @@ paths:
                       - key: invoiceDetails
                         json:
                           path: "$.approved"
-                          eq: true
+                          eq: "true"
                       - key: invoiceDetails
                         json:
                           path: "$.total"
@@ -459,18 +459,6 @@ components:
           description: "Tag key to search"
 
     #@overlay/match missing_ok=True
-    JsonAttributeSearchValue:
-      description: |-
-        A scalar JSON field comparison value. Types are compared without coercion: true is
-        different from "true", and numbers are compared numerically. Objects, arrays, and
-        null are not accepted as comparison values. Missing fields or incompatible field
-        types do not match.
-      oneOf:
-        - type: string
-        - type: number
-        - type: boolean
-
-    #@overlay/match missing_ok=True
     JsonAttributeSearchPath:
       type: string
       description: |-
@@ -493,19 +481,23 @@ components:
         Compare a nested scalar field of an attribute defined with dataType JSON.
         A path and at least one field comparison are required.
         All supplied predicates are combined with AND; eqOr matches any supplied value.
+        eq and eqOr accept strings and match string fields or boolean fields represented
+        by the lowercase strings "true" and "false". Numeric fields do not match eq or eqOr;
+        use numeric bounds instead. Missing fields, null, objects, and arrays do not match.
         beginsWith applies to string fields and gt/gte/lt/lte apply to numeric fields.
         The legacy range operator is not supported inside a json filter.
       properties:
         path:
           $ref: '#/components/schemas/JsonAttributeSearchPath'
         eq:
-          $ref: '#/components/schemas/JsonAttributeSearchValue'
+          type: string
+          description: Match a JSON string field or a boolean field using "true" or "false".
         eqOr:
           type: array
           minItems: 1
-          description: Match the field against any provided string, number, or boolean without type coercion.
+          description: Match a JSON string field or a boolean field against any provided string; use "true" or "false" for booleans.
           items:
-            $ref: '#/components/schemas/JsonAttributeSearchValue'
+            type: string
         beginsWith:
           type: string
           description: JSON string field must begin with this value.

@@ -32,7 +32,6 @@ import com.formkiq.client.model.DocumentSearchMeta;
 import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.DocumentSearchResponse;
 import com.formkiq.client.model.JsonAttributeSearchFilter;
-import com.formkiq.client.model.JsonAttributeSearchValue;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.testutils.api.ApiHttpResponse;
@@ -87,19 +86,17 @@ public class SearchDocumentRequestBuilder implements HttpRequestBuilder<Document
   }
 
   /**
-   * Add a typed equality criterion for a JSON attribute field.
+   * Add a string equality criterion for a JSON attribute field.
    *
    * @param key attribute key
    * @param jsonPath path relative to the JSON attribute value
-   * @param value string, number, or boolean comparison value
+   * @param value string comparison value; use "true" or "false" for boolean fields
    * @return this builder
    */
   public SearchDocumentRequestBuilder addJsonAttributeEquals(final String key,
-      final String jsonPath, final Object value) {
-    Object comparison = value instanceof Number number ? new BigDecimal(number.toString()) : value;
-    return addAttribute(
-        new DocumentSearchAttribute().key(key).eqOr(null).json(new JsonAttributeSearchFilter()
-            .path(jsonPath).eqOr(null).eq(new JsonAttributeSearchValue(comparison))));
+      final String jsonPath, final String value) {
+    return addAttribute(new DocumentSearchAttribute().key(key).eqOr(null)
+        .json(new JsonAttributeSearchFilter().path(jsonPath).eqOr(null).eq(value)));
   }
 
   /**

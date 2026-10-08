@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/** Validates and evaluates typed JSON comparisons without coercing strings or booleans. */
+/** Validates and evaluates JSON string equality, boolean strings, and numeric bounds. */
 final class JsonAttributeSearchPredicate implements Predicate<Map<String, AttributeValue>> {
 
   /** Comparisons to apply to the resolved field. */
@@ -52,22 +52,9 @@ final class JsonAttributeSearchPredicate implements Predicate<Map<String, Attrib
     }
   }
 
-  private BigDecimal decimal(final Object number) {
-    return new BigDecimal(number.toString());
-  }
-
-  private boolean equalsValue(final AttributeValue value, final Object expected) {
-    return switch (expected) {
-      case String string -> string.equals(value.s());
-      case Boolean bool -> bool.equals(value.bool());
-      case Number number ->
-        value.n() != null && new BigDecimal(value.n()).compareTo(decimal(number)) == 0;
-      default -> false;
-    };
-  }
-
-  private boolean finite(final Number number) {
-    return number instanceof BigDecimal || Double.isFinite(number.doubleValue());
+  private boolean equalsValue(final AttributeValue value, final String expected) {
+    return expected.equals(value.s())
+        || value.bool() != null && expected.equals(value.bool().toString());
   }
 
   private boolean matchesBounds(final AttributeValue value) {
@@ -91,18 +78,18 @@ final class JsonAttributeSearchPredicate implements Predicate<Map<String, Attrib
   }
 
   private boolean matchesLower(final BigDecimal value) {
-    return (filter.gt() == null || value.compareTo(decimal(filter.gt())) > 0)
-        && (filter.gte() == null || value.compareTo(decimal(filter.gte())) >= 0);
+    return (filter.gt() == null || value.compareTo(filter.gt()) > 0)
+        && (filter.gte() == null || value.compareTo(filter.gte()) >= 0);
   }
 
   private boolean matchesPrefix(final AttributeValue value) {
     return this.filter.beginsWith() == null
-        || value.s() != null && value.s().startsWith((String) this.filter.beginsWith());
+        || value.s() != null && value.s().startsWith(this.filter.beginsWith());
   }
 
   private boolean matchesUpper(final BigDecimal value) {
-    return (filter.lt() == null || value.compareTo(decimal(filter.lt())) < 0)
-        && (filter.lte() == null || value.compareTo(decimal(filter.lte())) <= 0);
+    return (filter.lt() == null || value.compareTo(filter.lt()) < 0)
+        && (filter.lte() == null || value.compareTo(filter.lte()) <= 0);
   }
 
   @Override
@@ -119,33 +106,11 @@ final class JsonAttributeSearchPredicate implements Predicate<Map<String, Attrib
     if (!hasComparison) {
       throw new IllegalArgumentException("json requires at least one comparison");
     }
-    if (filter.eq() != null) {
-      validateScalar(filter.eq());
-    }
     if (filter.eqOr() != null) {
       if (filter.eqOr().isEmpty()) {
         throw new IllegalArgumentException("json eqOr requires at least one value");
       }
-      filter.eqOr().forEach(this::validateScalar);
-    }
-    Stream.of(filter.gt(), filter.gte(), filter.lt(), filter.lte()).filter(Objects::nonNull)
-        .forEach(this::validateNumber);
-    if (filter.beginsWith() != null && !(filter.beginsWith() instanceof String)) {
-      throw new IllegalArgumentException("json beginsWith requires a string");
-    }
-  }
-
-  private void validateNumber(final Object value) {
-    if (!(value instanceof Number number) || !finite(number)) {
-      throw new IllegalArgumentException("JSON bounds require a number");
-    }
-  }
-
-  private void validateScalar(final Object value) {
-    boolean scalar = value instanceof String || value instanceof Boolean;
-    boolean number = value instanceof Number n && finite(n);
-    if (!scalar && !number) {
-      throw new IllegalArgumentException("JSON comparisons require a string, number, or boolean");
+      filter.eqOr().forEach(this::validateString);
     }
   }
 
@@ -153,6 +118,12 @@ final class JsonAttributeSearchPredicate implements Predicate<Map<String, Attrib
     if (Stream.of(search.eq(), search.eqOr(), search.beginsWith(), search.range())
         .anyMatch(Objects::nonNull)) {
       throw new IllegalArgumentException("json cannot be combined with scalar search operators");
+    }
+  }
+
+  private void validateString(final String value) {
+    if (value == null) {
+      throw new IllegalArgumentException("json eqOr requires string values");
     }
   }
 }

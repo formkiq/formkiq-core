@@ -29,8 +29,6 @@ import com.formkiq.module.lambdaservices.AwsServiceExtension;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentAttribute;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentAttributeDeserializer;
 import com.google.gson.Gson;
-import com.formkiq.aws.dynamodb.model.JsonAttributeSearchFilter;
-import com.formkiq.stacks.dynamodb.JsonAttributeSearchFilterDeserializer;
 
 /**
  *
@@ -53,8 +51,6 @@ public class CoreGsonExtension implements AwsServiceExtension<Gson> {
       GsonService service = new GsonService();
       this.gson = service
           .registerTypeAdapter(AddDocumentAttribute.class, new AddDocumentAttributeDeserializer())
-          .registerTypeAdapter(JsonAttributeSearchFilter.class,
-              new JsonAttributeSearchFilterDeserializer())
           .build();
     }
 

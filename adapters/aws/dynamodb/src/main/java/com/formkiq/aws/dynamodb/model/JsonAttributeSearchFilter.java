@@ -24,10 +24,11 @@
 package com.formkiq.aws.dynamodb.model;
 
 import com.formkiq.graalvm.annotations.Reflectable;
+import java.math.BigDecimal;
 import java.util.Collection;
 
-/** Typed comparisons against a nested JSON attribute field. */
+/** String equality and numeric bounds against a nested JSON attribute field. */
 @Reflectable
-public record JsonAttributeSearchFilter(String path, Object eq, Collection<Object> eqOr,
-    Object beginsWith, Object gt, Object gte, Object lt, Object lte) {
+public record JsonAttributeSearchFilter(String path, String eq, Collection<String> eqOr,
+    String beginsWith, BigDecimal gt, BigDecimal gte, BigDecimal lt, BigDecimal lte) {
 }

@@ -53,7 +53,6 @@ import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.client.model.SearchResponseFields;
 import com.formkiq.client.model.JsonAttributeSearchFilter;
-import com.formkiq.client.model.JsonAttributeSearchValue;
 import com.formkiq.client.model.SearchRangeDataType;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
@@ -1140,23 +1139,22 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
     DocumentArtifact matching = new AddDocumentRequestBuilder().content()
         .addJsonAttribute(key,
-            Map.of("lineItems", List.of(Map.of("quantity", 2)), "customer.name", "Acme"))
-        .getDocument(client, siteId);
-    new AddDocumentRequestBuilder().content()
-        .addJsonAttribute(key,
             Map.of("lineItems", List.of(Map.of("quantity", "2")), "customer.name", "Acme"))
         .getDocument(client, siteId);
     new AddDocumentRequestBuilder().content()
         .addJsonAttribute(key,
-            Map.of("lineItems", List.of(Map.of("quantity", 2)), "customer.name", "Beta"))
+            Map.of("lineItems", List.of(Map.of("quantity", 2)), "customer.name", "Acme"))
+        .getDocument(client, siteId);
+    new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key,
+            Map.of("lineItems", List.of(Map.of("quantity", "2")), "customer.name", "Beta"))
         .getDocument(client, siteId);
 
     // when
     DocumentSearchResponse response = new SearchDocumentRequestBuilder()
         .addAttribute(new DocumentSearchAttribute().key(key).eqOr(null)
             .json(new JsonAttributeSearchFilter().path("$.lineItems[0].quantity")
-                .eqOr(List.of(new JsonAttributeSearchValue(new BigDecimal("2")),
-                    new JsonAttributeSearchValue(new BigDecimal("3"))))))
+                .eqOr(List.of("2", "3"))))
         .addAttribute(new DocumentSearchAttribute().key(key).eqOr(null).json(
             new JsonAttributeSearchFilter().path("$['customer.name']").eqOr(null).beginsWith("Ac")))
         .submitOk(client, siteId).response();
@@ -1221,13 +1219,11 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
     List<DocumentSearchAttribute> invalid = List.of(
         new DocumentSearchAttribute().key(key).eqOr(null)
-            .json(new JsonAttributeSearchFilter().path("$.*").eqOr(null)
-                .eq(new JsonAttributeSearchValue("Acme"))),
+            .json(new JsonAttributeSearchFilter().path("$.*").eqOr(null).eq("Acme")),
         new DocumentSearchAttribute().key(key).eqOr(null)
             .json(new JsonAttributeSearchFilter().path("$.name").eqOr(null)),
         new DocumentSearchAttribute().key(key).eq("Acme").eqOr(null)
-            .json(new JsonAttributeSearchFilter().path("$.name").eqOr(null)
-                .eq(new JsonAttributeSearchValue("Acme"))));
+            .json(new JsonAttributeSearchFilter().path("$.name").eqOr(null).eq("Acme")));
 
     for (DocumentSearchAttribute attribute : invalid) {
       // when
@@ -1369,12 +1365,12 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * JSON paths on the same key combine typed boolean equality and inclusive numeric bounds.
+   * JSON paths on the same key combine boolean string equality and inclusive numeric bounds.
    *
    * @throws ApiException an error has occurred
    */
   @Test
-  public void testSearchJsonAttributeTypedComparisonsAndCount() throws ApiException {
+  public void testSearchJsonAttributeStringComparisonsAndCount() throws ApiException {
     // given
     String siteId = ID.uuid();
     setBearerToken(siteId);
@@ -1383,9 +1379,12 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
     DocumentArtifact matching = new AddDocumentRequestBuilder().content()
         .addJsonAttribute(key, Map.of("approved", true, "total", 1250.50))
         .getDocument(client, siteId);
+    DocumentArtifact matchingString = new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key, Map.of("approved", "true", "total", 1250.50))
+        .getDocument(client, siteId);
     for (Map<String, Object> value : List.<Map<String, Object>>of(
         Map.of("approved", false, "total", 1250.50), Map.of("approved", true, "total", 900),
-        Map.of("approved", "true", "total", 1250.50),
+        Map.of("approved", "TRUE", "total", 1250.50),
         Map.of("approved", true, "total", "1250.50"))) {
       new AddDocumentRequestBuilder().content().addJsonAttribute(key, value).getDocument(client,
           siteId);
@@ -1393,18 +1392,19 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
 
     // when
     SearchDocumentRequestBuilder request =
-        new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.approved", true)
+        new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.approved", "true")
             .addJsonAttributeRange(key, "$.total", new BigDecimal("1000"), new BigDecimal("1500"));
     DocumentSearchResponse response = request.submitOk(client, siteId).response();
 
     // then
-    assertDocumentIds(List.of(matching.documentId()), notNull(response.getDocuments()));
+    assertDocumentIds(List.of(matching.documentId(), matchingString.documentId()),
+        notNull(response.getDocuments()));
 
     // when
     DocumentSearchResponse count = request.projection("COUNT").submitOk(client, siteId).response();
 
     // then
-    assertEquals(1, count.getCount());
+    assertEquals(2, count.getCount());
     assertNotTruncated(count);
   }
 

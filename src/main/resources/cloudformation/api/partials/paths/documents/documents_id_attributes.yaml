@@ -287,8 +287,10 @@ components:
       type: object
       additionalProperties: true
       nullable: true
+      #! Keep omitted client values unset; avoid Java generator's direct not/enum null handling.
       not:
-        enum: [null]
+        anyOf:
+          - enum: [null]
       example:
         total: 1250.50
         approved: true

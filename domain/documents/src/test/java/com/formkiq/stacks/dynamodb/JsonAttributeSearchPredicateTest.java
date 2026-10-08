@@ -49,15 +49,28 @@ class JsonAttributeSearchPredicateTest {
     return Stream.of(
         Arguments.of("{\"path\":\"$.name\",\"eq\":\"Acme\"}", "{\"name\":\"Acme\"}", true),
         Arguments.of("{\"path\":\"$.name\",\"eq\":\"Acme\"}", "{\"name\":\"Beta\"}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":2}", "{\"value\":2}", true),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":2}", "{\"value\":\"2\"}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"2\"}", "{\"value\":\"2\"}", true),
         Arguments.of("{\"path\":\"$.value\",\"eq\":\"2\"}", "{\"value\":2}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":false}", "{\"value\":false}", true),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":false}", "{\"value\":\"false\"}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":0}", "{\"value\":false}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eqOr\":[false,2,\"paid\"]}", "{\"value\":2}", true),
-        Arguments.of("{\"path\":\"$.value\",\"eqOr\":[false,2,\"paid\"]}", "{\"value\":\"2\"}",
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"false\"}", "{\"value\":false}", true),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"false\"}", "{\"value\":\"false\"}", true),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"true\"}", "{\"value\":true}", true),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"true\"}", "{\"value\":false}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"TRUE\"}", "{\"value\":true}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"False\"}", "{\"value\":false}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"0\"}", "{\"value\":false}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"\"}", "{\"value\":\"\"}", true),
+        Arguments.of("{\"path\":\"$.value\",\"eqOr\":[\"false\",\"2\",\"paid\"]}", "{\"value\":2}",
             false),
+        Arguments.of("{\"path\":\"$.value\",\"eqOr\":[\"false\",\"2\",\"paid\"]}",
+            "{\"value\":\"2\"}", true),
+        Arguments.of("{\"path\":\"$.value\",\"eqOr\":[\"false\",\"2\",\"paid\"]}",
+            "{\"value\":false}", true),
+        Arguments.of("{\"path\":\"$.value\",\"eqOr\":[\"true\",\"paid\"]}", "{\"value\":true}",
+            true),
+        Arguments.of("{\"path\":\"$.value\",\"eqOr\":[\"true\",\"paid\"]}", "{\"value\":false}",
+            false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"true\",\"eqOr\":[\"false\"]}",
+            "{\"value\":true}", false),
         Arguments.of("{\"path\":\"$.value\",\"beginsWith\":\"Ac\"}", "{\"value\":\"Acme\"}", true),
         Arguments.of("{\"path\":\"$.value\",\"beginsWith\":\"2\"}", "{\"value\":2}", false));
   }
@@ -69,8 +82,8 @@ class JsonAttributeSearchPredicateTest {
         Arguments.of("{\"path\":\"$.value\",\"lte\":2}", "{\"value\":2}", true),
         Arguments.of("{\"path\":\"$.value\",\"gte\":1,\"lte\":3}", "{\"value\":2}", true),
         Arguments.of("{\"path\":\"$.value\",\"gte\":1,\"lte\":3}", "{\"value\":\"2\"}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":2,\"gt\":2}", "{\"value\":2}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":2,\"gte\":2,\"lte\":2}", "{\"value\":2}", true));
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"2\",\"gt\":2}", "{\"value\":2}", false),
+        Arguments.of("{\"path\":\"$.value\",\"gte\":2,\"lte\":2}", "{\"value\":2}", true));
   }
 
   private static Stream<Arguments> pathComparisons() {
@@ -79,9 +92,9 @@ class JsonAttributeSearchPredicateTest {
             "{\"customer\":{\"name\":\"Acme\"}}", true),
         Arguments.of("{\"path\":\"$.customer.name\",\"eq\":\"Acme\"}", "{\"name\":\"Acme\"}",
             false),
-        Arguments.of("{\"path\":\"$.items[0].quantity\",\"eq\":2}",
+        Arguments.of("{\"path\":\"$.items[0].quantity\",\"gte\":2}",
             "{\"items\":[{\"quantity\":2}]}", true),
-        Arguments.of("{\"path\":\"$.items[1].quantity\",\"eq\":2}",
+        Arguments.of("{\"path\":\"$.items[1].quantity\",\"gte\":2}",
             "{\"items\":[{\"quantity\":2}]}", false),
         Arguments.of("{\"path\":\"$['customer.name']\",\"eq\":\"Acme\"}",
             "{\"customer.name\":\"Acme\"}", true),
@@ -98,11 +111,7 @@ class JsonAttributeSearchPredicateTest {
   }
 
   private static Stream<String> invalidFilters() {
-    return Stream.of("{\"path\":\"$.value\",\"gt\":\"2\"}", "{\"path\":\"$.value\",\"gte\":true}",
-        "{\"path\":\"$.value\",\"lte\":{}}", "{\"path\":\"$.value\",\"beginsWith\":2}",
-
-        "{}", "{\"path\":\"$.value\"}", "{\"path\":\"$.value\",\"eqOr\":[]}",
-        "{\"path\":\"$.value\",\"eq\":{}}", "{\"path\":\"$.value\",\"eq\":[]}",
+    return Stream.of("{}", "{\"path\":\"$.value\"}", "{\"path\":\"$.value\",\"eqOr\":[]}",
         "{\"path\":\"$.value\",\"eqOr\":[null]}", "{\"path\":\"$.value\",\"eq\":null}",
         "{\"path\":null,\"eq\":\"Acme\"}", "{\"path\":\"$\",\"eq\":\"Acme\"}",
         "{\"path\":\"value\",\"eq\":\"Acme\"}", "{\"path\":\"$..value\",\"eq\":\"Acme\"}",
