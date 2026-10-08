@@ -7,7 +7,7 @@ paths:
     get:
       operationId: GetDocumentReviews
       summary: Get document reviews
-      description: Get a listing of reviews for a document
+      description: Get a listing of reviews for a document, including the effective countedDecisionTypes policy for each review.
       tags:
         - Document Reviews
       parameters:
@@ -40,6 +40,9 @@ paths:
       description: |-
         Add a review to a document. When notifications are supplied, queue each notification
         for delivery when the review is created.
+        Omitted or null countedDecisionTypes defaults to [APPROVAL]. Only decision records of the
+        configured types count toward requiredDecisions; other supported types may still be submitted.
+        The same counting policy applies to document-level and artifact-scoped reviews.
       tags:
         - Document Reviews
       parameters:
@@ -52,6 +55,21 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AddDocumentReviewRequest'
+            examples:
+              approvalReview:
+                summary: Require two approval-type responses
+                value:
+                  review:
+                    reviewCategory: Legal
+                    requiredDecisions: 2
+                    countedDecisionTypes: [APPROVAL]
+              acknowledgmentReview:
+                summary: Require one acknowledgment while allowing other decision types
+                value:
+                  review:
+                    reviewCategory: Receipt
+                    requiredDecisions: 1
+                    countedDecisionTypes: [ACKNOWLEDGMENT]
       responses:
         '201':
           description: 201 CREATED
@@ -66,6 +84,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentReviewResponse'
+        '400':
+          description: Invalid review configuration, including empty, duplicate, unknown, or non-string countedDecisionTypes entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -76,7 +100,7 @@ paths:
     get:
       operationId: GetDocumentReview
       summary: Get document review
-      description: Get a document review by review id
+      description: Get a document review by review id, including its effective countedDecisionTypes policy. Reviews stored without an explicit policy return [APPROVAL]; historical completed reviews retain their status.
       tags:
         - Document Reviews
       parameters:
@@ -105,7 +129,10 @@ paths:
     patch:
       operationId: UpdateDocumentReview
       summary: Update document review
-      description: Update a document review by review id
+      description: |-
+        Update a document review by review id. Omitted properties retain their existing values.
+        Changes to countedDecisionTypes or requiredDecisions apply when subsequent counted
+        decisions are submitted. Updating the counting configuration does not change reviewStatus.
       tags:
         - Document Reviews
       parameters:
@@ -122,6 +149,12 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/200CorsUpdateResponse'
+        '400':
+          description: Invalid review configuration, including empty, duplicate, unknown, or non-string countedDecisionTypes entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -132,7 +165,7 @@ paths:
     get:
       operationId: GetDocumentReviewDecisions
       summary: Get document review decisions
-      description: Get a listing of decisions for a document review
+      description: Get a listing of all decisions for a document review, including records whose types do not count toward completion.
       tags:
         - Document Reviews
       parameters:
@@ -166,6 +199,17 @@ paths:
       description: |-
         Add a decision to a document review. When approvalGroups is set on the review,
         the caller must belong to at least one of those groups, in addition to satisfying the existing authorization requirements, before the decision is added.
+        Every accepted submission is retained with its own decision ID, author, timestamp,
+        and content. countedDecisionTypes selects records that contribute to requiredDecisions;
+        it does not restrict which supported types may be submitted. Counting uses decision
+        records, not distinct reviewers. APPROVAL records count regardless of their decision value.
+        With the default [APPROVAL] policy, COMMENT, RECOMMENDATION, and ACKNOWLEDGMENT
+        may be submitted repeatedly by the same authorized user while the review is open.
+        A non-counting submission may move PENDING to IN_PROGRESS, but cannot complete the
+        review or trigger completion-dependent processing. It does not automatically create
+        a follow-up review or downstream action; an explicitly supplied follow-up review
+        uses the same counting-policy defaults and validation as ordinary review creation.
+        Completion occurs when the qualifying count reaches or exceeds requiredDecisions.
         Decisions submitted to a review that is already COMPLETED return 409 Conflict without creating a decision, follow-up review, notification, or activity record.
       tags:
         - Document Reviews
@@ -194,6 +238,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddDocumentReviewDecisionResponse'
+        '400':
+          description: Invalid decision or explicitly requested follow-up review configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
         '409':
           description: The review is already complete. No decision was created.
           headers:
@@ -236,7 +286,7 @@ components:
         Status of Document Review:
         - PENDING: Review has been created and is waiting for one or more decisions.
         - IN_PROGRESS: Review has been claimed or at least one decision has been submitted, but completion requirements are not yet satisfied.
-        - COMPLETED: Completion requirements are satisfied.
+        - COMPLETED: The required number of records matching countedDecisionTypes has been collected. This status does not imply that every decision approved the document.
         - CANCELLED: Review was cancelled before completion.
         - SUPERSEDED: Review was replaced by another review, usually because the artifact/document changed.
       enum:
@@ -249,6 +299,7 @@ components:
     #@overlay/match missing_ok=True
     ReviewDecisionType:
       type: string
+      description: Decision type. APPROVAL identifies an approval-type response; the separate decision value represents its outcome and may be positive or negative.
       enum:
         - APPROVAL
         - RECOMMENDATION
@@ -292,8 +343,21 @@ components:
         requiredDecisions:
           type: integer
           format: int64
-          minimum: 1
-          description: Number of decisions required to complete the review
+          minimum: 0
+          description: Number of decision records matching countedDecisionTypes required to complete the review. Records count regardless of decision value or whether the same reviewer submitted earlier records.
+        countedDecisionTypes:
+          type: array
+          nullable: true
+          minItems: 1
+          uniqueItems: true
+          default: [APPROVAL]
+          description: |-
+            Types of decision records that count toward requiredDecisions. Omission or null defaults
+            to [APPROVAL]. This selects records to count and does not restrict which supported
+            decision types may be submitted. Empty arrays, duplicate entries, unknown
+            types, and non-string entries are rejected.
+          items:
+            $ref: "#/components/schemas/ReviewDecisionType"
         notifications:
           type: array
           description: Optional notifications to queue for delivery when the review is created. An empty list sends no notifications.
@@ -319,8 +383,21 @@ components:
         requiredDecisions:
           type: integer
           format: int64
-          minimum: 1
-          description: Number of decisions required to complete the review
+          minimum: 0
+          description: Number of decision records matching countedDecisionTypes required to complete the review. Changes apply when subsequent counted decisions are submitted.
+        countedDecisionTypes:
+          type: array
+          nullable: true
+          minItems: 1
+          uniqueItems: true
+          description: |-
+            Replacement types of decision records that count toward requiredDecisions.
+            Omission or null preserves the effective current policy; it does not reset it to [APPROVAL].
+            Changes apply when subsequent counted decisions are submitted, counting existing
+            records against the updated policy. This does not restrict submissions.
+            Empty arrays, duplicate entries, unknown types, and non-string entries are rejected.
+          items:
+            $ref: "#/components/schemas/ReviewDecisionType"
         comments:
           type: string
           description: Review comments
@@ -348,6 +425,8 @@ components:
     #@overlay/match missing_ok=True
     DocumentReview:
       type: object
+      required:
+        - countedDecisionTypes
       properties:
         documentId:
           type: string
@@ -371,7 +450,15 @@ components:
         requiredDecisions:
           type: integer
           format: int64
-          description: Number of decisions required to complete the review
+          description: Number of decision records matching countedDecisionTypes required to complete the review. Completion does not imply a positive approval outcome.
+        countedDecisionTypes:
+          type: array
+          nullable: false
+          minItems: 1
+          uniqueItems: true
+          description: Effective types of decision records that count toward requiredDecisions. Always returned by review GET and list operations, including [APPROVAL] for records stored without an explicit policy. This does not restrict which supported decision types may be submitted.
+          items:
+            $ref: "#/components/schemas/ReviewDecisionType"
         userId:
           type: string
           description: User who added review

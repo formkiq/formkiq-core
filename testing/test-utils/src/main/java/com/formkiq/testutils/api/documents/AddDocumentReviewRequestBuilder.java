@@ -31,10 +31,12 @@ import com.formkiq.client.model.AddDocumentReview;
 import com.formkiq.client.model.AddDocumentReviewRequest;
 import com.formkiq.client.model.AddDocumentReviewResponse;
 import com.formkiq.client.model.DocumentReviewStatus;
+import com.formkiq.client.model.ReviewDecisionType;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Builder for POST /documents/{documentId}/reviews.
@@ -78,6 +80,17 @@ public class AddDocumentReviewRequestBuilder
    */
   public AddDocumentReviewRequestBuilder comments(final String comments) {
     this.review.comments(comments);
+    return this;
+  }
+
+  /**
+   * Set the decision types that count toward completion.
+   *
+   * @param types counted decision types
+   * @return {@link AddDocumentReviewRequestBuilder}
+   */
+  public AddDocumentReviewRequestBuilder countedDecisionTypes(final Set<ReviewDecisionType> types) {
+    this.review.countedDecisionTypes(types);
     return this;
   }
 
