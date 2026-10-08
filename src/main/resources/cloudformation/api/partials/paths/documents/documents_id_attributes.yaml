@@ -286,17 +286,12 @@ components:
         Numbers must fit within DynamoDB's supported range and 38 digits of precision.
       type: object
       additionalProperties: true
-      nullable: true
-      #! Keep omitted client values unset; avoid Java generator's direct not/enum null handling.
-      not:
-        anyOf:
-          - enum: [null]
+      nullable: false
       example:
         total: 1250.50
         approved: true
         customer:
           name: Acme
-        notes: null
         lineItems:
           - sku: HOSTING
             quantity: 2
