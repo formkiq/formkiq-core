@@ -28,11 +28,14 @@ import com.formkiq.client.api.DocumentReviewsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocumentReviewStatus;
+import com.formkiq.client.model.ReviewDecisionType;
 import com.formkiq.client.model.UpdateDocumentReview;
 import com.formkiq.client.model.UpdateDocumentReviewRequest;
 import com.formkiq.client.model.UpdateResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
+
+import java.util.Set;
 
 /**
  * Builder for PATCH /documents/{documentId}/reviews/{reviewId}.
@@ -42,7 +45,7 @@ public class UpdateDocumentReviewRequestBuilder implements HttpRequestBuilder<Up
   /** Document Artifact. */
   private final DocumentArtifact document;
   /** Review Request. */
-  private final UpdateDocumentReview review = new UpdateDocumentReview();
+  private final UpdateDocumentReview review = new UpdateDocumentReview().countedDecisionTypes(null);
   /** Review Id. */
   private final String reviewId;
 
@@ -77,6 +80,18 @@ public class UpdateDocumentReviewRequestBuilder implements HttpRequestBuilder<Up
    */
   public UpdateDocumentReviewRequestBuilder comments(final String comments) {
     this.review.comments(comments);
+    return this;
+  }
+
+  /**
+   * Set the decision types that count toward completion.
+   *
+   * @param types counted decision types
+   * @return {@link UpdateDocumentReviewRequestBuilder}
+   */
+  public UpdateDocumentReviewRequestBuilder countedDecisionTypes(
+      final Set<ReviewDecisionType> types) {
+    this.review.countedDecisionTypes(types);
     return this;
   }
 
