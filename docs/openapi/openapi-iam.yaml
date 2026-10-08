@@ -10454,17 +10454,12 @@ components:
         Numbers must fit within DynamoDB's supported range and 38 digits of precision.
       type: object
       additionalProperties: true
-      nullable: true
-      not:
-        anyOf:
-        - enum:
-          - null
+      nullable: false
       example:
         total: 1250.5
         approved: true
         customer:
           name: Acme
-        notes: null
         lineItems:
         - sku: HOSTING
           quantity: 2
