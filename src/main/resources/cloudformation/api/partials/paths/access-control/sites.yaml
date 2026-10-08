@@ -1934,6 +1934,7 @@ components:
       properties:
         attributeKeys:
           type: "array"
+          description: Attribute keys that form the composite key. Attributes with dataType JSON cannot be part of a composite key.
           items:
             type: "string"
 

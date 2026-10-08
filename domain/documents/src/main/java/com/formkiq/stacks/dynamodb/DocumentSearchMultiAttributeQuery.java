@@ -84,6 +84,12 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
    * @param startKey last evaluated DynamoDB key
    */
   private record CandidateCursor(int position, Map<String, AttributeValue> startKey) {
+    /**
+     * Decode the query branch and start key from a continuation token.
+     *
+     * @param nextToken continuation token, or null to start at the first branch
+     * @return cursor for the next candidate read
+     */
     private static CandidateCursor decode(final String nextToken) {
       Map<String, AttributeValue> start =
           new HashMap<>(notNull(new StringToMapAttributeValue().apply(nextToken)));
@@ -91,12 +97,24 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
       return new CandidateCursor(value != null ? Integer.parseInt(value.s()) : 0, start);
     }
 
+    /**
+     * Continue within the current branch or advance to the next branch when its results end.
+     *
+     * @param response completed candidate query response
+     * @return cursor following the completed query page
+     */
     private CandidateCursor advance(final QueryResponse response) {
       return new CandidateCursor(
           response.lastEvaluatedKey().isEmpty() ? this.position + 1 : this.position,
           response.lastEvaluatedKey());
     }
 
+    /**
+     * Combine the branch position and start key into continuation data.
+     *
+     * @param end number of query branches
+     * @return continuation data, or null when all branches are exhausted
+     */
     private Map<String, AttributeValue> encode(final int end) {
       if (this.position >= end) {
         return null;
@@ -140,6 +158,18 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     this.nanoTime = clock;
   }
 
+  /**
+   * Load matching documents or artifacts and append results up to the requested limit. Count
+   * searches retain only the first result for each document ID across all batches.
+   *
+   * @param siteId site identifier
+   * @param matches matching attribute rows to load
+   * @param results accumulated results to append to
+   * @param count whether to deduplicate results by document ID for counting
+   * @param countedIds document IDs already counted, updated as results are added
+   * @param limit maximum size of the accumulated results
+   * @return attribute row for the last appended result, or null if no result was appended
+   */
   private Map<String, AttributeValue> addResults(final String siteId,
       final List<Map<String, AttributeValue>> matches, final List<DocumentSearchResult> results,
       final boolean count, final Set<String> countedIds, final int limit) {
@@ -160,6 +190,16 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     return lastMatch;
   }
 
+  /**
+   * Count documents matching every attribute criterion, using a covering composite index when
+   * available or checking remaining criteria against candidate documents and artifacts.
+   *
+   * @param siteId site identifier
+   * @param query search criteria and optional document IDs
+   * @param maxResults maximum count to return
+   * @return capped count and whether additional matches may remain
+   * @throws ValidationException if the criteria are invalid
+   */
   @Override
   public SearchCountResult count(final String siteId, final SearchQuery query,
       final int maxResults) {
@@ -254,6 +294,17 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     return ordered;
   }
 
+  /**
+   * Search for documents or artifacts matching every attribute criterion. Use a covering composite
+   * index when available; otherwise check candidates against the remaining criteria.
+   *
+   * @param siteId site identifier
+   * @param query search criteria and optional document IDs
+   * @param nextToken continuation token, or null for the first page
+   * @param limit maximum page size when document IDs are not supplied
+   * @return matching results with continuation and truncation metadata
+   * @throws ValidationException if the criteria are invalid
+   */
   @Override
   public Pagination<DocumentSearchResult> query(final String siteId, final SearchQuery query,
       final String nextToken, final int limit) {
@@ -265,6 +316,19 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
             false);
   }
 
+  /**
+   * Check explicit document IDs or select an index to drive the search and filter its candidates.
+   * Searches without a continuation token return immediately when a required equality index is
+   * empty.
+   *
+   * @param siteId site identifier
+   * @param attributes normalized criteria combined with AND
+   * @param documentIds optional document IDs to check directly
+   * @param nextToken continuation token, or null for the first page
+   * @param limit maximum result count for an index search
+   * @param count whether to deduplicate index results by document ID for counting
+   * @return matching results with continuation and truncation metadata
+   */
   private Pagination<DocumentSearchResult> queryWithAttributeFilters(final String siteId,
       final List<SearchAttributeCriteria> attributes, final Collection<String> documentIds,
       final String nextToken, final int limit, final boolean count) {
@@ -278,6 +342,18 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
         : queryByAttributeIndex(siteId, criteria, nextToken, limit, count);
   }
 
+  /**
+   * Read ordered index branches in batches, retaining candidates that satisfy all criteria. Stop
+   * when the result limit, candidate cap, or time budget is reached, retaining a cursor for any
+   * unfinished work. An interrupted batch resumes from its original cursor.
+   *
+   * @param siteId site identifier
+   * @param criteria driving index criterion followed by remaining filters
+   * @param nextToken continuation token, or null for the first page
+   * @param limit maximum result count
+   * @param count whether to deduplicate results by document ID for counting
+   * @return matching results, continuation data, and whether a processing cap truncated the search
+   */
   private Pagination<DocumentSearchResult> queryByAttributeIndex(final String siteId,
       final List<SearchAttributeCriteria> criteria, final String nextToken, final int limit,
       final boolean count) {
@@ -338,15 +414,33 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
         .filter(search -> !isEmpty(search.eq()) || !notNull(search.eqOr()).isEmpty())
         .anyMatch(search -> createAttributeQueries(siteId, search, null).stream()
             .map(request -> request.toBuilder().limit(1).projectionExpression(PK).build())
-            .noneMatch(request -> !this.dbClient.query(request).items().isEmpty()));
+            .allMatch(request -> this.dbClient.query(request).items().isEmpty()));
   }
 
+  /**
+   * Load all supplied documents that satisfy every criterion, without index pagination or a search
+   * time budget.
+   *
+   * @param siteId site identifier
+   * @param attributes normalized criteria combined with AND
+   * @param ids distinct document IDs to check
+   * @return all matching document results without a continuation token
+   */
   private Pagination<DocumentSearchResult> queryWithDocumentIds(final String siteId,
       final List<SearchAttributeCriteria> attributes, final List<String> ids) {
     List<Map<String, AttributeValue>> matches = matchDocumentIds(siteId, attributes, ids);
     return new Pagination<>(loadResults(siteId, matches));
   }
 
+  /**
+   * Check each supplied document against all criteria, loading each attribute key once per
+   * document. Retain the first criterion's matching row as response metadata for each match.
+   *
+   * @param siteId site identifier
+   * @param attributes normalized criteria combined with AND
+   * @param ids document IDs to check in result order
+   * @return one matching attribute row per qualifying document, in supplied ID order
+   */
   private List<Map<String, AttributeValue>> matchDocumentIds(final String siteId,
       final List<SearchAttributeCriteria> attributes, final List<String> ids) {
     List<Map<String, AttributeValue>> matches = new ArrayList<>();
@@ -354,7 +448,7 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
       DocumentArtifact document = DocumentArtifact.of(id, null);
       Map<String, List<Map<String, AttributeValue>>> values = new HashMap<>();
       for (SearchAttributeCriteria search : attributes) {
-        values.put(search.key(), loadRequestedAttribute(siteId, document, search.key()));
+        values.computeIfAbsent(search.key(), key -> loadRequestedAttribute(siteId, document, key));
       }
       List<Map<String, AttributeValue>> matched = attributes.stream()
           .map(search -> values.get(search.key()).stream()
@@ -368,6 +462,14 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     return matches;
   }
 
+  /**
+   * Read every page of values stored under an attribute key for the supplied document or artifact.
+   *
+   * @param siteId site identifier
+   * @param document document or artifact whose values should be read
+   * @param key attribute key to load
+   * @return all stored attribute rows for the key
+   */
   private List<Map<String, AttributeValue>> loadRequestedAttribute(final String siteId,
       final DocumentArtifact document, final String key) {
     SearchAttributeCriteria keyOnly = new SearchAttributeCriteria(key, null, null, null, null);
@@ -383,8 +485,20 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     return items;
   }
 
+  /**
+   * Match an attribute row using a nested JSON predicate or scalar sort-key equality, range, or
+   * prefix comparisons.
+   *
+   * @param search criterion to evaluate
+   * @param document document or artifact that owns the attribute row
+   * @param item stored attribute row
+   * @return whether the row satisfies the criterion
+   */
   private boolean matchesAttribute(final SearchAttributeCriteria search,
       final DocumentArtifact document, final Map<String, AttributeValue> item) {
+    if (search.json() != null) {
+      return new JsonAttributeSearchPredicate(search).test(item);
+    }
     DocumentAttributeRecord record = new DocumentAttributeRecord().setDocument(document)
         .setKey(search.key()).setValueType(DocumentAttributeValueType.KEY_ONLY);
     String sk = item.get(SK).s();
@@ -402,12 +516,28 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     return search.beginsWith() == null || sk.startsWith(prefix + search.beginsWith());
   }
 
+  /**
+   * Compare strings by unsigned UTF-8 bytes to match DynamoDB sort-key ordering.
+   *
+   * @param first first sort key
+   * @param second second sort key
+   * @return a negative value, zero, or a positive value as the first key sorts before, at, or after
+   *         the second key
+   */
   private int compareSortKeys(final String first, final String second) {
     // Match DynamoDB string range ordering, including supplementary Unicode characters.
     return Arrays.compareUnsigned(first.getBytes(StandardCharsets.UTF_8),
         second.getBytes(StandardCharsets.UTF_8));
   }
 
+  /**
+   * Create driving attribute queries with equality branches ordered by their sort-key values. The
+   * stable branch order preserves continuation-token positions between invocations.
+   *
+   * @param siteId site identifier
+   * @param search driving index criterion
+   * @return queries in continuation-token branch order
+   */
   private List<QueryRequest> createOrderedAttributeQueries(final String siteId,
       final SearchAttributeCriteria search) {
     List<QueryRequest> requests = new ArrayList<>(createAttributeQueries(siteId, search, null));
@@ -419,6 +549,16 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     return requests;
   }
 
+  /**
+   * Resume after the last emitted candidate when a result page fills before the candidate batch
+   * ends. Keep the completed page cursor when the match is already the final candidate.
+   *
+   * @param candidates rows in the current candidate batch
+   * @param lastMatch attribute row for the last emitted result
+   * @param batchPosition query branch that produced the batch
+   * @param cursor cursor following the completed candidate page
+   * @return cursor after the last emitted candidate, or the completed page cursor
+   */
   private CandidateCursor resumeAfterMatch(final List<Map<String, AttributeValue>> candidates,
       final Map<String, AttributeValue> lastMatch, final int batchPosition,
       final CandidateCursor cursor) {
@@ -433,8 +573,20 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     return cursor;
   }
 
+  /**
+   * Resolve and validate a composite index covering every criterion. JSON criteria require
+   * attribute filtering and therefore cannot use this direct composite-index path.
+   *
+   * @param siteId site identifier
+   * @param attributes normalized criteria in composite-key order
+   * @return combined composite criterion, or null if no covering index can be used
+   * @throws ValidationException if the composite criteria are invalid
+   */
   private SearchAttributeCriteria resolveCompositeCriteria(final String siteId,
       final List<SearchAttributeCriteria> attributes) {
+    if (attributes.stream().anyMatch(attribute -> attribute.json() != null)) {
+      return null;
+    }
     SchemaCompositeKeyRecord composite = this.schemaService.getCompositeKeyExactMatch(siteId,
         attributes.stream().map(SearchAttributeCriteria::key).toList());
     if (composite == null) {
@@ -460,23 +612,37 @@ public final class DocumentSearchMultiAttributeQuery extends AbstractSearchAttri
     if (attributes.size() <= 2) {
       return attributes;
     }
+    List<SearchAttributeCriteria> scalar =
+        attributes.stream().filter(attribute -> attribute.json() == null).toList();
+    if (scalar.size() < 2) {
+      return attributes;
+    }
     SchemaCompositeKeyRecord composite =
-        this.schemaService.getCompositeKeyBestMatch(siteId, attributes);
+        this.schemaService.getCompositeKeyBestMatch(siteId, scalar);
     if (composite == null) {
       return attributes;
     }
-    Map<String, SearchAttributeCriteria> byKey = attributes.stream()
-        .collect(Collectors.toMap(SearchAttributeCriteria::key, search -> search));
+    Map<String, SearchAttributeCriteria> byKey =
+        scalar.stream().collect(Collectors.toMap(SearchAttributeCriteria::key, search -> search));
     List<SearchAttributeCriteria> covered = composite.getKeys().stream().map(byKey::get).toList();
     SearchAttributeCriteria search = new SearchAttributesToCriteria(composite).apply(covered);
     validate(search);
 
     List<SearchAttributeCriteria> criteria = new ArrayList<>(List.of(search));
-    attributes.stream().filter(attribute -> !composite.getKeys().contains(attribute.key()))
+    attributes.stream()
+        .filter(
+            attribute -> attribute.json() != null || !composite.getKeys().contains(attribute.key()))
         .forEach(criteria::add);
     return criteria;
   }
 
+  /**
+   * Require equality-only comparisons for every composite-key component preceding the last one.
+   * Reject prefix, range, and equality-OR comparisons on those components.
+   *
+   * @param attributes criteria in composite-key order
+   * @throws ValidationException if an earlier component uses an unsupported comparison
+   */
   private void validateCompositeCriteria(final List<SearchAttributeCriteria> attributes)
       throws ValidationException {
 

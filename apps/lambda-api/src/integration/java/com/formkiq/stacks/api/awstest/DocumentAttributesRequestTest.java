@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
 import com.formkiq.client.api.ReindexApi;
 import com.formkiq.client.api.SchemasApi;
@@ -62,7 +63,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import com.formkiq.client.api.AttributesApi;
 import com.formkiq.client.api.DocumentAttributesApi;
-import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddAttribute;
@@ -73,13 +73,16 @@ import com.formkiq.client.model.AddDocumentAttributesRequest;
 import com.formkiq.client.model.AddResponse;
 import com.formkiq.client.model.DeleteResponse;
 import com.formkiq.client.model.DocumentAttribute;
-import com.formkiq.client.model.DocumentSearch;
 import com.formkiq.client.model.DocumentSearchAttribute;
-import com.formkiq.client.model.DocumentSearchRequest;
 import com.formkiq.client.model.SetDocumentAttributeRequest;
 import com.formkiq.client.model.SetDocumentAttributesRequest;
 import com.formkiq.client.model.SetResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentAttributeRequestBuilder;
+import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.SearchDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.WaitForDocumentContentRequestBuilder;
 
 /**
  * GET, POST /documents/{documentId}/attributes tests. GET, PUT, DELETE
@@ -133,9 +136,9 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     List<DocumentAttribute> attributes =
         notNull(api.getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
     assertEquals(1, attributes.size());
-    assertEquals(key, attributes.get(0).getKey());
-    assertEquals("xyz", attributes.get(0).getStringValue());
-    assertTrue(notNull(attributes.get(0).getStringValues()).isEmpty());
+    assertEquals(key, attributes.getFirst().getKey());
+    assertEquals("xyz", attributes.getFirst().getStringValue());
+    assertTrue(notNull(attributes.getFirst().getStringValues()).isEmpty());
   }
 
   private void setDocumentAttributeValues(final DocumentAttributesApi api, final String siteId,
@@ -154,9 +157,9 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     List<DocumentAttribute> attributes =
         notNull(api.getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
     assertEquals(1, attributes.size());
-    assertEquals(key, attributes.get(0).getKey());
-    assertNull(attributes.get(0).getStringValue());
-    assertEquals("987,xyz", String.join(",", notNull(attributes.get(0).getStringValues())));
+    assertEquals(key, attributes.getFirst().getKey());
+    assertNull(attributes.getFirst().getStringValue());
+    assertEquals("987,xyz", String.join(",", notNull(attributes.getFirst().getStringValues())));
   }
 
   private void setDocumentAttributes(final DocumentAttributesApi api, final String siteId,
@@ -174,9 +177,9 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     List<DocumentAttribute> attributes =
         notNull(api.getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
     assertEquals(1, attributes.size());
-    assertEquals(key, attributes.get(0).getKey());
-    assertNull(attributes.get(0).getStringValue());
-    assertEquals("123,abc", String.join(",", notNull(attributes.get(0).getStringValues())));
+    assertEquals(key, attributes.getFirst().getKey());
+    assertNull(attributes.getFirst().getStringValue());
+    assertEquals("123,abc", String.join(",", notNull(attributes.getFirst().getStringValues())));
   }
 
   /**
@@ -187,7 +190,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
   void testAddDocument10() throws ApiException, InterruptedException {
     // given
     String siteId = ID.uuid();
-    ApiClient apiClient = getApiClients(siteId).get(0);
+    ApiClient apiClient = getApiClients(siteId).getFirst();
 
     FkqAttributeService.addAttribute(apiClient, siteId, "invoiceCurrency", AttributeDataType.STRING,
         null);
@@ -216,6 +219,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     AddDocumentAttribute a3 = createStringAttribute("invoiceNumber", "45102");
     AddDocumentAttribute a4 = createNumberAttribute("invoiceTotalAmount", new BigDecimal(1));
     AddDocumentAttribute a5 = createStringAttribute("invoiceVendorName", "Mascareene Beef Company");
+    // when
     addDocumentAttributes(apiClient, siteId, documentId, List.of(a0, a1, a2, a3, a4, a5));
 
     // then
@@ -265,7 +269,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
       final String key2 = "test2_" + UUID.randomUUID();
       final String value = "val";
 
-      AttributesApi attributeApi = new AttributesApi(apiClients.get(0));
+      AttributesApi attributeApi = new AttributesApi(apiClients.getFirst());
       addAttribute(attributeApi, siteId, key1);
       addAttribute(attributeApi, siteId, key2);
 
@@ -286,9 +290,9 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
         List<DocumentAttribute> attributes = notNull(
             api.getDocumentAttributes(documentId, siteId, null, null, null).getAttributes());
         assertEquals(1, attributes.size());
-        assertEquals(key1, attributes.get(0).getKey());
-        assertEquals(value, attributes.get(0).getStringValue());
-        assertNotNull(attributes.get(0).getInsertedDate());
+        assertEquals(key1, attributes.getFirst().getKey());
+        assertEquals(value, attributes.getFirst().getStringValue());
+        assertNotNull(attributes.getFirst().getInsertedDate());
 
         DocumentAttribute attribute =
             api.getDocumentAttribute(documentId, key1, siteId, null).getAttribute();
@@ -323,7 +327,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
     final String value1 = "val1";
     final String value2 = "val2";
 
-    AttributesApi attributeApi = new AttributesApi(apiClients.get(0));
+    AttributesApi attributeApi = new AttributesApi(apiClients.getFirst());
     addAttribute(attributeApi, siteId, key1);
     addAttribute(attributeApi, siteId, key2);
 
@@ -419,29 +423,28 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
       final String key = "category_" + UUID.randomUUID();
       final String value = "person";
 
-      AttributesApi attributeApi = new AttributesApi(apiClients.get(0));
-      addAttribute(attributeApi, siteId, key);
-
-      String documentId = createDocument(apiClients.get(0), siteId);
-
-      DocumentAttributesApi api = new DocumentAttributesApi(apiClients.get(0));
-      AddDocumentAttributesRequest req = addAttributeToDocument(key, value);
-      api.addDocumentAttributes(documentId, req, siteId, null);
+      ApiClient writer = apiClients.getFirst();
+      new AddAttributeRequestBuilder().keyAsString(key).submitOk(writer, siteId);
+      String documentId = new AddDocumentRequestBuilder().content("some content")
+          .submitOk(writer, siteId).response().getDocumentId();
+      new WaitForDocumentContentRequestBuilder(documentId).content("some content").submitOk(writer,
+          siteId);
+      new AddDocumentAttributeRequestBuilder(DocumentArtifact.of(documentId, null))
+          .addAttribute(key, List.of(value)).submitOk(writer, siteId);
 
       for (ApiClient apiClient : apiClients) {
 
-        DocumentSearchApi searchApi = new DocumentSearchApi(apiClient);
-        DocumentSearchRequest sreq = new DocumentSearchRequest().query(new DocumentSearch()
-            .addAttributesItem(new DocumentSearchAttribute().key(key).eq(value)));
+        SearchDocumentRequestBuilder request = new SearchDocumentRequestBuilder()
+            .attribute(new DocumentSearchAttribute().key(key).eq(value));
 
-        // when EQ
+        // when
         List<SearchResultDocument> response =
-            notNull(searchApi.documentSearch(sreq, siteId, null, null, null, null).getDocuments());
+            notNull(request.submitOk(apiClient, siteId).response().getDocuments());
 
         // then
         assertEquals(1, response.size());
-        assertEquals(documentId, response.get(0).getDocumentId());
-        DocumentSearchMatchAttribute matchedAttribute = response.get(0).getMatchedAttribute();
+        assertEquals(documentId, response.getFirst().getDocumentId());
+        DocumentSearchMatchAttribute matchedAttribute = response.getFirst().getMatchedAttribute();
         assertNotNull(matchedAttribute);
         assertEquals(key, matchedAttribute.getKey());
         assertEquals("person", matchedAttribute.getStringValue());

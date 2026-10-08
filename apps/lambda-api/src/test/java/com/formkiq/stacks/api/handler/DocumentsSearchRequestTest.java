@@ -52,6 +52,7 @@ import com.formkiq.client.model.DocumentSyncStatus;
 import com.formkiq.client.model.GetDocumentFulltextResponse;
 import com.formkiq.client.model.GetDocumentSyncResponse;
 import com.formkiq.client.model.SearchResponseFields;
+import com.formkiq.client.model.JsonAttributeSearchFilter;
 import com.formkiq.client.model.SearchRangeDataType;
 import com.formkiq.client.model.SearchResultDocument;
 import com.formkiq.client.model.SearchResultDocumentAttribute;
@@ -75,6 +76,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
@@ -1121,6 +1123,329 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       // then
       assertEquals(0, notNull(response.getDocuments()).size());
     }
+  }
+
+  /**
+   * JSON array and quoted property paths combine EQ OR and string prefix comparisons.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributeArrayAndQuotedPaths() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    DocumentArtifact matching = new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key,
+            Map.of("lineItems", List.of(Map.of("quantity", "2")), "customer.name", "Acme"))
+        .getDocument(client, siteId);
+    new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key,
+            Map.of("lineItems", List.of(Map.of("quantity", 2)), "customer.name", "Acme"))
+        .getDocument(client, siteId);
+    new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key,
+            Map.of("lineItems", List.of(Map.of("quantity", "2")), "customer.name", "Beta"))
+        .getDocument(client, siteId);
+
+    // when
+    DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+        .addAttribute(new DocumentSearchAttribute().key(key).eqOr(null)
+            .json(new JsonAttributeSearchFilter().path("$.lineItems[0].quantity")
+                .eqOr(List.of("2", "3"))))
+        .addAttribute(new DocumentSearchAttribute().key(key).eqOr(null).json(
+            new JsonAttributeSearchFilter().path("$['customer.name']").eqOr(null).beginsWith("Ac")))
+        .submitOk(client, siteId).response();
+
+    // then
+    assertDocumentIds(List.of(matching.documentId()), notNull(response.getDocuments()));
+  }
+
+  /**
+   * JSON search matches an artifact without combining its attributes with the parent document.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributeArtifact() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    new AddAttributeRequestBuilder().keyAsString("status").submitOk(client, siteId);
+    DocumentArtifact parent =
+        new AddDocumentRequestBuilder().content().addAttribute("status", "approved")
+            .addJsonAttribute(key, Map.of("customer", Map.of("name", "Beta")))
+            .getDocument(client, siteId);
+    DocumentArtifact matching = new AddDocumentRequestBuilder().content()
+        .documentId(parent.documentId()).artifacts(true).addAttribute("status", "pending")
+        .addJsonAttribute(key, Map.of("customer", Map.of("name", "Acme")))
+        .getDocument(client, siteId);
+
+    // when
+    DocumentSearchResponse response = new SearchDocumentRequestBuilder()
+        .addJsonAttributeEquals(key, "$.customer.name", "Acme").submitOk(client, siteId).response();
+
+    // then
+    assertNotNull(matching.artifactId());
+    assertEquals(1, notNull(response.getDocuments()).size());
+    assertEquals(parent.documentId(), response.getDocuments().getFirst().getDocumentId());
+    assertEquals(matching.artifactId(), response.getDocuments().getFirst().getArtifactId());
+
+    // when
+    response =
+        new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.customer.name", "Acme")
+            .addAttribute(new DocumentSearchAttribute().key("status").eq("approved"))
+            .submitOk(client, siteId).response();
+
+    // then
+    assertTrue(notNull(response.getDocuments()).isEmpty());
+  }
+
+  /**
+   * JSON search rejects invalid paths, empty filters, mixed operators, and duplicate paths.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributeInvalidFilters() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    List<DocumentSearchAttribute> invalid = List.of(
+        new DocumentSearchAttribute().key(key).eqOr(null)
+            .json(new JsonAttributeSearchFilter().path("$.*").eqOr(null).eq("Acme")),
+        new DocumentSearchAttribute().key(key).eqOr(null)
+            .json(new JsonAttributeSearchFilter().path("$.name").eqOr(null)),
+        new DocumentSearchAttribute().key(key).eq("Acme").eqOr(null)
+            .json(new JsonAttributeSearchFilter().path("$.name").eqOr(null).eq("Acme")));
+
+    for (DocumentSearchAttribute attribute : invalid) {
+      // when
+      var response = new SearchDocumentRequestBuilder().attribute(attribute).submit(client, siteId);
+
+      // then
+      assertTrue(response.isError());
+      assertNotNull(response.exception());
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), response.exception().getCode());
+    }
+
+    // when
+    var response = new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.name", "Acme")
+        .addJsonAttributeEquals(key, "$.name", "Beta").submit(client, siteId);
+
+    // then
+    assertTrue(response.isError());
+    assertNotNull(response.exception());
+    assertEquals(SC_BAD_REQUEST.getStatusCode(), response.exception().getCode());
+  }
+
+  /**
+   * POST /search matches a JSON attribute's nested string field and excludes other values.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributeNestedStringEquals() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    DocumentArtifact matchingDocument = new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key, Map.of("customer", Map.of("name", "Acme")))
+        .getDocument(client, siteId);
+    new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key, Map.of("customer", Map.of("name", "Beta")))
+        .getDocument(client, siteId);
+    new AddDocumentRequestBuilder().content().addJsonAttribute(key, Map.of("name", "Acme"))
+        .getDocument(client, siteId);
+
+    // when
+    DocumentSearchResponse response =
+        new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.customer.name", "Acme")
+            .responseFields(new SearchResponseFields().attributes(List.of(key)))
+            .submitOk(client, siteId).response();
+
+    // then
+    assertDocumentIds(List.of(matchingDocument.documentId()), notNull(response.getDocuments()));
+    SearchResultDocument result = response.getDocuments().getFirst();
+    assertNotNull(result.getMatchedAttribute());
+    assertEquals(key, result.getMatchedAttribute().getKey());
+    assertEquals("$.customer.name", result.getMatchedAttribute().getJsonPath());
+    assertEquals(Map.of("customer", Map.of("name", "Acme")),
+        result.getMatchedAttribute().getJsonValue());
+    assertNotNull(result.getAttributes());
+    assertEquals(result.getMatchedAttribute().getJsonValue(),
+        result.getAttributes().get(key).getJsonValue());
+  }
+
+  /**
+   * JSON index pagination returns each match once and explicit IDs apply the same filter.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributePaginationAndDocumentIds() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    List<String> expected = new ArrayList<>();
+    List<String> ids = new ArrayList<>();
+    for (String name : List.of("Acme", "Beta", "Acme", "Beta", "Acme")) {
+      DocumentArtifact document = new AddDocumentRequestBuilder().content()
+          .addJsonAttribute(key, Map.of("customer", Map.of("name", name)))
+          .getDocument(client, siteId);
+      ids.add(document.documentId());
+      if ("Acme".equals(name)) {
+        expected.add(document.documentId());
+      }
+    }
+    List<SearchResultDocument> documents = new ArrayList<>();
+    String next = null;
+    int pages = 0;
+
+    // when
+    do {
+      DocumentSearchResponse response =
+          new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.customer.name", "Acme")
+              .limit("1").next(next).submitOk(client, siteId).response();
+      documents.addAll(notNull(response.getDocuments()));
+      next = response.getNext();
+      pages++;
+    } while (next != null && pages < TEST_TIMEOUT);
+
+    // then
+    assertNull(next);
+    assertDocumentIds(expected, documents);
+
+    // when
+    DocumentSearchResponse response =
+        new SearchDocumentRequestBuilder().query(new DocumentSearch().documentIds(ids))
+            .addJsonAttributeEquals(key, "$.customer.name", "Acme").limit("1")
+            .submitOk(client, siteId).response();
+
+    // then
+    assertDocumentIds(expected, notNull(response.getDocuments()));
+    assertNull(response.getNext());
+  }
+
+  /**
+   * JSON path filters require an attribute definition with JSON data type.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributeRequiresJsonDataType() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "description";
+    new AddAttributeRequestBuilder().keyAsString(key).submitOk(client, siteId);
+
+    // when
+    var response = new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.name", "Acme")
+        .submit(client, siteId);
+
+    // then
+    assertTrue(response.isError());
+    assertNotNull(response.exception());
+    assertEquals(SC_BAD_REQUEST.getStatusCode(), response.exception().getCode());
+    assertEquals(
+        "{\"errors\":[{\"key\":\"description\",\"error\":\""
+            + "json search requires an attribute with dataType JSON\"}]}",
+        response.exception().getResponseBody());
+  }
+
+  /**
+   * JSON paths on the same key combine boolean string equality and inclusive numeric bounds.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributeStringComparisonsAndCount() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    DocumentArtifact matching = new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key, Map.of("approved", true, "total", 1250.50))
+        .getDocument(client, siteId);
+    DocumentArtifact matchingString = new AddDocumentRequestBuilder().content()
+        .addJsonAttribute(key, Map.of("approved", "true", "total", 1250.50))
+        .getDocument(client, siteId);
+    for (Map<String, Object> value : List.<Map<String, Object>>of(
+        Map.of("approved", false, "total", 1250.50), Map.of("approved", true, "total", 900),
+        Map.of("approved", "TRUE", "total", 1250.50),
+        Map.of("approved", true, "total", "1250.50"))) {
+      new AddDocumentRequestBuilder().content().addJsonAttribute(key, value).getDocument(client,
+          siteId);
+    }
+
+    // when
+    SearchDocumentRequestBuilder request =
+        new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.approved", "true")
+            .addJsonAttributeRange(key, "$.total", new BigDecimal("1000"), new BigDecimal("1500"));
+    DocumentSearchResponse response = request.submitOk(client, siteId).response();
+
+    // then
+    assertDocumentIds(List.of(matching.documentId(), matchingString.documentId()),
+        notNull(response.getDocuments()));
+
+    // when
+    DocumentSearchResponse count = request.projection("COUNT").submitOk(client, siteId).response();
+
+    // then
+    assertEquals(2, count.getCount());
+    assertNotTruncated(count);
+  }
+
+  /**
+   * A partial scalar composite may drive a search while JSON paths remain filters.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testSearchJsonAttributeWithScalarComposite() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(client, siteId);
+    for (String scalar : List.of("status", "category")) {
+      new AddAttributeRequestBuilder().keyAsString(scalar).submitOk(client, siteId);
+    }
+    new SetSchemaDocumentRequestBuilder("json-search").addCompositeKey("status", "category")
+        .submitOk(client, siteId);
+    DocumentArtifact matching = new AddDocumentRequestBuilder().content()
+        .addAttribute("status", "approved").addAttribute("category", "invoice")
+        .addJsonAttribute(key, Map.of("customer", Map.of("name", "Acme")))
+        .getDocument(client, siteId);
+    new AddDocumentRequestBuilder().content().addAttribute("status", "approved")
+        .addAttribute("category", "invoice")
+        .addJsonAttribute(key, Map.of("customer", Map.of("name", "Beta")))
+        .getDocument(client, siteId);
+
+    // when
+    DocumentSearchResponse response =
+        new SearchDocumentRequestBuilder().addJsonAttributeEquals(key, "$.customer.name", "Acme")
+            .addAttribute(new DocumentSearchAttribute().key("status").eq("approved"))
+            .addAttribute(new DocumentSearchAttribute().key("category").eq("invoice"))
+            .submitOk(client, siteId).response();
+
+    // then
+    assertDocumentIds(List.of(matching.documentId()), notNull(response.getDocuments()));
+    assertEquals("status::category",
+        response.getDocuments().getFirst().getMatchedAttribute().getKey());
+    assertNull(response.getDocuments().getFirst().getMatchedAttribute().getJsonPath());
   }
 
   /** Prefer the largest usable composite and fall back when its leading operator cannot match. */

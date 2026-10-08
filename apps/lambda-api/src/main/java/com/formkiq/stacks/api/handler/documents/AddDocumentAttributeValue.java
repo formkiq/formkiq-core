@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Document Attribute Value.
@@ -33,5 +34,5 @@ import java.util.List;
 @Reflectable
 public record AddDocumentAttributeValue(String stringValue, List<String> stringValues,
     Double numberValue, List<Double> numberValues, Boolean booleanValue, String dateValue,
-    List<String> dateValues) {
+    List<String> dateValues, Map<String, Object> jsonValue) {
 }

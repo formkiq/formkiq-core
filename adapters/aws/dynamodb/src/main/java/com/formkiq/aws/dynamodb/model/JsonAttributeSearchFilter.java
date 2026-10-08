@@ -21,37 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.aws.dynamodb.documentattributes;
+package com.formkiq.aws.dynamodb.model;
 
 import com.formkiq.graalvm.annotations.Reflectable;
+import java.math.BigDecimal;
+import java.util.Collection;
 
-/**
- * Attribute Search Type.
- */
+/** String equality and numeric bounds against a nested JSON attribute field. */
 @Reflectable
-public enum DocumentAttributeValueType {
-  /** Boolean. */
-  BOOLEAN,
-  /** Composite String. */
-  COMPOSITE_STRING,
-  /** Date. */
-  DATE,
-  /** JSON object. */
-  JSON,
-  /** Key Only. */
-  KEY_ONLY,
-  /** Number. */
-  NUMBER,
-  /** String. */
-  STRING,
-  /** Publication. */
-  PUBLICATION,
-  /** Classification. */
-  CLASSIFICATION,
-  /** Relationships. */
-  RELATIONSHIPS,
-  /** Watermark. */
-  WATERMARK,
-  /** Entity. */
-  ENTITY
+public record JsonAttributeSearchFilter(String path, String eq, Collection<String> eqOr,
+    String beginsWith, BigDecimal gt, BigDecimal gte, BigDecimal lt, BigDecimal lte) {
 }
