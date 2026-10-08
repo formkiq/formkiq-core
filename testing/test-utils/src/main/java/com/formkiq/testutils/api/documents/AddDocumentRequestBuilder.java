@@ -48,6 +48,8 @@ import com.formkiq.testutils.api.HttpRequestBuilder;
 import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Builder for {@link AddDocumentRequest}.
@@ -237,6 +239,20 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
     AddDocumentAttribute attr =
         new AddDocumentAttribute(new AddDocumentAttributeStandard().key(key).dateValue(value));
     this.request.addAttributesItem(attr);
+    return this;
+  }
+
+  /**
+   * Add a JSON document attribute.
+   *
+   * @param key attribute key
+   * @param value JSON object; nested values may include arrays
+   * @return this builder
+   */
+  public AddDocumentRequestBuilder addJsonAttribute(final String key,
+      final Map<String, Object> value) {
+    this.request.addAttributesItem(new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).jsonValue(Objects.requireNonNull(value))));
     return this;
   }
 

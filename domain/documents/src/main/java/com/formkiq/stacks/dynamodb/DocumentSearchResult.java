@@ -41,12 +41,41 @@ import java.util.Map;
 public record DocumentSearchResult(DocumentRecord documentRecord,
     DocumentAttributeRecord matchedAttribute, Map<String, Object> attributeFields,
     DocumentTag matchedTag, List<DocumentTag> matchedTags, DocumentSearchFolderIndex folderIndex,
-    String value) {
+    String value, String jsonPath) {
 
   /**
    * Canonical constructor.
    */
   public DocumentSearchResult {
+  }
+
+  /**
+   * Construct a search result without JSON path metadata.
+   *
+   * @param document document record
+   * @param attribute matching attribute
+   * @param fields projected attribute values
+   * @param tag matching tag
+   * @param tags matching tags
+   * @param folder matching folder
+   * @param searchValue search value
+   */
+  public DocumentSearchResult(final DocumentRecord document,
+      final DocumentAttributeRecord attribute, final Map<String, Object> fields,
+      final DocumentTag tag, final List<DocumentTag> tags, final DocumentSearchFolderIndex folder,
+      final String searchValue) {
+    this(document, attribute, fields, tag, tags, folder, searchValue, null);
+  }
+
+  /**
+   * Copy the result with the JSON path used by its driving criterion.
+   *
+   * @param path JSON search path
+   * @return result with path metadata
+   */
+  public DocumentSearchResult withJsonPath(final String path) {
+    return new DocumentSearchResult(documentRecord, matchedAttribute, attributeFields, matchedTag,
+        matchedTags, folderIndex, value, path);
   }
 
   public DocumentSearchResult(final String documentSearchValue) {
@@ -75,6 +104,6 @@ public record DocumentSearchResult(DocumentRecord documentRecord,
   public DocumentSearchResult(final DocumentSearchResult item,
       final Map<String, Object> documentAttributeFields) {
     this(item.documentRecord, item.matchedAttribute, documentAttributeFields, item.matchedTag,
-        item.matchedTags, item.folderIndex, item.value);
+        item.matchedTags, item.folderIndex, item.value, item.jsonPath);
   }
 }

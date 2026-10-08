@@ -100,8 +100,9 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   private boolean isKeyOnlyValues(final DocumentAttributeRecord da) {
-    return isEmpty(da.getStringValue()) && da.getNumberValue() == null
-        && da.getBooleanValue() == null && isEmpty(da.getDateValueAsString());
+    boolean hasScalarValue = !isEmpty(da.getStringValue()) || da.getNumberValue() != null
+        || da.getBooleanValue() != null;
+    return !hasScalarValue && isEmpty(da.getDateValueAsString()) && da.getJsonValue() == null;
   }
 
   private boolean validateAllowedValues(final List<String> allowedValues,
@@ -291,6 +292,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       case ENTITY -> validateEntity(siteId, a, vb);
       case NUMBER ->
         vb.isRequired(a.getKey(), a.getNumberValue(), "attribute only support number value");
+      case JSON ->
+        vb.isRequired(a.getKey(), a.getJsonValue() != null, "attribute only support json value");
       case DATE -> validateDate(a, vb);
       case BOOLEAN -> vb.isRequired(a.getKey(), a.getBooleanValue() != null,
           "attribute only support boolean value");

@@ -36,6 +36,8 @@ public enum DocumentAttributeValueType {
   COMPOSITE_STRING,
   /** Date. */
   DATE,
+  /** JSON object. */
+  JSON,
   /** Key Only. */
   KEY_ONLY,
   /** Number. */

@@ -233,6 +233,10 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
       return List.of();
     }
 
+    if (search.json() != null) {
+      return findMatchingJsonAttributes(siteId, search, artifacts, beforeRead);
+    }
+
     List<String> values = equalityValues(search);
     if (!values.isEmpty()) {
       List<DynamoDbKey> keys = new ArrayList<>();
@@ -261,6 +265,24 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
     }
 
     return results;
+  }
+
+  private List<Map<String, AttributeValue>> findMatchingJsonAttributes(final String siteId,
+      final SearchAttributeCriteria search, final List<DocumentArtifact> artifacts,
+      final Runnable beforeRead) {
+    JsonAttributeSearchPredicate predicate = new JsonAttributeSearchPredicate(search);
+    List<DynamoDbKey> keys = artifacts
+        .stream().map(artifact -> new DocumentAttributeRecord().setDocument(artifact)
+            .setKey(search.key()).setValueType(DocumentAttributeValueType.JSON).buildKey(siteId))
+        .distinct().toList();
+    List<Map<String, AttributeValue>> matches = new ArrayList<>();
+    for (List<DynamoDbKey> batch : com.formkiq.aws.dynamodb.objects.Objects.parition(keys,
+        MAX_ATTRIBUTE_BATCH_SIZE)) {
+      beforeRead.run();
+      this.db.getBatchByKey(new BatchGetConfig(), batch).stream().filter(predicate)
+          .forEach(matches::add);
+    }
+    return matches;
   }
 
   private AttributeDataType getAttributeDataType(final String siteId, final String key) {
@@ -314,13 +336,14 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
       final SearchQuery query) {
     List<SearchAttributeCriteria> attributes =
         !notNull(query.attributes()).isEmpty() ? query.attributes() : List.of(query.attribute());
-    long distinctKeys = attributes.stream().map(SearchAttributeCriteria::key).distinct().count();
-    if (distinctKeys != attributes.size()) {
-      throw ValidationException.builder().error("duplicate attributes in query").build();
-    }
     List<SearchAttributeCriteria> normalized =
         attributes.stream().map(attribute -> normalizeDateCriteria(siteId, attribute)).toList();
     normalized.forEach(this::validate);
+    long distinctKeys = normalized.stream().map(attribute -> List.of(attribute.key(),
+        attribute.json() != null ? attribute.json().path() : "")).distinct().count();
+    if (distinctKeys != attributes.size()) {
+      throw ValidationException.builder().error("duplicate attributes in query").build();
+    }
     return normalized;
   }
 
@@ -328,6 +351,13 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
       final SearchAttributeCriteria search) {
 
     AttributeDataType dataType = getAttributeDataType(siteId, search.key());
+    if (search.json() != null) {
+      if (!AttributeDataType.JSON.equals(dataType)) {
+        throw ValidationException.builder()
+            .error(search.key(), "json search requires an attribute with dataType JSON").build();
+      }
+      return search;
+    }
     boolean isDate = AttributeDataType.DATE.equals(dataType)
         || search.range() != null && "date".equalsIgnoreCase(search.range().type());
     return isDate ? createDateSearchCriteria(search) : search;
@@ -389,6 +419,7 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
   protected final void validate(final SearchAttributeCriteria search) throws ValidationException {
     ValidationBuilder vb = new ValidationBuilder();
     SearchTagCriteriaRange range = search.range();
+    vb.isRequired("key", search.key());
 
     if (range != null) {
       vb.isRequired("start", range.start());
@@ -396,5 +427,8 @@ public abstract class AbstractSearchAttributeQuery implements DocumentSearchQuer
     }
 
     vb.check();
+    if (search.json() != null) {
+      new JsonAttributeSearchPredicate(search);
+    }
   }
 }

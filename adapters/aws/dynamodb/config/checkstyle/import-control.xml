@@ -17,6 +17,7 @@
 		<allow pkg="com.formkiq.validation" />
 
 		<allow pkg="java.io" />
+		<allow class="java.math.BigDecimal" />
 		<allow pkg="java.net" />
 		<allow pkg="java.text" />
 		<allow pkg="java.time" />

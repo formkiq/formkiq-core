@@ -30,6 +30,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -110,6 +111,28 @@ public interface DynamoDbTypes {
 
   static Integer toInteger(final AttributeValue attributeValue) {
     return attributeValue != null ? Integer.valueOf(attributeValue.n()) : null;
+  }
+
+  /**
+   * Convert a DynamoDB document value to JSON values without changing object keys.
+   *
+   * @param value DynamoDB value
+   * @return a map, list, string, number, boolean, or null
+   */
+  static Object toJson(final AttributeValue value) {
+    return switch (value.type()) {
+      case M -> {
+        Map<String, Object> map = new HashMap<>();
+        value.m().forEach((key, nested) -> map.put(key, toJson(nested)));
+        yield map;
+      }
+      case L -> value.l().stream().map(DynamoDbTypes::toJson).toList();
+      case S -> value.s();
+      case N -> Double.valueOf(value.n());
+      case BOOL -> value.bool();
+      case NUL -> null;
+      default -> throw new IllegalArgumentException("Unsupported JSON value: " + value.type());
+    };
   }
 
   /**

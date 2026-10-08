@@ -34,6 +34,8 @@ import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Builder for {@link SetDocumentAttributesRequest}.
@@ -80,6 +82,20 @@ public class SetDocumentAttributeRequestBuilder implements HttpRequestBuilder<Se
       final String stringValue) {
     this.request.addAttributesItem(new AddDocumentAttribute(
         new AddDocumentAttributeStandard().key(key).stringValue(stringValue)));
+    return this;
+  }
+
+  /**
+   * Add a JSON document attribute to the replacement request.
+   *
+   * @param key attribute key
+   * @param value JSON object; nested values may include arrays
+   * @return this builder
+   */
+  public SetDocumentAttributeRequestBuilder addJsonAttribute(final String key,
+      final Map<String, Object> value) {
+    this.request.addAttributesItem(new AddDocumentAttribute(
+        new AddDocumentAttributeStandard().key(key).jsonValue(Objects.requireNonNull(value))));
     return this;
   }
 
