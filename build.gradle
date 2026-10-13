@@ -12,7 +12,7 @@ repositories { mavenCentral() }
 
 allprojects {
 
-  version = '1.19.2'
+  version = '1.19.2-apipermissions'
 
   plugins.withType(JavaPlugin).configureEach {
     java {

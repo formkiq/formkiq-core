@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -39,6 +40,8 @@ import com.formkiq.stacks.dynamodb.documents.DocumentPublicationRecord;
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
@@ -109,5 +112,14 @@ public class PublicationsDocumentIdRequestHandler
   @Override
   public String getRequestUrl() {
     return "/publications/{documentId}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_DOCUMENTS);
+      case "delete" -> Optional.of(ApiPermission.DELETE_DOCUMENTS);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 }

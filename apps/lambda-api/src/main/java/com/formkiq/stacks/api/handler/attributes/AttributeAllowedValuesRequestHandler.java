@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.attributes;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -36,6 +37,7 @@ import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
@@ -88,5 +90,11 @@ public class AttributeAllowedValuesRequestHandler
   @Override
   public String getRequestUrl() {
     return "/attributes/{key}/allowedValues";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "get".equalsIgnoreCase(method) ? Optional.of(ApiPermission.READ_ATTRIBUTES)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

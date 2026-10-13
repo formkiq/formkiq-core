@@ -24,8 +24,10 @@
 package com.formkiq.stacks.api.handler.folders;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -72,5 +74,11 @@ public class FoldersIndexKeyRequestHandler
   @Override
   public String getRequestUrl() {
     return "/folders/{indexKey}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "delete".equalsIgnoreCase(method) ? Optional.of(ApiPermission.DELETE_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

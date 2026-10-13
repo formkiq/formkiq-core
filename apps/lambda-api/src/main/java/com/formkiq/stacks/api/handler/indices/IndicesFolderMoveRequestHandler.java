@@ -28,8 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -59,6 +61,12 @@ public class IndicesFolderMoveRequestHandler
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "post".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   /**

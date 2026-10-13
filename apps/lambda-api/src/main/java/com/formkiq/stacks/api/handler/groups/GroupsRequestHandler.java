@@ -29,6 +29,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.UserManagementRequestHandler;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
@@ -40,10 +41,10 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.ListGroupsR
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/groups". */
-public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+public class GroupsRequestHandler
+    implements UserManagementRequestHandler, ApiGatewayRequestEventUtil {
 
   /** Default Limit. */
   private static final int DEFAULT_LIMIT = 10;
@@ -80,12 +81,6 @@ public class GroupsRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    return Optional.of(new GroupsApiHasAccess().test(method, authorization));
   }
 
   @Override

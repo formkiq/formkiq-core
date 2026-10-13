@@ -38,6 +38,7 @@ paths:
       operationId: AddSite
       description: Add Site
       summary: Add Site
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       requestBody:
@@ -76,6 +77,7 @@ paths:
       operationId: UpdateSite
       description: Update Site
       summary: Update Site
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -111,6 +113,7 @@ paths:
       operationId: GetSiteGroups
       description: Returns list of groups and permissions belonging to site
       summary: Get group(s) and permissions belonging to site
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -140,6 +143,7 @@ paths:
       operationId: GetSiteGroup
       description: Returns details of a group and permissions belonging to site
       summary: Get group and permissions belonging to site
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -167,6 +171,7 @@ paths:
       operationId: DeleteSiteGroup
       description: Deletes Site Group and permissions
       summary: Deletes Site Group and permissions
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -186,6 +191,7 @@ paths:
       operationId: SetSiteGroupPermissions
       description: Set Site's Group Permissions
       summary: Set Site's Group Permissions
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -225,6 +231,7 @@ paths:
 
         (Deprecated use /sites/{siteId}/opensearch/indices)
       summary: Get site(s) OpenSearch index settings
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -251,6 +258,7 @@ paths:
       operationId: SetOpenSearchIndex
       description: Sets the OpenSearch index settings
       summary: Set site(s) OpenSearch index settings
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -283,6 +291,7 @@ paths:
       operationId: DeleteOpenSearchIndex
       description: Deletes the OpenSearch index
       summary: Deletes site(s) OpenSearch index
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -301,6 +310,7 @@ paths:
       operationId: GetAllOpenSearchIndices
       description: Returns all OpenSearch indices
       summary: Get all OpenSearch indices
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       responses:
@@ -328,6 +338,7 @@ paths:
       operationId: DeleteOpenSearchIndexByName
       description: Deletes the OpenSearch index by name
       summary: Deletes OpenSearch index by name
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -346,6 +357,7 @@ paths:
       operationId: GetOpenSearchIndices
       description: Returns the OpenSearch indices
       summary: Get site(s) OpenSearch indices
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -372,6 +384,7 @@ paths:
       operationId: SetOpenSearchIndices
       description: Sets the OpenSearch index to use for a SiteId
       summary: Set site(s) OpenSearch index to use for a SiteId
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -410,6 +423,7 @@ paths:
 
         This endpoint is available to administrators when the fulltext OpenSearch module is installed and snapshot support is enabled. Snapshot repositories are not supported for OpenSearch Serverless.
       summary: List OpenSearch snapshot repositories
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       responses:
@@ -440,6 +454,7 @@ paths:
 
         This endpoint clears data no longer referenced by any existing snapshot. This operation is not supported for OpenSearch Serverless.
       summary: Cleanup OpenSearch snapshot repository
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -484,6 +499,7 @@ paths:
 
         The repository stores manual snapshots for the site's OpenSearch index. It is named from the site and application environment and is created automatically when a snapshot is requested. Snapshot repositories are not supported for OpenSearch Serverless.
       summary: Get site OpenSearch snapshot repository
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -513,6 +529,7 @@ paths:
 
         This removes the OpenSearch repository registration, not the site's index. This operation is not supported for OpenSearch Serverless.
       summary: Delete site OpenSearch snapshot repository
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -534,6 +551,7 @@ paths:
 
         For provisioned OpenSearch domains, the response is read from the site's S3 snapshot repository. For OpenSearch Serverless, the response is read from the automated snapshot repository.
       summary: List site OpenSearch snapshots
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -566,6 +584,7 @@ paths:
 
         For provisioned OpenSearch domains, the supplied snapshot name is resolved to the site's stored snapshot name before lookup. For OpenSearch Serverless, the response is read from the automated snapshot repository.
       summary: Get site OpenSearch snapshot
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -596,6 +615,7 @@ paths:
 
         If the site's S3 snapshot repository does not already exist, it is registered before the snapshot is created. The supplied snapshot name is stored with the site prefix. This operation is not supported for OpenSearch Serverless.
       summary: Create site OpenSearch snapshot
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -626,6 +646,7 @@ paths:
 
         The supplied snapshot name is resolved to the site's stored snapshot name before deletion. This operation is not supported for OpenSearch Serverless.
       summary: Delete site OpenSearch snapshot
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -648,6 +669,7 @@ paths:
 
         The restored index is created from the site's current index name with the snapshot name and "_restored" suffix. For provisioned OpenSearch domains, the snapshot is read from the site's S3 snapshot repository. For OpenSearch Serverless, the snapshot is read from the automated snapshot repository.
       summary: Restore site OpenSearch snapshot
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -678,6 +700,7 @@ paths:
 
         This deletes only the restored index named with the snapshot name and "_restored" suffix. It does not delete the original site index or the snapshot. This operation is not supported for OpenSearch Serverless.
       summary: Delete restored OpenSearch snapshot index
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -697,6 +720,7 @@ paths:
       operationId: GetSitesSchema
       description: Gets Sites schema
       summary: Get Sites Schema
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -724,6 +748,7 @@ paths:
       operationId: SetSitesSchema
       description: Sets Sites schema
       summary: Set Sites Schema
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -763,6 +788,7 @@ paths:
   /sites/{siteId}/schema/document/attributes/{key}/allowedValues:
     get:
       operationId: GetSitesSchemaAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
         - Schemas
       description: |-
@@ -797,6 +823,7 @@ paths:
       operationId: GetSitesClassifications
       description: Gets Sites Classifications
       summary: Get Sites Classifications
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -825,6 +852,7 @@ paths:
       operationId: AddClassification
       description: Add Classification
       summary: Add Classification
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -866,6 +894,7 @@ paths:
       operationId: GetClassification
       description: Get Classification
       summary: Get Classification
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -894,6 +923,7 @@ paths:
       operationId: DeleteClassification
       description: Delete Classification
       summary: Delete Classification
+      x-formkiq-required-permission: DELETE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -921,6 +951,7 @@ paths:
       operationId: SetClassification
       description: Sets Classification
       summary: Set Classification
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -961,6 +992,7 @@ paths:
   /sites/{siteId}/classifications/{classificationId}/attributes/{key}/allowedValues:
     get:
       operationId: GetClassificationAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
         - Schemas
       description: |-
@@ -996,6 +1028,7 @@ paths:
       operationId: GetConfiguration
       description: Returns the list of sites that the user has access to
       summary: Get site configuration
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1022,6 +1055,7 @@ paths:
       operationId: UpdateConfiguration
       description: Update the System Management configuration
       summary: Update site configuration
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1063,6 +1097,7 @@ paths:
       operationId: GetNumberingSequences
       description: Returns the numbering sequences configured for a site
       summary: Get numbering sequences
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1094,6 +1129,7 @@ paths:
       operationId: GetNumberingSequence
       description: Returns the numbering sequence configured for an attribute key
       summary: Get numbering sequence
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1127,6 +1163,7 @@ paths:
       operationId: SetNumberingSequence
       description: Creates or updates the numbering sequence for an attribute key
       summary: Set numbering sequence
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1177,6 +1214,7 @@ paths:
       operationId: AddNotificationTest
       description: Queues a test email using the site's saved notification configuration
       summary: Send a test notification
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1218,6 +1256,7 @@ paths:
       operationId: GetApiKeys
       description: Returns the list of ApiKeys
       summary: Get API Keys
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1246,6 +1285,7 @@ paths:
       operationId: AddApiKey
       description: Adds a new API Key
       summary: Add API Key
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1285,6 +1325,7 @@ paths:
       operationId: DeleteApiKey
       description: Adds a new API Key
       summary: Delete API Key
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1315,6 +1356,7 @@ paths:
       operationId: GetOpaAccessPolicies
       description: Returns a list of OPA Access Policies, can only be requested with ADMIN privileges
       summary: Get OPAs Access Policies
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
         - Access Control
       responses:
@@ -1342,6 +1384,7 @@ paths:
       operationId: GetOpaAccessPolicy
       description: Returns OPA Access Policy, can only be requested with ADMIN privileges
       summary: Get OPA Access Policy
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
         - Access Control
       parameters:
@@ -1374,6 +1417,7 @@ paths:
         request, against simulated request and user input. The operation does not persist
         policies or modify documents.
       summary: Test an OPA access policy, can only be requested with ADMIN privileges
+      x-formkiq-required-permission: ADMIN
       tags:
         - Access Control
       parameters:
@@ -1435,6 +1479,7 @@ paths:
       operationId: GetOpaAccessPolicyItems
       description: Returns OPA Access Policy Items, can only be requested with ADMIN privileges
       summary: Get OPA Access Policy Items
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
         - Access Control
       parameters:
@@ -1462,6 +1507,7 @@ paths:
       description: |-
         Sets opa access policy items
       summary: Set opa access policy items, can only be requested with ADMIN privileges
+      x-formkiq-required-permission: ADMIN
       tags:
         - Access Control
       parameters:
@@ -1500,6 +1546,7 @@ paths:
       operationId: DeleteOpaAccessPolicyItems
       summary: Delete OPA Access Policy Items
       description: Delete OPA Access Policy Items
+      x-formkiq-required-permission: ADMIN
       tags:
         - Access Control
       parameters:
@@ -1529,6 +1576,7 @@ paths:
       operationId: GetLocales
       description: Returns a list of locale(s) in a specified site
       summary: Get Locales
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1557,6 +1605,7 @@ paths:
       operationId: AddLocale
       description: Adds a new locale to the specified site
       summary: Add Locale
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1592,6 +1641,7 @@ paths:
       operationId: DeleteLocale
       summary: Delete Locale
       description: Delete Locale
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1622,6 +1672,7 @@ paths:
       operationId: GetLocaleResourceItems
       description: Returns the list resource items
       summary: Get Resource Items by Locale
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1651,6 +1702,7 @@ paths:
       operationId: AddLocaleResourceItem
       description: Adds a new localized resource item for a given locale
       summary: Add Locale Resource Item
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1712,6 +1764,7 @@ paths:
       operationId: GetLocaleResourceItem
       description: Returns the resource item
       summary: Get Resource Item by Locale
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1740,6 +1793,7 @@ paths:
       operationId: SetLocaleResourceItem
       description: Set a new Locale Resource Item
       summary: Set Locale Resource Item
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1774,6 +1828,7 @@ paths:
       operationId: DeleteLocaleResourceItem
       summary: Delete Local Resource Item
       description: Delete Local Resource Item
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:

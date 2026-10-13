@@ -21,20 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.formkiq.stacks.api.handler.groups;
+package com.formkiq.testutils.api.systemmanagement;
 
-import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.client.api.SystemManagementApi;
+import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.model.GetPermissionCatalogResponse;
+import com.formkiq.testutils.api.ApiHttpResponse;
+import com.formkiq.testutils.api.HttpRequestBuilder;
 
-import java.util.Collection;
-import java.util.function.BiPredicate;
+/**
+ * GET /permissions/catalog.
+ */
+public class GetPermissionCatalogRequestBuilder
+    implements HttpRequestBuilder<GetPermissionCatalogResponse> {
 
-public class GroupsApiHasAccess implements BiPredicate<String, ApiAuthorization> {
+  /**
+   * constructor.
+   */
+  public GetPermissionCatalogRequestBuilder() {}
+
   @Override
-  public boolean test(final String method, final ApiAuthorization authorization) {
-    Collection<ApiPermission> allPermissions = authorization.getAllPermissions();
-    boolean access = allPermissions.contains(ApiPermission.ADMIN);
-    boolean read = allPermissions.contains(ApiPermission.READ);
-    return !"get".equalsIgnoreCase(method) ? access : read;
+  public ApiHttpResponse<GetPermissionCatalogResponse> submit(final ApiClient apiClient,
+      final String siteId) {
+    return executeApiCall(() -> new SystemManagementApi(apiClient).getPermissionCatalog());
   }
 }

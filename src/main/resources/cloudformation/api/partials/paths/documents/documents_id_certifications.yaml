@@ -11,6 +11,7 @@ paths:
         Target determines whether a presigned download is returned, a new version is created, or a new document is created.
         ; available as an Add-On Module
       summary: Add Document Certification
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document Generation
       parameters:

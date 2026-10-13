@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.handler.webhooks;
 
+import java.util.Locale;
+import java.util.Optional;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.isDefaultSiteId;
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
@@ -41,6 +44,7 @@ import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
 import com.formkiq.aws.dynamodb.model.DocumentTag;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -91,6 +95,15 @@ public class WebhooksRequestHandler
   @Override
   public String getRequestUrl() {
     return "/webhooks";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_WEBHOOKS);
+      case "post" -> Optional.of(ApiPermission.WRITE_WEBHOOKS);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   private Date getTtlDate(final SiteConfiguration config, final DynamicObject o) {

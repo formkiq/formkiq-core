@@ -24,7 +24,7 @@
 package com.formkiq.stacks.api.handler.folders;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.services.lambda.AdminRequestHandler;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -35,11 +35,12 @@ import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.aws.dynamodb.folderpermissions.FolderPermissionRecord;
 
 import java.util.Collections;
+import java.util.Optional;
 
 
 /** {@link ApiGatewayRequestHandler} for "/folders/{indexKey}/permissions". */
 public class FoldersPermissionRequestHandler
-    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
@@ -64,5 +65,11 @@ public class FoldersPermissionRequestHandler
   @Override
   public String getRequestUrl() {
     return "/folders/{indexKey}/permissions";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "get".equalsIgnoreCase(method) ? Optional.of(ApiPermission.GOVERN_DOCUMENT_FOLDERS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentActions
       summary: Get document actions
       description: Get document actions and their status
+      x-formkiq-required-permission: READ_DOCUMENT_ACTIONS
       tags:
         - Document Actions
       parameters:
@@ -75,6 +76,7 @@ paths:
         | RESIZE    | height    | The height of the image to resize (or 'auto'). | |
         | RESIZE    | outputType    | The output type of the image (optional). | |
         | RESIZE    | path    | The path to use when creating resized document (optional). | |
+      x-formkiq-required-permission: WRITE_DOCUMENT_ACTIONS
       tags:
         - Document Actions
       parameters:
@@ -118,6 +120,7 @@ paths:
       summary: Retries failed document action(s)
       description: |-
         Retries all failed document action(s). Failed action status changes to "FAILED_RETRY" and a new "PENDING" action is created.
+      x-formkiq-required-permission: WRITE_DOCUMENT_ACTIONS
       tags:
         - Document Actions
       parameters:

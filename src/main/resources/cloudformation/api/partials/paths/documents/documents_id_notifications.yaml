@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentNotifications
       summary: Get document notifications
       description: Get notifications attached to a document or one of its artifacts
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Document Notifications
       parameters:
@@ -38,6 +39,7 @@ paths:
       operationId: AddDocumentNotification
       summary: Add an ad hoc document notification
       description: Queue an ad hoc notification for a document or one of its artifacts
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document Notifications
       parameters:

@@ -42,6 +42,7 @@ paths:
         
         See requestBody examples below for commmon examples.
 
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Document Search
       parameters:
@@ -198,6 +199,7 @@ paths:
       operationId: SearchFulltext
       summary: Document full-text search
       description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:
@@ -267,6 +269,7 @@ paths:
         Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); available as an Add-On Module
 
         Example Request Body: { "query": { "match_all": {} }}
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:

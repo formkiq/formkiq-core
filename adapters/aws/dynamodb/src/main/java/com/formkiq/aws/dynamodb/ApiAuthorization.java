@@ -23,12 +23,10 @@
  */
 package com.formkiq.aws.dynamodb;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -93,10 +91,8 @@ public class ApiAuthorization {
    */
   private String defaultSiteId;
 
-  /**
-   * {@link ApiPermission} by SiteId.
-   */
-  private Map<String, Collection<ApiPermission>> permissionsBySiteId = new HashMap<>();
+  /** {@link ApiPermissionRole} by SiteId. */
+  private final Map<String, ApiPermissionRole> permissionRoleMap = new HashMap<>();
 
   /**
    * Authorization Roles.
@@ -135,23 +131,13 @@ public class ApiAuthorization {
   }
 
   /**
-   * Add Site Permission.
+   * Add {@link SiteApiPermissionRole} Permission.
    * 
-   * @param siteId {@link String}
-   * @param permissions {@link Collection} {@link ApiPermission}
+   * @param role {@link SiteApiPermissionRole}
    * @return {@link ApiAuthorization}
    */
-  public ApiAuthorization addPermission(final String siteId,
-      final Collection<ApiPermission> permissions) {
-
-    if (this.permissionsBySiteId.containsKey(siteId)) {
-      Collection<ApiPermission> c = new HashSet<>(this.permissionsBySiteId.get(siteId));
-      c.addAll(permissions);
-      this.permissionsBySiteId.put(siteId, c);
-    } else {
-      this.permissionsBySiteId.put(siteId, permissions);
-    }
-
+  public ApiAuthorization addPermission(final SiteApiPermissionRole role) {
+    permissionRoleMap.put(role.siteId(), role.role());
     return this;
   }
 
@@ -164,13 +150,6 @@ public class ApiAuthorization {
   public ApiAuthorization attributeAccessApproval(final AttributeAccessApproval approval) {
     this.attributeAccessApproval = approval;
     return this;
-  }
-
-  /**
-   * Clear Permissions Map.
-   */
-  public void clearPermissions() {
-    this.permissionsBySiteId = new HashMap<>();
   }
 
   /**
@@ -192,9 +171,11 @@ public class ApiAuthorization {
   public String getAccessSummary() {
     List<String> sites = getSiteIds();
 
-    String s = this.permissionsBySiteId.keySet().stream().sorted()
-        .map(e -> e + " (" + this.permissionsBySiteId.get(e).stream().map(Enum::name)
-            .sorted(String::compareTo).collect(Collectors.joining(",")) + ")")
+    String s = this.permissionRoleMap.keySet().stream().sorted()
+        .map(e -> e + " ("
+            + this.permissionRoleMap.get(e).getPermissions().stream().map(Enum::name)
+                .sorted(String::compareTo).collect(Collectors.joining(","))
+            + ")")
         .collect(Collectors.joining(", "));
 
     return !sites.isEmpty() ? "groups: " + s : "no groups";
@@ -206,7 +187,7 @@ public class ApiAuthorization {
    * @return {@link Collection} {@link ApiPermission}
    */
   public Collection<ApiPermission> getAllPermissions() {
-    return this.permissionsBySiteId.keySet().stream()
+    return this.permissionRoleMap.keySet().stream()
         .flatMap(siteId -> getPermissions(siteId).stream()).collect(Collectors.toSet());
   }
 
@@ -250,15 +231,18 @@ public class ApiAuthorization {
    * @return {@link Collection} {@link ApiPermission}
    */
   public Collection<ApiPermission> getPermissions(final String siteId) {
-    Collection<ApiPermission> permissions = this.permissionsBySiteId.get(siteId);
 
-    if (permissions == null) {
-      if (hasAdminPermission()) {
-        permissions = Arrays.stream(ApiPermission.values()).sorted().collect(Collectors.toList());
-      }
+    var permissionRole = this.permissionRoleMap.get(siteId);
+    Collection<ApiPermission> permissions = Collections.emptyList();
+
+    if (permissionRole != null) {
+      permissions = permissionRole.getPermissions();
+    } else if (hasAdminPermission()) {
+      permissions = Arrays.stream(ApiPermission.values())
+          .filter(permission -> permission.getGroup() == null).sorted().toList();
     }
 
-    return permissions != null ? permissions : Collections.emptyList();
+    return permissions;
   }
 
   /**
@@ -303,9 +287,7 @@ public class ApiAuthorization {
    * @return {@link List} {@link String}
    */
   public List<String> getSiteIds() {
-    List<String> siteIds = new ArrayList<>(this.permissionsBySiteId.keySet());
-    Collections.sort(siteIds);
-    return siteIds;
+    return permissionRoleMap.keySet().stream().sorted().toList();
   }
 
   /**
@@ -327,8 +309,8 @@ public class ApiAuthorization {
   }
 
   private boolean hasAdminPermission() {
-    return this.permissionsBySiteId.values().stream()
-        .anyMatch(p -> p.contains(ApiPermission.ADMIN));
+    return this.permissionRoleMap.values().stream()
+        .anyMatch(p -> p.hasPermission(ApiPermission.ADMIN));
   }
 
   /**

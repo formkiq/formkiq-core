@@ -30,8 +30,13 @@ import com.formkiq.module.lambdaservices.AwsServiceCache;
 import java.util.Collection;
 import java.util.Optional;
 
-/** {@link ApiGatewayRequestHandler} for Admin or Govern permissions. */
+/** {@link ApiGatewayRequestHandler} requiring ADMIN, with GOVERN also permitted for GET. */
 public interface AdminRequestHandler extends ApiGatewayRequestHandler {
+
+  @Override
+  default Optional<ApiPermission> getRequiredPermission(final String method) {
+    return Optional.of("get".equalsIgnoreCase(method) ? ApiPermission.GOVERN : ApiPermission.ADMIN);
+  }
 
   @Override
   default Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,

@@ -25,11 +25,11 @@ package com.formkiq.stacks.api.handler.groups;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.UserManagementRequestHandler;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.handler.users.AddUserRequest;
@@ -43,7 +43,7 @@ import java.util.Map;
 
 /** {@link ApiGatewayRequestHandler} for "/groups/{groupName}/users". */
 public class GroupsUsersRequestHandler
-    implements ApiGatewayRequestHandler, AdminRequestHandler, ApiGatewayRequestEventUtil {
+    implements UserManagementRequestHandler, ApiGatewayRequestEventUtil {
 
   /** Default Limit. */
   private static final int DEFAULT_LIMIT = 10;

@@ -1,0 +1,255 @@
+#@ load("@ytt:overlay", "overlay")
+#@overlay/match by=overlay.all
+---
+paths:
+  #@overlay/match missing_ok=True
+  /permissions/catalog:
+    get:
+      operationId: GetPermissionCatalog
+      summary: Get API permission catalog
+      description: |-
+        Returns the supported API permission role types, grouped by permission group,
+        with the scoped permission names and descriptions in each group. Use this catalog when creating
+        API keys or mapping user roles to permissions.
+
+        Predefined role types contain their effective permissions, including permissions
+        inherited from other operation categories. CUSTOM contains all available scoped
+        permissions as selectable options; it does not automatically grant them.
+        Deprecated umbrella permissions are excluded from the permission lists, and empty
+        groups are omitted.
+
+        The catalog is available to authenticated callers without a site-specific API
+        permission. It describes supported grants rather than the caller's current
+        permissions or authority to assign those grants. No siteId is required.
+      tags:
+        - System Management
+      responses:
+        '200':
+          description: API permission catalog
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPermissionCatalogResponse'
+              examples:
+                CatalogStructure:
+                  summary: Abbreviated role type, group and permission hierarchy
+                  value:
+                    roleTypes:
+                      - name: READ
+                        groups:
+                          - name: DOCUMENTS
+                            label: Documents
+                            permissions:
+                              - name: READ_DOCUMENTS
+                                description: Read and search documents, their content, and related document data.
+                          - name: DOCUMENT_ATTRIBUTES
+                            label: Document Attributes
+                            permissions:
+                              - name: READ_DOCUMENT_ATTRIBUTES
+                                description: Read attributes assigned to documents.
+                      - name: CUSTOM
+                        groups:
+                          - name: DOCUMENTS
+                            label: Documents
+                            permissions:
+                              - name: READ_DOCUMENTS
+                                description: Read and search documents, their content, and related document data.
+                              - name: WRITE_DOCUMENTS
+                                description: Create, upload, and update documents, their content, and related document data.
+                              - name: DELETE_DOCUMENTS
+                                description: Delete documents and related document data.
+                              - name: GOVERN_DOCUMENTS
+                                description: Permanently delete documents and manage document governance, including legal holds.
+        '401':
+          description: Authentication required
+      security:
+        - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
+
+components:
+  schemas:
+    #@overlay/match missing_ok=True
+    GetPermissionCatalogResponse:
+      type: object
+      required:
+        - roleTypes
+      properties:
+        roleTypes:
+          type: array
+          description: Supported role types and their permission groups
+          items:
+            $ref: '#/components/schemas/PermissionCatalogRoleType'
+
+    #@overlay/match missing_ok=True
+    PermissionCatalogRoleType:
+      type: object
+      required:
+        - name
+        - groups
+      properties:
+        name:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
+        groups:
+          type: array
+          description: |-
+            Nonempty groups of effective permissions for a predefined role type.
+            For CUSTOM, these groups contain all selectable scoped permissions.
+          items:
+            $ref: '#/components/schemas/PermissionCatalogGroup'
+
+    #@overlay/match missing_ok=True
+    PermissionCatalogGroup:
+      type: object
+      required:
+        - name
+        - label
+        - permissions
+      properties:
+        name:
+          $ref: '#/components/schemas/ApiPermissionGroup'
+        label:
+          type: string
+          description: Display label for the permission group
+          example: Document Attributes
+        permissions:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Scoped permissions and their descriptions in this group
+          items:
+            $ref: '#/components/schemas/PermissionCatalogPermission'
+
+    #@overlay/match missing_ok=True
+    PermissionCatalogPermission:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          $ref: '#/components/schemas/ApiPermission'
+        description:
+          type: string
+          minLength: 1
+          description: Human-readable explanation of the permission
+          example: Read attributes assigned to documents.
+
+    #@overlay/match missing_ok=True
+    ApiPermissionRoleType:
+      type: string
+      description: |-
+        A predefined permission role or CUSTOM for selecting individual permissions.
+        ADMIN grants all scoped permissions. GOVERN grants governance, read, write and
+        delete permissions outside the dedicated management roles. WRITE also grants
+        read and delete permissions. SYSTEM_MANAGEMENT and USER_MANAGEMENT grant their
+        respective management permissions. READ and DELETE grant their matching
+        operation permissions. CUSTOM has no implicit grants.
+      enum:
+        - ADMIN
+        - DELETE
+        - READ
+        - WRITE
+        - GOVERN
+        - SYSTEM_MANAGEMENT
+        - USER_MANAGEMENT
+        - CUSTOM
+
+    #@overlay/match missing_ok=True
+    ApiPermissionGroup:
+      type: string
+      description: Permission group identifier
+      enum:
+        - ACCESS_CONTROL
+        - ATTRIBUTES
+        - DOCUMENT_ACTIONS
+        - DOCUMENT_ATTRIBUTES
+        - DOCUMENT_FOLDERS
+        - DOCUMENT_GENERATION
+        - DOCUMENT_SHARES
+        - DOCUMENT_TAGS
+        - DOCUMENT_VERSIONS
+        - DOCUMENT_WORKFLOWS
+        - DOCUMENTS
+        - E_SIGNATURE
+        - ENTITY
+        - EXAMINE_OBJECTS
+        - GOOGLE_INTEGRATION
+        - INTELLIGENT_DOCUMENT_PROCESSING
+        - MAPPINGS
+        - RULESETS
+        - SCHEMAS
+        - SHORTLINKS
+        - SYSTEM_MANAGEMENT
+        - USER_ACTIVITIES
+        - USER_MANAGEMENT
+        - WEBHOOKS
+
+    #@overlay/match missing_ok=True
+    ApiPermission:
+      type: string
+      description: Scoped API permission identifier
+      enum:
+        - GOVERN_ACCESS_CONTROL
+        - READ_ATTRIBUTES
+        - WRITE_ATTRIBUTES
+        - DELETE_ATTRIBUTES
+        - READ_DOCUMENT_ACTIONS
+        - WRITE_DOCUMENT_ACTIONS
+        - READ_DOCUMENT_ATTRIBUTES
+        - WRITE_DOCUMENT_ATTRIBUTES
+        - DELETE_DOCUMENT_ATTRIBUTES
+        - GOVERN_DOCUMENT_FOLDERS
+        - WRITE_DOCUMENT_GENERATION
+        - WRITE_DOCUMENT_SHARES
+        - DELETE_DOCUMENT_SHARES
+        - READ_DOCUMENT_TAGS
+        - WRITE_DOCUMENT_TAGS
+        - DELETE_DOCUMENT_TAGS
+        - READ_DOCUMENT_VERSIONS
+        - WRITE_DOCUMENT_VERSIONS
+        - GOVERN_DOCUMENT_VERSIONS
+        - READ_DOCUMENT_WORKFLOWS
+        - WRITE_DOCUMENT_WORKFLOWS
+        - DELETE_DOCUMENT_WORKFLOWS
+        - READ_DOCUMENTS
+        - WRITE_DOCUMENTS
+        - DELETE_DOCUMENTS
+        - GOVERN_DOCUMENTS
+        - READ_E_SIGNATURE
+        - WRITE_E_SIGNATURE
+        - READ_ENTITY
+        - WRITE_ENTITY
+        - DELETE_ENTITY
+        - READ_EXAMINE_OBJECTS
+        - WRITE_GOOGLE_INTEGRATION
+        - READ_INTELLIGENT_DOCUMENT_PROCESSING
+        - WRITE_INTELLIGENT_DOCUMENT_PROCESSING
+        - READ_MAPPINGS
+        - WRITE_MAPPINGS
+        - DELETE_MAPPINGS
+        - READ_RULESETS
+        - WRITE_RULESETS
+        - DELETE_RULESETS
+        - READ_SCHEMAS
+        - WRITE_SCHEMAS
+        - DELETE_SCHEMAS
+        - WRITE_SHORTLINKS
+        - READ_SYSTEM_MANAGEMENT
+        - WRITE_SYSTEM_MANAGEMENT
+        - DELETE_SYSTEM_MANAGEMENT
+        - GOVERN_USER_ACTIVITIES
+        - READ_USER_MANAGEMENT
+        - WRITE_USER_MANAGEMENT
+        - DELETE_USER_MANAGEMENT
+        - GOVERN_USER_MANAGEMENT
+        - READ_WEBHOOKS
+        - WRITE_WEBHOOKS
+        - DELETE_WEBHOOKS

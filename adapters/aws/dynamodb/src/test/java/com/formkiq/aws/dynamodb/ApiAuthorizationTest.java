@@ -27,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Map;
 import java.util.List;
+import java.util.Collection;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +40,23 @@ import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 
 /** Tests for {@link ApiAuthorization}. */
 class ApiAuthorizationTest {
+
+  /** Admin fallback preserves the original umbrella grants instead of expanding all children. */
+  @Test
+  void testAdminFallbackKeepsUmbrellaPermissions() {
+    // given
+    var siteApiPermissionsRole = new SiteApiPermissionRole("adminSite",
+        ApiPermissionRole.builder(ApiPermissionRoleType.ADMIN).build());
+    ApiAuthorization authorization = new ApiAuthorization().addPermission(siteApiPermissionsRole);
+    Set<ApiPermission> expected = Set.of(ApiPermission.ADMIN, ApiPermission.READ,
+        ApiPermission.WRITE, ApiPermission.DELETE, ApiPermission.GOVERN);
+
+    // when
+    Collection<ApiPermission> permissions = authorization.getPermissions("anotherSite");
+
+    // then
+    assertEquals(expected, Set.copyOf(permissions));
+  }
 
   /** Test request approval uses the handler's default and preserves key overrides. */
   @Test
@@ -91,5 +110,21 @@ class ApiAuthorizationTest {
     assertEquals(AttributeValidationAccess.UPDATE, approval.defaultAccess());
     assertEquals(List.of(rule), approval.conditionalRules());
     assertEquals("opa: denied", approval.deniedMessage());
+  }
+
+  /** A scoped grant remains scoped when reporting a site's permissions. */
+  @Test
+  void testScopedGrantsRemainScoped() {
+    // given
+    var siteApiPermissionsRole =
+        new SiteApiPermissionRole("site", ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+            .permissions(List.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build());
+    ApiAuthorization authorization = new ApiAuthorization().addPermission(siteApiPermissionsRole);
+
+    // when
+    Collection<ApiPermission> permissions = authorization.getPermissions("site");
+
+    // then
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES), Set.copyOf(permissions));
   }
 }

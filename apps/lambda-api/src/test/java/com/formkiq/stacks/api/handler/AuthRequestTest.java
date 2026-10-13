@@ -207,7 +207,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
         new SetBearers().apply(client, new String[] {"bleh", siteId});
         assertFail(build.submit(client, null));
 
-        new SetBearers().apply(client, new String[] {"bleh", siteId + "_govern"});
+        new SetBearers().apply(client, new String[] {"bleh", siteId + "_user_management"});
         assertValidCognitoRequest(build.submit(client, null));
 
         new SetBearers().apply(client, new String[] {"bleh", siteId, "Admins"});
@@ -222,7 +222,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
   @Test
   void testGetGroups() {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-      new SetBearers().apply(client, new String[] {siteId});
+      new SetBearers().apply(client, new String[] {siteId + "_user_management"});
       assertValidCognitoRequest(new GetGroupsRequestBuilder().submit(client, null));
     }
   }
@@ -247,7 +247,7 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
   @Test
   public void testMultipleRoles() {
     new SetBearers().apply(client, new String[] {"manager", "finance"});
-    assertValidCognitoRequest(new GetGroupsRequestBuilder().submit(client, null));
+    assertFail(new GetGroupsRequestBuilder().submit(client, null));
     assertFail(new GetGroupRequestBuilder("name").submit(client, null));
     assertFail(new GetGroupUsersRequestBuilder("name").submit(client, null));
     assertFail(new GetUsersRequestBuilder().submit(client, null));

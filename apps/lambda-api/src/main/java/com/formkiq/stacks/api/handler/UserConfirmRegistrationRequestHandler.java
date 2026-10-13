@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.MOVED_PERMANENTLY;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -153,6 +154,11 @@ public class UserConfirmRegistrationRequestHandler
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return Optional.empty();
   }
 
   @Override

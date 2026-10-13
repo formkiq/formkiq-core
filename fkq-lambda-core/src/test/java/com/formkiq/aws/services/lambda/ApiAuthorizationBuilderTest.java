@@ -679,7 +679,7 @@ class ApiAuthorizationBuilderTest {
         .collect(Collectors.joining(",")));
     assertEquals("READ", api0.getPermissions(DEFAULT_SITE_ID).stream().map(Enum::name)
         .collect(Collectors.joining(",")));
-    assertEquals("WRITE,DELETE",
+    assertEquals("DELETE,WRITE",
         api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: default (READ), test (DELETE,WRITE)", api0.getAccessSummary());
     assertEquals("default,test", String.join(",", api0.getRoles()));
@@ -1005,6 +1005,40 @@ class ApiAuthorizationBuilderTest {
         api.getRoles().stream().sorted().collect(Collectors.joining(",")));
     assertEquals("ADMIN,DELETE,GOVERN,READ,WRITE",
         api.getAllPermissions().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
+  }
+
+  /**
+   * User has 'default_user_management'.
+   */
+  @Test
+  void testApiAuthorizerUserManagement() throws Exception {
+    // given
+    String s0 = "[default_user_management]";
+    String s1 = "[finance_user_management]";
+
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
+
+    // then
+    assertEquals(DEFAULT_SITE_ID, api0.getSiteId());
+    assertEquals(DEFAULT_SITE_ID, String.join(",", api0.getSiteIds()));
+    String permissionList =
+        "DELETE_USER_MANAGEMENT,GOVERN_USER_MANAGEMENT,READ_USER_MANAGEMENT,WRITE_USER_MANAGEMENT";
+    assertEquals(permissionList, api0.getAllPermissions().stream().map(Enum::name)
+        .sorted(String::compareTo).collect(Collectors.joining(",")));
+    assertEquals("groups: default (" + permissionList + ")", api0.getAccessSummary());
+    assertEquals("default_user_management", String.join(",", api0.getRoles()));
+
+    assertEquals("finance", api1.getSiteId());
+    assertEquals("finance", String.join(",", api1.getSiteIds()));
+    assertEquals(permissionList, api1.getAllPermissions().stream().map(Enum::name).sorted()
+        .collect(Collectors.joining(",")));
+    assertEquals("groups: finance (" + permissionList + ")", api1.getAccessSummary());
+    assertEquals("finance_user_management", String.join(",", api1.getRoles()));
   }
 
   /**

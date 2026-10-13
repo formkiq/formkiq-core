@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DeleteResult;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -42,7 +43,9 @@ import com.formkiq.stacks.dynamodb.schemas.SchemaService;
 import com.formkiq.validation.ValidationBuilder;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
@@ -115,6 +118,16 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   @Override
   public String getRequestUrl() {
     return "/entities/{entityTypeId}/{entityId}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_ENTITY);
+      case "put", "patch" -> Optional.of(ApiPermission.WRITE_ENTITY);
+      case "delete" -> Optional.of(ApiPermission.DELETE_ENTITY);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   @Override

@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -32,6 +33,8 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
+
+import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/restore". */
 public class DocumentIdRestoreRequestHandler
@@ -46,6 +49,12 @@ public class DocumentIdRestoreRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/restore";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "put".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

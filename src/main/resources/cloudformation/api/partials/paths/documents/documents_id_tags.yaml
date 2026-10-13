@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentTags
       summary: Get document's tags
       description: Get a listing of a document's tags
+      x-formkiq-required-permission: READ_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -44,6 +45,7 @@ paths:
       operationId: AddDocumentTags
       summary: Add tag to document
       description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -90,6 +92,7 @@ paths:
       operationId: UpdateDocumentTags
       summary: Update document tags
       description: Updates multiple tags to a document; this endpoint also accepts a different body parameter for updating a single tag
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -128,6 +131,7 @@ paths:
       operationId: SetDocumentTags
       summary: Set document's tags
       description: Set multiple tags to a document; this endpoint also accepts a different body parameter for setting a single tag
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -169,6 +173,7 @@ paths:
       operationId: GetDocumentTag
       summary: Get document tag by key
       description: Get a document tag by using its key
+      x-formkiq-required-permission: READ_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -199,6 +204,7 @@ paths:
       operationId: SetDocumentTag
       summary: Update document tag value(s)
       description: Update any and all values of a document tag, by using its key; you can supply one tag value or a list of tag values in the request body
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -223,6 +229,7 @@ paths:
       operationId: DeleteDocumentTag
       summary: Delete document tag
       description: Delete a document tag by using its key
+      x-formkiq-required-permission: DELETE_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -244,6 +251,7 @@ paths:
       operationId: DeleteDocumentTagAndValue
       summary: Delete document's tag value
       description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
+      x-formkiq-required-permission: DELETE_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
@@ -267,6 +275,7 @@ paths:
       operationId: UpdateMatchingDocumentTags
       summary: Mass Update document tag(s)
       description: This API request allows the adding/updating of multiple document tag(s) based on document(s) that have the matching tag.
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
         - Document Tags
       parameters:
