@@ -34,6 +34,10 @@ import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2CustomAuthorizerEvent;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRoles;
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +46,7 @@ import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
-import com.formkiq.stacks.dynamodb.ApiKeyPermission;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
@@ -116,7 +120,8 @@ class ApiKeyAuthorizerRequestHandlerTest {
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
-    assertEquals("", claims.get("permissions"));
+    assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
+        claims.get("sitePermissions"));
   }
 
   /**
@@ -140,7 +145,8 @@ class ApiKeyAuthorizerRequestHandlerTest {
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
-    assertEquals("", claims.get("permissions"));
+    assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
+        claims.get("sitePermissions"));
   }
 
   /**
@@ -162,7 +168,29 @@ class ApiKeyAuthorizerRequestHandlerTest {
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
-    assertEquals("", claims.get("permissions"));
+    assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
+        claims.get("sitePermissions"));
+  }
+
+  /** Scoped keys export their exact grant and stored site. */
+  @Test
+  void testScopedApiKey() {
+    // given
+    String siteId = ID.uuid();
+    ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+        .permissions(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build();
+    String key = apiKeysService.createApiKey(siteId, "scoped", role, List.of("other_WRITE"));
+    // when
+    Map<String, Object> response = processor.handleRequest(getInput(key), this.context);
+    Map<String, Object> claims =
+        (Map<String, Object>) ((Map<String, Object>) response.get("context")).get("apiKeyClaims");
+    SiteApiPermissionRoles decoded =
+        SiteApiPermissionRoles.importPermissions((String) claims.get("sitePermissions"));
+    // then
+    assertEquals(Boolean.TRUE, response.get("isAuthorized"));
+    assertEquals(1, decoded.roles().size());
+    assertEquals(siteId, decoded.roles().iterator().next().siteId());
+    assertEquals(role.getPermissions(), decoded.roles().iterator().next().role().getPermissions());
   }
 
   /**
@@ -176,9 +204,10 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
       String name = ID.uuid();
 
-      String apiKey = apiKeysService.createApiKey(siteId, name,
-          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE),
-          List.of());
+      ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+          .permissions(Set.of(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE))
+          .build();
+      String apiKey = apiKeysService.createApiKey(siteId, name, role, List.of());
 
       APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
@@ -198,7 +227,9 @@ class ApiKeyAuthorizerRequestHandlerTest {
       }
 
       assertEquals(name, claims.get("cognito:username"));
-      assertEquals("DELETE,READ,WRITE", claims.get("permissions"));
+      assertEquals(Set.of(ApiPermission.DELETE, ApiPermission.READ, ApiPermission.WRITE),
+          SiteApiPermissionRoles.importPermissions((String) claims.get("sitePermissions")).roles()
+              .iterator().next().role().getPermissions());
     }
   }
 
@@ -213,9 +244,10 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
       String name = ID.uuid();
 
-      String apiKey = apiKeysService.createApiKey(siteId, name,
-          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE),
-          List.of("test1", "test2"));
+      ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+          .permissions(Set.of(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE))
+          .build();
+      String apiKey = apiKeysService.createApiKey(siteId, name, role, List.of("test1", "test2"));
 
       APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
@@ -235,7 +267,10 @@ class ApiKeyAuthorizerRequestHandlerTest {
       }
 
       assertEquals(name, claims.get("cognito:username"));
-      assertEquals("DELETE,READ,WRITE", claims.get("permissions"));
+      assertEquals(Set.of(ApiPermission.DELETE, ApiPermission.READ, ApiPermission.WRITE),
+          SiteApiPermissionRoles.importPermissions((String) claims.get("sitePermissions")).roles()
+              .iterator().next().role().getPermissions());
     }
   }
+
 }

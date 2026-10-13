@@ -23,15 +23,16 @@
  */
 package com.formkiq.stacks.api.handler.sites;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
+import java.util.Locale;
+import java.util.Optional;
 
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
-import com.formkiq.aws.dynamodb.objects.Objects;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.services.lambda.AdminRequestHandler;
+import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -39,15 +40,17 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKey;
-import com.formkiq.stacks.dynamodb.ApiKeyPermission;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
 
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.strings.Strings.isEmpty;
+
 /** {@link ApiGatewayRequestHandler} for "/sites/{siteId}/apiKeys". */
 public class ConfigurationApiKeysRequestHandler
-    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
   /**
    * constructor.
@@ -59,12 +62,12 @@ public class ConfigurationApiKeysRequestHandler
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
+    final ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
 
     int limit = getLimit(awsservice.getLogger(), event);
     String nextToken = event.getQueryStringParameter("next");
 
-    String siteId = getPathParameterSiteId(event);
+    final String siteId = getPathParameterSiteId(event);
     Pagination<ApiKey> list = apiKeysService.list(siteId, nextToken, limit);
 
     AttributeValueToMapConfig config =
@@ -80,22 +83,25 @@ public class ConfigurationApiKeysRequestHandler
   }
 
   @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_SYSTEM_MANAGEMENT);
+      case "post" -> Optional.of(ApiPermission.WRITE_SYSTEM_MANAGEMENT);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
+  }
+
+  @Override
   public ApiRequestHandlerResponse post(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
 
-    String siteId = getPathParameterSiteId(event);
+    final String siteId = getPathParameterSiteId(event);
 
-    ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
+    final ApiKeysService apiKeysService = awsservice.getExtension(ApiKeysService.class);
     AddApiKeyRequest req = JsonToObject.fromJson(awsservice, event, AddApiKeyRequest.class);
-    validate(req);
+    ApiPermissionRole role = validate(req);
 
-    Collection<ApiKeyPermission> permissions = req.permissions();
-    if (Objects.isEmpty(permissions)) {
-      permissions =
-          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.WRITE, ApiKeyPermission.DELETE);
-    }
-
-    String apiKey = apiKeysService.createApiKey(siteId, req.name(), permissions, req.groups());
+    String apiKey = apiKeysService.createApiKey(siteId, req.name(), role, req.groups());
 
     return ApiRequestHandlerResponse.builder().ok().body("apiKey", apiKey).build();
   }
@@ -104,12 +110,36 @@ public class ConfigurationApiKeysRequestHandler
    * Validate.
    *
    * @param req {@link AddApiKeyRequest}
+   * @return {@link ApiPermissionRole}
    * @throws ValidationException ValidationException
    */
-  private void validate(final AddApiKeyRequest req) throws ValidationException {
+  private ApiPermissionRole validate(final AddApiKeyRequest req) throws ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
     vb.isRequired("name", req.name());
+    if (req.groups() != null && req.groups().stream().anyMatch(java.util.Objects::isNull)) {
+      vb.addError("groups", "groups must contain group names");
+    }
+
     vb.check();
+
+    ApiPermissionRole role;
+    if (notNull(req.permissions()).isEmpty() && isEmpty(req.roleType())) {
+      role = ApiPermissionRole.builder(ApiPermissionRoleType.WRITE).build();
+    } else {
+      role = ApiPermissionRole.fromRequest(req.roleType(), req.permissions());
+    }
+
+    if (ApiPermissionRoleType.ADMIN.equals(role.getType())) {
+      vb.addError("roleType", "'ADMIN' roleType is not allowed");
+    }
+
+    if (notNull(role.getPermissions()).contains(ApiPermission.ADMIN)) {
+      vb.addError("roleType", "'ADMIN' permission is not allowed");
+    }
+
+    vb.check();
+
+    return role;
   }
 }

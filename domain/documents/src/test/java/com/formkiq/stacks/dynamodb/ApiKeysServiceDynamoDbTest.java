@@ -23,16 +23,19 @@
  */
 package com.formkiq.stacks.dynamodb;
 
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,13 +73,14 @@ public class ApiKeysServiceDynamoDbTest {
   public void testCreateApiKey01() {
     // given
     String userId = "joe";
-    Collection<ApiKeyPermission> permissions = List.of(ApiKeyPermission.READ);
+    ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+        .permissions(List.of(ApiPermission.READ)).build();
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
-      String apiKey0 = this.service.createApiKey(siteId, "test1", permissions, List.of());
-      String apiKey1 = this.service.createApiKey(siteId, "test2", permissions, List.of());
+      String apiKey0 = this.service.createApiKey(siteId, "test1", role, List.of());
+      String apiKey1 = this.service.createApiKey(siteId, "test2", role, List.of());
 
       // then
       assertNotEquals(apiKey0, apiKey1);
@@ -113,13 +117,14 @@ public class ApiKeysServiceDynamoDbTest {
     final int limit = 200;
     final int max = 203;
     String userId = "joe";
-    Collection<ApiKeyPermission> permissions = List.of(ApiKeyPermission.READ);
+    ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+        .permissions(List.of(ApiPermission.READ)).build();
 
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       for (int i = start; i < start + max; i++) {
         // when
-        this.service.createApiKey(siteId, "test_" + i, permissions, List.of());
+        this.service.createApiKey(siteId, "test_" + i, role, List.of());
       }
 
       // then
@@ -136,4 +141,38 @@ public class ApiKeysServiceDynamoDbTest {
       assertEquals("test_302", list.getResults().get(2).name());
     }
   }
+
+  /** Existing records without a role type preserve legacy grants exactly. */
+  @Test
+  public void testLegacyRecord() {
+    // given
+    ApiKey original = ApiKey.builder().name("legacy").apiKey(ID.uuid())
+        .permissions(List.of(ApiPermission.WRITE)).build("default");
+    var attributes = new java.util.HashMap<>(original.getAttributes());
+    attributes.remove("roleType");
+    // when
+    ApiKey legacy = ApiKey.fromAttributeMap(attributes);
+    // then
+    assertEquals(ApiPermissionRoleType.CUSTOM, legacy.roleType());
+    assertEquals(List.of(ApiPermission.WRITE), legacy.permissions());
+    assertFalse(legacy.permissionRole().hasPermission(ApiPermission.READ_DOCUMENTS));
+  }
+
+  /** Role metadata survives storage and masked list responses. */
+  @Test
+  public void testStoredRole() {
+    // given
+    String siteId = ID.uuid();
+    var role = ApiPermissionRole.builder(ApiPermissionRoleType.SYSTEM_MANAGEMENT).build();
+    // when
+    String value = service.createApiKey(siteId, "role", role, List.of());
+    ApiKey key = service.get(value, false);
+    ApiKey masked = service.list(siteId, null, LIMIT).getResults().get(0);
+    // then
+    assertEquals(ApiPermissionRoleType.SYSTEM_MANAGEMENT, key.roleType());
+    assertEquals(role.getPermissions(), key.permissionRole().getPermissions());
+    assertEquals(key.roleType(), masked.roleType());
+    assertEquals(key.permissions(), masked.permissions());
+  }
+
 }

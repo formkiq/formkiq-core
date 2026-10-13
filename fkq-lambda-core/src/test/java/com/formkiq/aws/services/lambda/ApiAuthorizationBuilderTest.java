@@ -23,6 +23,16 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRole;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRoles;
+import org.junit.jupiter.api.function.Executable;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1062,6 +1072,51 @@ class ApiAuthorizationBuilderTest {
     }
   }
 
+  /** Compact claims take precedence over groups and legacy grants. */
+  @Test
+  void testCompactApiKeyClaims() throws Exception {
+    // given
+    String bitmap = new SiteApiPermissionRoles(List.of(new SiteApiPermissionRole("finance",
+        ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+            .permissions(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build())))
+        .exportPermissionsAsString();
+    ApiGatewayRequestEvent event = getApiKeyClaimsEvent();
+    event.getRequestContext().setAuthorizer(
+        Map.of("apiKeyClaims", Map.of("cognito:groups", "[finance other_WRITE API_KEY]",
+            "sitePermissions", bitmap, "cognito:username", "scoped key")));
+    // when
+    ApiAuthorization auth = new ApiAuthorizationBuilder().build(event);
+    // then
+    assertEquals("finance", auth.getSiteId());
+    assertEquals(List.of("finance"), auth.getSiteIds());
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES), auth.getAllPermissions());
+    assertEquals("scoped key", auth.getUsername());
+    assertFalse(auth.isAdmin("finance"));
+  }
+
+  /** Multiple compact site grants require an explicit site and remain independent. */
+  @Test
+  void testCompactMultipleSites() throws Exception {
+    // given
+    String bitmaps = new SiteApiPermissionRoles(List.of(
+        new SiteApiPermissionRole("finance",
+            ApiPermissionRole.builder(ApiPermissionRoleType.READ).build()),
+        new SiteApiPermissionRole("legal",
+            ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+                .permissions(Set.of(ApiPermission.WRITE_DOCUMENT_ATTRIBUTES)).build())))
+        .exportPermissionsAsString();
+    ApiGatewayRequestEvent event = getJwtEvent("finance legal", Map.of("sitesClaims",
+        gson.toJson(Map.of("cognito:groups", "finance legal", "sitePermissions", bitmaps))));
+    event.setQueryStringParameters(Map.of("siteId", "legal"));
+    // when
+    ApiAuthorization auth = new ApiAuthorizationBuilder().build(event);
+    // then
+    assertEquals("legal", auth.getSiteId());
+    assertEquals(Set.of(ApiPermission.READ), auth.getPermissions("finance"));
+    assertEquals(Set.of(ApiPermission.WRITE_DOCUMENT_ATTRIBUTES), auth.getPermissions("legal"));
+    assertTrue(auth.getPermissions("other").isEmpty());
+  }
+
   /**
    * Defined Sites, with multiple roles, making sure permissions map takes president.
    */
@@ -1110,6 +1165,20 @@ class ApiAuthorizationBuilderTest {
     assertEquals("no groups", api.getAccessSummary());
     assertNull(api.getRoles());
     assertEquals("System", api.getUsername());
+  }
+
+  /** Invalid compact claims fail closed instead of falling back to an ADMIN group. */
+  @Test
+  void testInvalidCompactClaims() {
+    // given
+    List<Object> invalid = List.of("{", "{\"default\":\"v2:AAAA\"}", Map.of("default", "bad"));
+    for (Object bitmap : invalid) {
+      ApiGatewayRequestEvent event = getJwtEvent("Admins", Map.of("sitePermissions", bitmap));
+      // when
+      Executable operation = () -> new ApiAuthorizationBuilder().build(event);
+      // then
+      assertThrows(UnauthorizedException.class, operation);
+    }
   }
 
   @Test
@@ -1208,4 +1277,5 @@ class ApiAuthorizationBuilderTest {
         .encodeToString(this.gson.toJson(claims).getBytes(StandardCharsets.UTF_8));
     return header + "." + payload + ".";
   }
+
 }

@@ -27,7 +27,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Locale;
 import java.util.Set;
+
+import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 /** An immutable API permission role with its granted permissions. */
 public final class ApiPermissionRole {
@@ -107,6 +110,55 @@ public final class ApiPermissionRole {
    */
   public static Builder builder(final ApiPermissionRoleType roleType) {
     return new Builder(roleType);
+  }
+
+  /**
+   * Resolve a public grant request without expanding legacy permission arrays into roles.
+   *
+   * @param roleType optional predefined role type or CUSTOM
+   * @param grants explicit permission names
+   * @return validated permission role
+   * @throws IllegalArgumentException if a type, permission or field combination is invalid
+   */
+  public static ApiPermissionRole fromRequest(final String roleType,
+      final Collection<String> grants) {
+    ApiPermissionRoleType resolvedType = ApiPermissionRoleType.CUSTOM;
+
+    if (roleType != null) {
+      try {
+        resolvedType = ApiPermissionRoleType.valueOf(roleType);
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("invalid roleType '" + roleType + "'", e);
+      }
+    }
+    boolean empty = notNull(grants).isEmpty();
+    if (resolvedType != ApiPermissionRoleType.CUSTOM) {
+      if (!empty) {
+        throw new IllegalArgumentException(
+            "'permissions' must be omitted or empty when 'roleType' is '" + resolvedType.name()
+                + "'. Use 'CUSTOM' to specify individual permissions.");
+      }
+      return builder(resolvedType).build();
+    }
+
+    if (empty) {
+      throw new IllegalArgumentException(roleType != null
+          ? "'permissions' must contain at least one permission when 'roleType' is 'CUSTOM'."
+          : "Provide 'roleType' or at least one permission in 'permissions'.");
+    }
+
+    EnumSet<ApiPermission> permissions = EnumSet.noneOf(ApiPermission.class);
+    for (String grant : grants) {
+      try {
+        if (grant == null) {
+          throw new IllegalArgumentException("null permission");
+        }
+        permissions.add(ApiPermission.valueOf(grant.toUpperCase(Locale.ROOT)));
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("invalid permission '" + grant + "'", e);
+      }
+    }
+    return builder(ApiPermissionRoleType.CUSTOM).permissions(permissions).build();
   }
 
   /** Permission role type. */

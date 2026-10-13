@@ -134,19 +134,26 @@ public class AuthRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  void testGetApiKeys() {
+  void testGetApiKeys() throws com.formkiq.client.invoker.ApiException {
+    // given
     HttpRequestBuilder<?> build = new GetSiteApiKeysRequestBuilder();
-
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      new SetBearers().apply(client, new String[] {"bleh", siteId});
-      assertFail(build.submit(client, siteId));
-
-      new SetBearers().apply(client, new String[] {"bleh", siteId + "_govern"});
-      assertOk(build.submit(client, siteId));
-
-      new SetBearers().apply(client, new String[] {"bleh", siteId, "Admins"});
-      assertOk(build.submit(client, siteId));
+      for (String group : List.of(siteId, siteId + "_govern")) {
+        // given
+        new SetBearers().apply(client, new String[] {"bleh", group});
+        // when
+        var denied = build.submitError(client, siteId);
+        // then
+        assertFail(denied);
+      }
+      for (String group : List.of(siteId + "_system_management", "Admins")) {
+        // given
+        new SetBearers().apply(client, new String[] {"bleh", siteId, group});
+        // when
+        var allowed = build.submitOk(client, siteId);
+        // then
+        assertOk(allowed);
+      }
     }
   }
 

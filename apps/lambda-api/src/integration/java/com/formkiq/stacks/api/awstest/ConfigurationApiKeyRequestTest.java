@@ -24,6 +24,8 @@
 package com.formkiq.stacks.api.awstest;
 
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.AddApiKeyRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetSitesRequestBuilder;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
@@ -41,7 +43,7 @@ import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.ApiKey;
-import com.formkiq.client.model.ApiKeyPermission;
+import com.formkiq.client.model.ApiPermissionGrant;
 import com.formkiq.client.model.GetApiKeysResponse;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.Site;
@@ -78,8 +80,6 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
   /** {@link ApiClient}. */
   private ApiClient jwtApiClient = null;
-  /** {@link SystemManagementApi}. */
-  private SystemManagementApi jwtSystemApi = null;
 
   /** {@link ApiClient}. */
   private ApiClient keyApiClient = null;
@@ -87,13 +87,13 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
   /** {@link DocumentsApi}. */
   private DocumentsApi keyDocumentsApi = null;
 
-  private AddApiKeyResponse addApiKey(final String siteId, final ApiKeyPermission permission,
+  private AddApiKeyResponse addApiKey(final String siteId, final ApiPermissionGrant permission,
       final List<String> groups) throws ApiException {
-    ApiClient apiClient = getApiClients(siteId).get(0);
-    SystemManagementApi api = new SystemManagementApi(apiClient);
+    ApiClient apiClient = getApiClients(siteId).getFirst();
     AddApiKeyRequest req =
         new AddApiKeyRequest().name(ID.uuid()).addPermissionsItem(permission).groups(groups);
-    return api.addApiKey(siteId, req);
+    return new AddApiKeyRequestBuilder().withAddApiKeyRequest(req).submitOk(apiClient, siteId)
+        .response();
   }
 
   /**
@@ -102,7 +102,6 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
   @BeforeEach
   public void beforeEach() {
     this.jwtApiClient = new ApiClient().setReadTimeout(0).setBasePath(getCognito().getRootJwtUrl());
-    this.jwtSystemApi = new SystemManagementApi(this.jwtApiClient);
 
     this.keyApiClient = new ApiClient().setReadTimeout(0).setBasePath(getCognito().getRootKeyUrl());
     this.keyDocumentsApi = new DocumentsApi(this.keyApiClient);
@@ -120,17 +119,17 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     for (String siteId : Arrays.asList(DEFAULT_SITE_ID, "aa" + ID.uuid())) {
 
       // when
-      AddApiKeyResponse response = addApiKey(siteId, ApiKeyPermission.GOVERN, List.of());
+      AddApiKeyResponse response = addApiKey(siteId, ApiPermissionGrant.GOVERN, List.of());
 
       // then
       ApiClient apiClientWithToken = getApiClientWithToken(response.getApiKey());
-      SystemManagementApi api = new SystemManagementApi(apiClientWithToken);
-      GetSitesResponse sitesResponse = api.getSites(null);
+      GetSitesResponse sitesResponse =
+          new GetSitesRequestBuilder().submitOk(apiClientWithToken, null).response();
       List<Site> sites = notNull(sitesResponse.getSites());
       assertEquals(1, sites.size());
-      assertEquals(siteId, sites.get(0).getSiteId());
+      assertEquals(siteId, sites.getFirst().getSiteId());
       assertEquals("GOVERN", String.join(",",
-          notNull(sites.get(0).getPermissions()).stream().map(Enum::name).toList()));
+          notNull(sites.getFirst().getPermissions()).stream().map(Enum::name).toList()));
       assertEquals("API_KEY," + siteId, getSortedRoles(sitesResponse));
     }
   }
@@ -148,14 +147,14 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
 
       // when
       AddApiKeyResponse response =
-          addApiKey(siteId, ApiKeyPermission.READ, List.of("test1", "test2"));
+          addApiKey(siteId, ApiPermissionGrant.READ, List.of("test1", "test2"));
 
       // then
       ApiClient apiClientWithToken = getApiClientWithToken(response.getApiKey());
-      SystemManagementApi api = new SystemManagementApi(apiClientWithToken);
-      GetSitesResponse sitesResponse = api.getSites(null);
+      GetSitesResponse sitesResponse =
+          new GetSitesRequestBuilder().submitOk(apiClientWithToken, null).response();
       List<Site> sites = notNull(sitesResponse.getSites());
-      assertEquals(3, sites.size());
+      assertEquals(1, sites.size());
 
       Site site = sites.stream().filter(s -> siteId.equals(s.getSiteId())).findFirst().orElse(null);
       assertNotNull(site);
@@ -181,13 +180,14 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     AuthenticationResultType token = getAdminToken();
 
     AddApiKeyRequest req =
-        new AddApiKeyRequest().name(name).addPermissionsItem(ApiKeyPermission.READ);
+        new AddApiKeyRequest().name(name).addPermissionsItem(ApiPermissionGrant.READ);
 
     for (String siteId : List.of(DEFAULT_SITE_ID)) {
 
       // when
       this.jwtApiClient.addDefaultHeader("Authorization", token.accessToken());
-      String apiKey = this.jwtSystemApi.addApiKey(siteId, req).getApiKey();
+      String apiKey = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req)
+          .submitOk(this.jwtApiClient, siteId).response().getApiKey();
 
       // then
       this.keyApiClient.addDefaultHeader("Authorization", apiKey);
@@ -202,8 +202,9 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       }
 
       // given
-      req = new AddApiKeyRequest().name(name).addPermissionsItem(ApiKeyPermission.WRITE);
-      apiKey = this.jwtSystemApi.addApiKey(siteId, req).getApiKey();
+      req = new AddApiKeyRequest().name(name).addPermissionsItem(ApiPermissionGrant.WRITE);
+      apiKey = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req)
+          .submitOk(this.jwtApiClient, siteId).response().getApiKey();
 
       // when
       this.keyApiClient.addDefaultHeader("Authorization", apiKey);
@@ -304,7 +305,7 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     String siteId = ID.uuid();
     final int count = 5;
 
-    ApiClient client = getApiClients(siteId).get(0);
+    ApiClient client = getApiClients(siteId).getFirst();
     SystemManagementApi api = new SystemManagementApi(client);
 
     for (int i = 0; i < count; i++) {

@@ -253,3 +253,77 @@ components:
         - READ_WEBHOOKS
         - WRITE_WEBHOOKS
         - DELETE_WEBHOOKS
+
+
+    #@overlay/match missing_ok=True
+    ApiPermissionGrant:
+      type: string
+      description: |-
+        An explicit permission grant. Scoped names match those returned by the permission
+        catalog. The legacy ADMIN, DELETE, READ, WRITE and GOVERN umbrella names are also
+        accepted for compatibility. These names are explicit grants, not selections of a
+        predefined role type; for example, WRITE alone does not imply READ or DELETE.
+        Use roleType to select a predefined role. Administrator grants require an
+        administrator caller.
+      enum:
+        - ADMIN
+        - DELETE
+        - READ
+        - WRITE
+        - GOVERN
+        - GOVERN_ACCESS_CONTROL
+        - READ_ATTRIBUTES
+        - WRITE_ATTRIBUTES
+        - DELETE_ATTRIBUTES
+        - READ_DOCUMENT_ACTIONS
+        - WRITE_DOCUMENT_ACTIONS
+        - READ_DOCUMENT_ATTRIBUTES
+        - WRITE_DOCUMENT_ATTRIBUTES
+        - DELETE_DOCUMENT_ATTRIBUTES
+        - GOVERN_DOCUMENT_FOLDERS
+        - WRITE_DOCUMENT_GENERATION
+        - WRITE_DOCUMENT_SHARES
+        - DELETE_DOCUMENT_SHARES
+        - READ_DOCUMENT_TAGS
+        - WRITE_DOCUMENT_TAGS
+        - DELETE_DOCUMENT_TAGS
+        - READ_DOCUMENT_VERSIONS
+        - WRITE_DOCUMENT_VERSIONS
+        - GOVERN_DOCUMENT_VERSIONS
+        - READ_DOCUMENT_WORKFLOWS
+        - WRITE_DOCUMENT_WORKFLOWS
+        - DELETE_DOCUMENT_WORKFLOWS
+        - READ_DOCUMENTS
+        - WRITE_DOCUMENTS
+        - DELETE_DOCUMENTS
+        - GOVERN_DOCUMENTS
+        - READ_E_SIGNATURE
+        - WRITE_E_SIGNATURE
+        - READ_ENTITY
+        - WRITE_ENTITY
+        - DELETE_ENTITY
+        - READ_EXAMINE_OBJECTS
+        - WRITE_GOOGLE_INTEGRATION
+        - READ_INTELLIGENT_DOCUMENT_PROCESSING
+        - WRITE_INTELLIGENT_DOCUMENT_PROCESSING
+        - READ_MAPPINGS
+        - WRITE_MAPPINGS
+        - DELETE_MAPPINGS
+        - READ_RULESETS
+        - WRITE_RULESETS
+        - DELETE_RULESETS
+        - READ_SCHEMAS
+        - WRITE_SCHEMAS
+        - DELETE_SCHEMAS
+        - WRITE_SHORTLINKS
+        - READ_SYSTEM_MANAGEMENT
+        - WRITE_SYSTEM_MANAGEMENT
+        - DELETE_SYSTEM_MANAGEMENT
+        - GOVERN_USER_ACTIVITIES
+        - READ_USER_MANAGEMENT
+        - WRITE_USER_MANAGEMENT
+        - DELETE_USER_MANAGEMENT
+        - GOVERN_USER_MANAGEMENT
+        - READ_WEBHOOKS
+        - WRITE_WEBHOOKS
+        - DELETE_WEBHOOKS

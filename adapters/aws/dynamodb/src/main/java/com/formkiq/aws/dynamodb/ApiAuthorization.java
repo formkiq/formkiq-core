@@ -336,6 +336,18 @@ public class ApiAuthorization {
   }
 
   /**
+   * Replace all site grants, for example when restricting a request to a shared document.
+   *
+   * @param permissions replacement site roles
+   * @return this authorization
+   */
+  public ApiAuthorization replacePermissions(final SiteApiPermissionRoles permissions) {
+    permissionRoleMap.clear();
+    new SiteApiPermissionRolesMerger().apply(permissions.roles()).forEach(this::addPermission);
+    return this;
+  }
+
+  /**
    * Set roleSiteMap.
    *
    * @param map {@link Map}

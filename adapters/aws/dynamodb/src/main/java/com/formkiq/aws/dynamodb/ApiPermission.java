@@ -32,37 +32,27 @@ public enum ApiPermission {
   /**
    * Admin permission.
    *
-   * @deprecated use {@link ApiPermissionRoleType#ADMIN} for administrative roles
    */
-  @Deprecated
   ADMIN(0, "Grant all API permissions."),
   /**
    * Delete permission.
    *
-   * @deprecated use {@link ApiPermissionRoleType#DELETE} for delete roles
    */
-  @Deprecated
   DELETE(1, "Delete resources covered by DELETE permissions."),
   /**
    * Read permission.
    *
-   * @deprecated use {@link ApiPermissionRoleType#READ} for read roles
    */
-  @Deprecated
   READ(2, "Read resources covered by READ permissions."),
   /**
    * Write permission.
    *
-   * @deprecated use {@link ApiPermissionRoleType#WRITE} for write roles
    */
-  @Deprecated
   WRITE(3, "Write resources covered by WRITE permissions."),
   /**
    * Govern permission.
    *
-   * @deprecated use {@link ApiPermissionRoleType#GOVERN} for governance roles
    */
-  @Deprecated
   GOVERN(4, "Govern resources covered by GOVERN permissions."),
 
   /** Govern permission for Access Control. */

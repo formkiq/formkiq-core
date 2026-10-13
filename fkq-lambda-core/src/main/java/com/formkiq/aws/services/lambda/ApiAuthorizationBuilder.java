@@ -64,9 +64,9 @@ import com.google.gson.reflect.TypeToken;
 public class ApiAuthorizationBuilder {
 
   /** Standard and Cognito-managed claims to exclude. */
-  private static final Set<String> EXCLUDED_CLAIMS =
-      Set.of("sub", "cognito:groups", "iss", "client_id", "origin_jti", "event_id", "token_use",
-          "scope", "auth_time", "exp", "iat", "jti", "username", "sitesClaims", "cognito:username");
+  private static final Set<String> EXCLUDED_CLAIMS = Set.of("sub", "cognito:groups", "iss",
+      "client_id", "origin_jti", "event_id", "token_use", "scope", "sitePermissions", "auth_time",
+      "exp", "iat", "jti", "username", "sitesClaims", "cognito:username");
   /** Cognito Admin Group Name. */
   private static final String COGNITO_ADMIN_GROUP = "Admins";
   /** The suffix for the 'readonly' Cognito group. */
@@ -198,8 +198,12 @@ public class ApiAuthorizationBuilder {
    * @return {@link SiteApiPermissionRoles}
    */
   private SiteApiPermissionRoles createPermissionRoles(final ApiGatewayRequestEvent event,
-      final Collection<String> groups, final boolean admin) {
+      final Collection<String> groups, final boolean admin) throws UnauthorizedException {
 
+    SiteApiPermissionRoles compact = getSitePermissions(event);
+    if (compact != null) {
+      return compact;
+    }
     Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
     Map<String, List<String>> permissionsMap = getPermissionsMap(event);
 
@@ -254,8 +258,12 @@ public class ApiAuthorizationBuilder {
   }
 
   private String findDefaultSiteIdFromEventAndGroups(final ApiGatewayRequestEvent event,
-      final Collection<String> groups) {
+      final Collection<String> groups) throws UnauthorizedException {
 
+    SiteApiPermissionRoles compact = getSitePermissions(event);
+    if (compact != null) {
+      return compact.roles().size() == 1 ? compact.roles().iterator().next().siteId() : null;
+    }
     Map<String, List<String>> permissionsMap = getPermissionsMap(event);
 
     if (permissionsMap != null) {
@@ -436,6 +444,23 @@ public class ApiAuthorizationBuilder {
     }
 
     return siteId;
+  }
+
+  private SiteApiPermissionRoles getSitePermissions(final ApiGatewayRequestEvent event)
+      throws UnauthorizedException {
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+    if (!claims.containsKey("sitePermissions")) {
+      return null;
+    }
+    try {
+      Object encoded = claims.get("sitePermissions");
+      if (!(encoded instanceof String value)) {
+        throw new IllegalArgumentException("sitePermissions must be a JSON string");
+      }
+      return SiteApiPermissionRoles.importPermissions(value);
+    } catch (IllegalArgumentException e) {
+      throw new UnauthorizedException("invalid site permissions");
+    }
   }
 
   /**

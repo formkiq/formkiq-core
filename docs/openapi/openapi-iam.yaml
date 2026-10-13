@@ -6670,7 +6670,13 @@ paths:
   /sites/{siteId}/groups/{groupName}/permissions:
     put:
       operationId: SetSiteGroupPermissions
-      description: Set Site's Group Permissions
+      description: |-
+        Replaces the group's permission grants for the specified site. Supply an optional
+        roleType to select a predefined role, or CUSTOM with a nonempty permissions array.
+        When roleType is omitted, permissions is required and is treated as an explicit
+        CUSTOM grant without adding inherited role permissions. For predefined role types,
+        omit permissions or supply an empty array. Nonempty permissions with a predefined
+        roleType are rejected. Assigning administrator access requires an administrator caller.
       summary: Set Site's Group Permissions
       x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
@@ -6684,6 +6690,30 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetGroupPermissionsRequest'
+            examples:
+              PredefinedRole:
+                summary: Grant the predefined User Management role
+                value:
+                  roleType: USER_MANAGEMENT
+              CustomRole:
+                summary: Grant document and document-attribute reads
+                value:
+                  roleType: CUSTOM
+                  permissions:
+                  - READ_DOCUMENTS
+                  - READ_DOCUMENT_ATTRIBUTES
+              ScopedPermissions:
+                summary: Omit roleType for explicit scoped grants
+                value:
+                  permissions:
+                  - READ_DOCUMENTS
+                  - READ_DOCUMENT_ATTRIBUTES
+              LegacyPermissions:
+                summary: Preserve explicit umbrella grants
+                value:
+                  permissions:
+                  - READ
+                  - WRITE
       responses:
         "200":
           description: 200 OK
@@ -7719,7 +7749,15 @@ paths:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
     post:
       operationId: AddApiKey
-      description: Adds a new API Key
+      description: |-
+        Creates an API key for the specified site. Supply an optional roleType to select
+        a predefined role, or CUSTOM with a nonempty permissions array. When roleType is
+        omitted and a nonempty permissions array is supplied, that array is treated as an
+        explicit CUSTOM grant without adding inherited role permissions. If roleType and
+        permissions are both omitted, or permissions is empty with no roleType, the legacy
+        READ, WRITE and DELETE grants apply. For predefined role types, omit permissions
+        or supply an empty array; nonempty permissions are rejected. Assigning administrator
+        access requires an administrator caller.
       summary: Add API Key
       x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
@@ -7734,8 +7772,34 @@ paths:
               $ref: '#/components/schemas/AddApiKeyRequest'
             examples:
               AddApiKey:
+                summary: Preserve the legacy default grants
                 value:
                   name: My API Key
+              PredefinedRole:
+                summary: Create a key with the predefined READ role
+                value:
+                  name: Document reader
+                  roleType: READ
+              CustomRole:
+                summary: Create a key with scoped read grants
+                value:
+                  name: Document and attribute reader
+                  roleType: CUSTOM
+                  permissions:
+                  - READ_DOCUMENTS
+                  - READ_DOCUMENT_ATTRIBUTES
+              ScopedPermissions:
+                summary: Omit roleType for explicit scoped grants
+                value:
+                  name: Document reader
+                  permissions:
+                  - READ_DOCUMENTS
+              LegacyPermissions:
+                summary: Preserve an explicit write-only umbrella grant
+                value:
+                  name: Document writer
+                  permissions:
+                  - WRITE
       responses:
         "200":
           description: 200 OK
@@ -14087,11 +14151,28 @@ components:
           description: Last nodified timestamp of group
     SetGroupPermissionsRequest:
       type: object
+      description: |-
+        Replaces the group's grants for a site. roleType is optional. Supply a predefined
+        roleType with no permissions or an empty array, or CUSTOM with a nonempty
+        permissions array. Nonempty permissions with a predefined roleType are rejected. When
+        roleType is omitted, a nonempty permissions array is required and is treated as
+        an explicit CUSTOM grant without adding inherited role permissions. For example,
+        legacy WRITE grants write operations only and is not converted to the predefined
+        WRITE role, which also grants read and delete operations. Requests with neither
+        field, unknown role types or permission names, and invalid field combinations
+        are rejected. Administrator grants require an administrator caller.
       properties:
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
+          uniqueItems: true
+          description: |-
+            Explicit scoped or legacy umbrella grants. Required when roleType is omitted
+            or CUSTOM, and must then be nonempty. For predefined role types, omit this
+            field or supply an empty array.
           items:
-            $ref: '#/components/schemas/SiteGroupPermissions'
+            $ref: '#/components/schemas/ApiPermissionGrant'
     GetUsersInGroupResponse:
       type: object
       properties:
@@ -14779,6 +14860,77 @@ components:
       type: string
       description: Scoped API permission identifier
       enum:
+      - GOVERN_ACCESS_CONTROL
+      - READ_ATTRIBUTES
+      - WRITE_ATTRIBUTES
+      - DELETE_ATTRIBUTES
+      - READ_DOCUMENT_ACTIONS
+      - WRITE_DOCUMENT_ACTIONS
+      - READ_DOCUMENT_ATTRIBUTES
+      - WRITE_DOCUMENT_ATTRIBUTES
+      - DELETE_DOCUMENT_ATTRIBUTES
+      - GOVERN_DOCUMENT_FOLDERS
+      - WRITE_DOCUMENT_GENERATION
+      - WRITE_DOCUMENT_SHARES
+      - DELETE_DOCUMENT_SHARES
+      - READ_DOCUMENT_TAGS
+      - WRITE_DOCUMENT_TAGS
+      - DELETE_DOCUMENT_TAGS
+      - READ_DOCUMENT_VERSIONS
+      - WRITE_DOCUMENT_VERSIONS
+      - GOVERN_DOCUMENT_VERSIONS
+      - READ_DOCUMENT_WORKFLOWS
+      - WRITE_DOCUMENT_WORKFLOWS
+      - DELETE_DOCUMENT_WORKFLOWS
+      - READ_DOCUMENTS
+      - WRITE_DOCUMENTS
+      - DELETE_DOCUMENTS
+      - GOVERN_DOCUMENTS
+      - READ_E_SIGNATURE
+      - WRITE_E_SIGNATURE
+      - READ_ENTITY
+      - WRITE_ENTITY
+      - DELETE_ENTITY
+      - READ_EXAMINE_OBJECTS
+      - WRITE_GOOGLE_INTEGRATION
+      - READ_INTELLIGENT_DOCUMENT_PROCESSING
+      - WRITE_INTELLIGENT_DOCUMENT_PROCESSING
+      - READ_MAPPINGS
+      - WRITE_MAPPINGS
+      - DELETE_MAPPINGS
+      - READ_RULESETS
+      - WRITE_RULESETS
+      - DELETE_RULESETS
+      - READ_SCHEMAS
+      - WRITE_SCHEMAS
+      - DELETE_SCHEMAS
+      - WRITE_SHORTLINKS
+      - READ_SYSTEM_MANAGEMENT
+      - WRITE_SYSTEM_MANAGEMENT
+      - DELETE_SYSTEM_MANAGEMENT
+      - GOVERN_USER_ACTIVITIES
+      - READ_USER_MANAGEMENT
+      - WRITE_USER_MANAGEMENT
+      - DELETE_USER_MANAGEMENT
+      - GOVERN_USER_MANAGEMENT
+      - READ_WEBHOOKS
+      - WRITE_WEBHOOKS
+      - DELETE_WEBHOOKS
+    ApiPermissionGrant:
+      type: string
+      description: |-
+        An explicit permission grant. Scoped names match those returned by the permission
+        catalog. The legacy ADMIN, DELETE, READ, WRITE and GOVERN umbrella names are also
+        accepted for compatibility. These names are explicit grants, not selections of a
+        predefined role type; for example, WRITE alone does not imply READ or DELETE.
+        Use roleType to select a predefined role. Administrator grants require an
+        administrator caller.
+      enum:
+      - ADMIN
+      - DELETE
+      - READ
+      - WRITE
+      - GOVERN
       - GOVERN_ACCESS_CONTROL
       - READ_ATTRIBUTES
       - WRITE_ATTRIBUTES
@@ -16309,14 +16461,6 @@ components:
         classificationId:
           type: string
           description: Classification Id
-    ApiKeyPermission:
-      type: string
-      description: List of API permissions (defaults to READ / WRITE / DELETE)
-      enum:
-      - READ
-      - WRITE
-      - DELETE
-      - GOVERN
     OpaPolicy:
       type: object
       properties:
@@ -16504,6 +16648,10 @@ components:
           description: Request identifier used to locate restricted diagnostic logs.
     ApiKey:
       type: object
+      description: |-
+        An API key and its permission configuration. roleType is optional for legacy records.
+        A missing roleType means permissions contains explicit CUSTOM grants. A predefined
+        roleType determines the effective role grants, which can be discovered in the catalog.
       properties:
         name:
           type: string
@@ -16518,16 +16666,14 @@ components:
         insertedDate:
           type: string
           description: Inserted Timestamp
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
-          description: List of permissions
+          uniqueItems: true
+          description: Explicit CUSTOM or legacy permission grants.
           items:
-            type: string
-            enum:
-            - READ
-            - WRITE
-            - DELETE
-            - GOVERN
+            $ref: '#/components/schemas/ApiPermissionGrant'
         groups:
           type: array
           description: List of groups to add as custom claims to API Key
@@ -16585,11 +16731,19 @@ components:
           description: Name of the S3 bucket
     SiteGroup:
       type: object
+      description: |-
+        A group's permission configuration for a site. roleType is optional for legacy
+        records. A missing roleType means permissions contains explicit CUSTOM grants.
+        A predefined roleType determines the effective role grants.
       properties:
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
+          uniqueItems: true
+          description: Explicit CUSTOM or legacy permission grants.
           items:
-            $ref: '#/components/schemas/SiteGroupPermissions'
+            $ref: '#/components/schemas/ApiPermissionGrant'
     LocaleInfo:
       type: object
       required:
@@ -16767,6 +16921,18 @@ components:
           $ref: '#/components/schemas/ResourceItem'
     AddApiKeyRequest:
       type: object
+      required:
+      - name
+      description: |-
+        roleType is optional. A predefined roleType must be supplied without nonempty
+        permissions; an omitted or empty array is accepted.
+        CUSTOM requires a nonempty permissions array. When roleType is omitted, a nonempty
+        permissions array is an explicit CUSTOM grant: legacy WRITE grants write operations
+        only and is not converted to the predefined WRITE role, which also grants read and
+        delete operations. If neither field is supplied, or permissions is empty with no
+        roleType, the legacy READ, WRITE and DELETE defaults apply. Unknown role types or
+        permission names, and invalid field combinations, are rejected. Administrator
+        grants require an administrator caller.
       properties:
         name:
           type: string
@@ -16776,10 +16942,18 @@ components:
           description: Optional list of groups to add as custom claims to API Key
           items:
             type: string
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
+          uniqueItems: true
+          description: |-
+            Explicit scoped or legacy umbrella grants for CUSTOM or an omitted roleType.
+            Required and nonempty when roleType is CUSTOM. For predefined role types,
+            omit this field or supply an empty array.
+            Legacy requests without roleType keep the default grants when this is empty.
           items:
-            $ref: '#/components/schemas/ApiKeyPermission'
+            $ref: '#/components/schemas/ApiPermissionGrant'
     AddApiKeyResponse:
       type: object
       properties:
@@ -17015,7 +17189,7 @@ components:
         permissions:
           type: array
           items:
-            $ref: '#/components/schemas/SiteGroupPermissions'
+            $ref: '#/components/schemas/ApiPermissionGrant'
         uploadEmail:
           type: string
           description: SiteId document upload email address
@@ -17036,15 +17210,6 @@ components:
       enum:
       - READ_WRITE
       - READ_ONLY
-    SiteGroupPermissions:
-      type: string
-      description: Site Group Permissions
-      enum:
-      - ADMIN
-      - DELETE
-      - READ
-      - WRITE
-      - GOVERN
     SiteConfig:
       type: object
       properties:

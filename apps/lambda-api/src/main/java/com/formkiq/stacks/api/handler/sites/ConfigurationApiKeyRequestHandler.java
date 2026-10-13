@@ -30,7 +30,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
-import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import java.util.Optional;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 
@@ -43,20 +43,6 @@ public class ConfigurationApiKeyRequestHandler
    *
    */
   public ConfigurationApiKeyRequestHandler() {}
-
-  @Override
-  public void beforeDelete(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
-    checkPermissions(event, authorization);
-  }
-
-  private void checkPermissions(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization) throws UnauthorizedException {
-    String siteId = getPathParameterSiteId(event);
-    if (!authorization.getPermissions(siteId).contains(ApiPermission.ADMIN)) {
-      throw new UnauthorizedException("user is unauthorized");
-    }
-  }
 
   @Override
   public ApiRequestHandlerResponse delete(final ApiGatewayRequestEvent event,
@@ -79,4 +65,11 @@ public class ConfigurationApiKeyRequestHandler
   public String getRequestUrl() {
     return "/sites/{siteId}/apiKeys/{apiKey}";
   }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "delete".equalsIgnoreCase(method) ? Optional.of(ApiPermission.DELETE_SYSTEM_MANAGEMENT)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
+  }
+
 }

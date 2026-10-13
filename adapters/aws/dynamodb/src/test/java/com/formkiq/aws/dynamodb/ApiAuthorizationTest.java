@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.aws.dynamodb.attributes.AttributeAccessCriterion;
@@ -112,6 +114,30 @@ class ApiAuthorizationTest {
     assertEquals("opa: denied", approval.deniedMessage());
   }
 
+  /** Replacement removes administrator grants while preserving request context. */
+  @Test
+  void testReplacePermissions() {
+    // given
+    ApiAuthorization auth =
+        new ApiAuthorization().username("shared user").addPermission(new SiteApiPermissionRole(
+            "admin", ApiPermissionRole.builder(ApiPermissionRoleType.ADMIN).build()));
+    SiteApiPermissionRoles replacement = new SiteApiPermissionRoles(java.util.List.of(
+        new SiteApiPermissionRole("shared",
+            ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+                .permissions(Set.of(ApiPermission.READ_DOCUMENTS)).build()),
+        new SiteApiPermissionRole("shared", ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+            .permissions(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build())));
+    // when
+    auth.replacePermissions(replacement);
+    // then
+    assertEquals(java.util.List.of("shared"), auth.getSiteIds());
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENTS, ApiPermission.READ_DOCUMENT_ATTRIBUTES),
+        auth.getPermissions("shared"));
+    assertTrue(auth.getPermissions("admin").isEmpty());
+    assertFalse(auth.isAdmin("shared"));
+    assertEquals("shared user", auth.getUsername());
+  }
+
   /** A scoped grant remains scoped when reporting a site's permissions. */
   @Test
   void testScopedGrantsRemainScoped() {
@@ -127,4 +153,5 @@ class ApiAuthorizationTest {
     // then
     assertEquals(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES), Set.copyOf(permissions));
   }
+
 }

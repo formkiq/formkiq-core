@@ -332,6 +332,25 @@ class ApiPermissionRoleTest {
   }
 
   /**
+   * Predefined request roles accept omitted or empty generated-client arrays.
+   * 
+   * @param type role type
+   */
+  @ParameterizedTest
+  @EnumSource(value = ApiPermissionRoleType.class, mode = EnumSource.Mode.EXCLUDE, names = "CUSTOM")
+  void testPredefinedRequestRole(final ApiPermissionRoleType type) {
+    // given
+    Set<ApiPermission> expected = ApiPermissionRole.builder(type).build().getPermissions();
+    // when
+    ApiPermissionRole omitted = ApiPermissionRole.fromRequest(type.name(), null);
+    ApiPermissionRole empty = ApiPermissionRole.fromRequest(type.name(), List.of());
+    // then
+    assertEquals(type, omitted.getType());
+    assertEquals(expected, omitted.getPermissions());
+    assertEquals(expected, empty.getPermissions());
+  }
+
+  /**
    * Predefined roles cannot be overwritten with custom grants.
    *
    * @param type predefined role type
@@ -347,6 +366,40 @@ class ApiPermissionRoleTest {
 
     // then
     assertThrows(IllegalStateException.class, override);
+  }
+
+  /** Legacy arrays retain exact grants; CUSTOM deduplicates scoped names. */
+  @Test
+  void testRequestExplicitGrants() {
+    // given
+    List<String> grants = List.of("READ_DOCUMENT_ATTRIBUTES", "READ_DOCUMENT_ATTRIBUTES");
+    // when
+    ApiPermissionRole legacy = ApiPermissionRole.fromRequest(null, List.of("WRITE"));
+    final ApiPermissionRole custom = ApiPermissionRole.fromRequest("CUSTOM", grants);
+    // then
+    assertEquals(ApiPermissionRoleType.CUSTOM, legacy.getType());
+    assertEquals(Set.of(ApiPermission.WRITE), legacy.getPermissions());
+    assertFalse(legacy.hasPermission(ApiPermission.READ_DOCUMENTS));
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES), custom.getPermissions());
+    assertFalse(custom.hasPermission(ApiPermission.READ_DOCUMENTS));
+  }
+
+  /** Invalid types, names and combinations never become broader roles. */
+  @Test
+  void testRequestInvalidGrants() {
+    // given
+    List<Executable> invalid = List.of(() -> ApiPermissionRole.fromRequest("UNKNOWN", null),
+        () -> ApiPermissionRole.fromRequest("READ", List.of("READ_DOCUMENTS")),
+        () -> ApiPermissionRole.fromRequest("CUSTOM", null),
+        () -> ApiPermissionRole.fromRequest(null, List.of()),
+        () -> ApiPermissionRole.fromRequest(null, List.of("UNKNOWN")),
+        () -> ApiPermissionRole.fromRequest(null, Arrays.asList((String) null)));
+    for (Executable request : invalid) {
+      // when
+      Executable operation = request;
+      // then
+      assertThrows(IllegalArgumentException.class, operation);
+    }
   }
 
   /**
@@ -410,4 +463,5 @@ class ApiPermissionRoleTest {
     assertFalse(documentAccess);
     assertFalse(adminAccess);
   }
+
 }
