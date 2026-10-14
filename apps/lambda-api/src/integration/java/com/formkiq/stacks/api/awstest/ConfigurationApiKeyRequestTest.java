@@ -24,7 +24,12 @@
 package com.formkiq.stacks.api.awstest;
 
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.WaitForDocumentContentRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.AddApiKeyRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.DeleteApiKeyRequestBuilder;
+import com.formkiq.testutils.api.systemmanagement.GetApiKeysRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.GetSitesRequestBuilder;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -36,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.model.AddApiKeyRequest;
@@ -44,6 +50,7 @@ import com.formkiq.client.model.AddDocumentRequest;
 import com.formkiq.client.model.AddDocumentResponse;
 import com.formkiq.client.model.ApiKey;
 import com.formkiq.client.model.ApiPermissionGrant;
+import com.formkiq.client.model.ApiPermissionRoleType;
 import com.formkiq.client.model.GetApiKeysResponse;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.Site;
@@ -163,6 +170,63 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       assertEquals("READ",
           String.join(",", notNull(site.getPermissions()).stream().map(Enum::name).toList()));
       assertEquals("API_KEY," + siteId + ",test1,test2", getSortedRoles(sitesResponse));
+    }
+  }
+
+  /**
+   * A WRITE_DOCUMENTS-only API key can create a document but cannot read it.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testAddApiKeyWithWriteDocumentsOnly() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    this.jwtApiClient.addDefaultHeader("Authorization", getAdminToken().accessToken());
+    AddApiKeyRequest request =
+        new AddApiKeyRequest().name(ID.uuid()).roleType(ApiPermissionRoleType.CUSTOM)
+            .permissions(Set.of(ApiPermissionGrant.WRITE_DOCUMENTS));
+
+    // when
+    AddApiKeyResponse created = new AddApiKeyRequestBuilder().withAddApiKeyRequest(request)
+        .submitOk(this.jwtApiClient, siteId).response();
+    List<ApiKey> keys = new GetApiKeysRequestBuilder().getApiKeys(this.jwtApiClient, siteId);
+
+    // then
+    assertNotNull(created.getApiKey());
+    assertEquals(1, keys.size());
+    assertEquals(ApiPermissionRoleType.CUSTOM, keys.getFirst().getRoleType());
+    assertEquals(Set.of(ApiPermissionGrant.WRITE_DOCUMENTS), keys.getFirst().getPermissions());
+
+    String documentId = null;
+    try {
+      // given
+      ApiClient writer = getApiClientWithToken(created.getApiKey());
+
+      // when
+      AddDocumentResponse document = new AddDocumentRequestBuilder().content("write-only content")
+          .contentType("text/plain").submitOk(writer, siteId).response();
+      documentId = document.getDocumentId();
+
+      // then
+      assertNotNull(documentId);
+
+      // given
+      new WaitForDocumentContentRequestBuilder(documentId).content("write-only content")
+          .submitOk(this.jwtApiClient, siteId);
+
+      // when
+      var denied = new GetDocumentRequestBuilder(documentId).submitError(writer, siteId);
+
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), denied.exception().getCode());
+    } finally {
+      if (documentId != null) {
+        new DeleteDocumentRequestBuilder(documentId).submitOk(this.jwtApiClient, siteId);
+      }
+      new DeleteApiKeyRequestBuilder().withApiKey(created.getApiKey()).submitOk(this.jwtApiClient,
+          siteId);
     }
   }
 
