@@ -6676,7 +6676,8 @@ paths:
         When roleType is omitted, permissions is required and is treated as an explicit
         CUSTOM grant without adding inherited role permissions. For predefined role types,
         omit permissions or supply an empty array. Nonempty permissions with a predefined
-        roleType are rejected. Assigning administrator access requires an administrator caller.
+        roleType are rejected. ADMIN roles and ADMIN permission grants are not allowed,
+        even for administrators.
       summary: Set Site's Group Permissions
       x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
@@ -7756,8 +7757,8 @@ paths:
         explicit CUSTOM grant without adding inherited role permissions. If roleType and
         permissions are both omitted, or permissions is empty with no roleType, the legacy
         READ, WRITE and DELETE grants apply. For predefined role types, omit permissions
-        or supply an empty array; nonempty permissions are rejected. Assigning administrator
-        access requires an administrator caller.
+        or supply an empty array; nonempty permissions are rejected. ADMIN roles and ADMIN
+        permission grants are not allowed, even for administrators.
       summary: Add API Key
       x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
@@ -16931,8 +16932,8 @@ components:
         only and is not converted to the predefined WRITE role, which also grants read and
         delete operations. If neither field is supplied, or permissions is empty with no
         roleType, the legacy READ, WRITE and DELETE defaults apply. Unknown role types or
-        permission names, and invalid field combinations, are rejected. Administrator
-        grants require an administrator caller.
+        permission names, and invalid field combinations, are rejected. ADMIN roles and ADMIN
+        permission grants are not allowed, even for administrators.
       properties:
         name:
           type: string
