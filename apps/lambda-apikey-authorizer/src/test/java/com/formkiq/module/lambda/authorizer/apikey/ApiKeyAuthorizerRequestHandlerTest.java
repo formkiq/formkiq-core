@@ -25,6 +25,7 @@ package com.formkiq.module.lambda.authorizer.apikey;
 
 import static com.formkiq.testutils.aws.DynamoDbExtension.DOCUMENTS_TABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -112,7 +113,8 @@ class ApiKeyAuthorizerRequestHandlerTest {
     String siteId = ID.uuid();
     ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.READ).build();
     Map<String, Object> firstClaims = Map.of("department", "Legal", "roles", List.of("reviewer"),
-        "active", true, "limit", 42.5, "profile", Map.of("region", "north"));
+        "active", true, "limit", 42.5, "count", 7.0, "adjustment", -3.25, "profile",
+        Map.of("region", "north", "weights", List.of(0.0, -2.5)));
     Map<String, Object> secondClaims = Map.of("department", "Sales");
     String first = apiKeysService.createApiKey(siteId, "first", role, List.of(), firstClaims);
     String second = apiKeysService.createApiKey(siteId, "second", role, List.of(), secondClaims);
@@ -133,7 +135,10 @@ class ApiKeyAuthorizerRequestHandlerTest {
     assertEquals(Boolean.TRUE, firstResult.get("isAuthorized"));
     assertEquals(Boolean.TRUE, secondResult.get("isAuthorized"));
     assertEquals(firstClaims, authorization.getUserClaims());
-    assertEquals(secondClaims, secondKeyClaims.get("customClaims"));
+    assertEquals("{\"department\":\"Sales\"}", secondKeyClaims.get("customClaims"));
+    Map<String, Object> firstContext = (Map<String, Object>) firstResult.get("context");
+    Map<String, Object> firstKeyClaims = (Map<String, Object>) firstContext.get("apiKeyClaims");
+    assertInstanceOf(String.class, firstKeyClaims.get("customClaims"));
     assertEquals("first", authorization.getUsername());
     assertEquals(siteId, authorization.getSiteId());
     assertEquals(role.getPermissions(), authorization.getAllPermissions());
@@ -157,7 +162,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
     assertEquals(Boolean.FALSE, map.get("isAuthorized"));
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals(Map.of(), claims.get("customClaims"));
+    assertEquals("{}", claims.get("customClaims"));
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
@@ -183,7 +188,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
     assertEquals(Boolean.FALSE, map.get("isAuthorized"));
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals(Map.of(), claims.get("customClaims"));
+    assertEquals("{}", claims.get("customClaims"));
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
@@ -207,7 +212,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
-    assertEquals(Map.of(), claims.get("customClaims"));
+    assertEquals("{}", claims.get("customClaims"));
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),

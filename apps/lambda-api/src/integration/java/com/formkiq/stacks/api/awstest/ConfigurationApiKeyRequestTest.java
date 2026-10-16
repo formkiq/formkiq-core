@@ -154,7 +154,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     String siteId = ID.uuid();
     String name = "custom-claims-" + ID.ulid();
     Map<String, Object> claims = Map.of("custom:department", "Legal", "customerId", "acme", "roles",
-        List.of("reviewer"), "active", true, "limit", 42.5, "profile", Map.of("region", "north"));
+        List.of("reviewer"), "active", true, "limit", 42.5, "count", 7.0, "adjustment", -3.25,
+        "profile", Map.of("region", "north", "weights", List.of(0.0, -2.5)));
     this.jwtApiClient.addDefaultHeader("Authorization", getAdminToken().accessToken());
     AddApiKeyRequest request =
         new AddApiKeyRequest().name(name).roleType(ApiPermissionRoleType.READ).customClaims(claims);
