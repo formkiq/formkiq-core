@@ -643,22 +643,12 @@ public class DocumentAttributesRequestTest extends AbstractAttributesRequestTest
         new AddDocumentRequestBuilder().content("test").getDocument(this.client, siteId);
 
     // when
-    AddResponse response = new AddDocumentAttributeRequestBuilder(document)
-        .addJsonAttribute(key, jsonValue).submitOk(this.client, siteId).response();
+    var response = new AddDocumentAttributeRequestBuilder(document).addJsonAttribute(key, jsonValue)
+        .submitError(this.client, siteId);
 
     // then
-    assertEquals("added attributes to documentId '" + document.documentId() + "'",
-        response.getMessage());
-
-    // when
-    DocumentAttribute attribute = new GetDocumentAttributeRequestBuilder(document, key)
-        .submitOk(this.client, siteId).response().getAttribute();
-    List<DocumentAttribute> attributes = new GetDocumentAttributesRequestBuilder(document)
-        .submitOk(this.client, siteId).response().getAttributes();
-
-    // then
-    assertJsonAttribute(attribute, key, jsonValue);
-    assertJsonAttribute(findAttribute(attributes, key), key, jsonValue);
+    assertApiError(response, ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(),
+        "{\"errors\":[{\"key\":\"" + key + "\",\"error\":\"attribute only support json value\"}]}");
   }
 
   /**
