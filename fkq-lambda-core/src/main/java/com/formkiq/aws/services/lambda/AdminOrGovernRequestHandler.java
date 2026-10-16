@@ -24,12 +24,18 @@
 package com.formkiq.aws.services.lambda;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
 import java.util.Optional;
 
-/** {@link ApiGatewayRequestHandler} for Admin or Govern permissions. */
+/** {@link ApiGatewayRequestHandler} permitting ADMIN or GOVERN for every request method. */
 public interface AdminOrGovernRequestHandler extends ApiGatewayRequestHandler {
+
+  @Override
+  default Optional<ApiPermission> getRequiredPermission(final String method) {
+    return Optional.of(ApiPermission.GOVERN);
+  }
 
   @Override
   default Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,

@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentSyncs
       summary: Get document syncs
       description: Retrieve the document syncs with external services status
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Documents
       parameters:
@@ -37,6 +38,7 @@ paths:
       operationId: AddDocumentSync
       summary: Add document sync to service
       description: Add a document to a service
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Documents
       parameters:

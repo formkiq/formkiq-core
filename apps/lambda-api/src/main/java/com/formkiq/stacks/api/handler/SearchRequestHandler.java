@@ -41,7 +41,6 @@ import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceImpl;
@@ -115,6 +114,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     return "/search";
   }
 
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "post".equalsIgnoreCase(method) ? Optional.of(ApiPermission.READ_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
+  }
+
   /**
    * Get Response Tags.
    * 
@@ -139,15 +144,6 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     }
 
     return map;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization)
-      throws UnauthorizedException {
-    String siteId = authorization.getSiteId();
-    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.READ);
-    return Optional.of(access);
   }
 
   /**

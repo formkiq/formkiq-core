@@ -11,6 +11,7 @@ paths:
         Get a document's optical character recognition (OCR) result, if exists; 
 
         Tesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Document OCR
       parameters:
@@ -46,6 +47,7 @@ paths:
         Document optical character recognition (OCR) request; extract text and data from a document; 
 
         Tesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document OCR
       parameters:
@@ -83,6 +85,7 @@ paths:
         Set a document's optical character recognition (OCR) result for a document; 
 
         Tesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document OCR
       parameters:
@@ -120,6 +123,7 @@ paths:
         Delete a document's optical character recognition (OCR) result, if exists; 
 
         Tesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Document OCR
       parameters:

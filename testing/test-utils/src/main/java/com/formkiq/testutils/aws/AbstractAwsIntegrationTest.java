@@ -30,15 +30,16 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import com.formkiq.client.model.ApiKeyPermission;
+import com.formkiq.client.model.ApiPermissionGrant;
+import com.formkiq.testutils.api.systemmanagement.AddApiKeyRequestBuilder;
 import com.formkiq.testutils.api.ApiClientBuilder;
 import com.formkiq.testutils.aws.sqs.SqsMessageReceiver;
 import org.junit.jupiter.api.BeforeAll;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.sqs.SqsService;
 import com.formkiq.aws.ssm.SsmService;
-import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest;
@@ -194,12 +195,11 @@ public abstract class AbstractAwsIntegrationTest {
 
     if (!API_KEYS.containsKey(site)) {
 
-      SystemManagementApi api = new SystemManagementApi(client);
-
-      List<ApiKeyPermission> permissions =
-          Arrays.asList(ApiKeyPermission.READ, ApiKeyPermission.DELETE, ApiKeyPermission.WRITE);
+      Set<ApiPermissionGrant> permissions = java.util.Set.of(ApiPermissionGrant.READ,
+          ApiPermissionGrant.DELETE, ApiPermissionGrant.WRITE);
       AddApiKeyRequest req = new AddApiKeyRequest().name("My Api Key").permissions(permissions);
-      String apiKey = api.addApiKey(site, req).getApiKey();
+      String apiKey = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req).submitOk(client, site)
+          .response().getApiKey();
 
       API_KEYS.put(site, apiKey);
     }

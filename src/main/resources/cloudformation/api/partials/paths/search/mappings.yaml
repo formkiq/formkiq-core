@@ -6,6 +6,7 @@ paths:
   /mappings:
     get:
       operationId: GetMappings
+      x-formkiq-required-permission: READ_MAPPINGS
       tags:
         - Mappings
       description: Returns a list of mappings; available as an Add-On Module
@@ -37,6 +38,7 @@ paths:
       description: |-
         Creates a new mapping; available as an Add-On Module
       summary: Add New Mapping
+      x-formkiq-required-permission: WRITE_MAPPINGS
       tags:
         - Mappings
       parameters:
@@ -76,6 +78,7 @@ paths:
   /mappings/{mappingId}:
     get:
       operationId: GetMapping
+      x-formkiq-required-permission: READ_MAPPINGS
       tags:
         - Mappings
       description: Get a mapping; available as an Add-On Module
@@ -106,6 +109,7 @@ paths:
       description: |-
         Sets an mapping; available as an Add-On Module
       summary: Set Mapping
+      x-formkiq-required-permission: WRITE_MAPPINGS
       tags:
         - Mappings
       parameters:
@@ -146,6 +150,7 @@ paths:
       operationId: DeleteMapping
       description: Delete Mapping; available as an Add-On Module
       summary: Delete Mapping
+      x-formkiq-required-permission: DELETE_MAPPINGS
       tags:
         - Mappings
       parameters:

@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
 import com.formkiq.aws.dynamodb.BatchGetConfig;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DeleteResult;
@@ -75,14 +76,14 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
   }
 
   @Override
-  public String createApiKey(final String siteId, final String name,
-      final Collection<ApiKeyPermission> permissions, final Collection<String> groups) {
+  public String createApiKey(final String siteId, final String name, final ApiPermissionRole role,
+      final Collection<String> groups) {
 
     String apiKey = Strings.generateRandomString(ApiKey.API_KEY_LENGTH);
     String userId = ApiAuthorization.getAuthorization().getUsername();
 
     ApiKey key = ApiKey.builder().apiKey(apiKey).name(name).userId(userId).insertedDate(new Date())
-        .permissions(permissions).groups(groups).build(siteId);
+        .permissionRole(role).groups(groups).build(siteId);
 
     Map<String, AttributeValue> attributes = key.getAttributes();
     this.db.putItem(attributes);
@@ -136,7 +137,7 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
       if (masked) {
         key = new ApiKey(key.key(), key.siteId(), mask(key.apiKey()), key.name(), key.userId(),
-            key.insertedDate(), key.permissions(), key.groups());
+            key.insertedDate(), key.permissions(), key.roleType(), key.groups());
       }
     }
 
@@ -159,10 +160,11 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
         .map(m -> Map.of(PK, m.get(PK), SK, m.get(SK))).collect(Collectors.toList());
 
     BatchGetConfig batchConfig = new BatchGetConfig();
-    List<ApiKey> apiKeys = this.db.getBatch(batchConfig, attrs).stream()
-        .map(ApiKey::fromAttributeMap).map(a -> new ApiKey(a.key(), a.siteId(), mask(a.apiKey()),
-            a.name(), a.userId(), a.insertedDate(), a.permissions(), a.groups()))
-        .collect(Collectors.toList());
+    List<ApiKey> apiKeys =
+        this.db.getBatch(batchConfig, attrs).stream().map(ApiKey::fromAttributeMap)
+            .map(a -> new ApiKey(a.key(), a.siteId(), mask(a.apiKey()), a.name(), a.userId(),
+                a.insertedDate(), a.permissions(), a.roleType(), a.groups()))
+            .collect(Collectors.toList());
 
     return new Pagination<>(apiKeys, response.lastEvaluatedKey());
   }

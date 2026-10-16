@@ -8,6 +8,7 @@ paths:
       operationId: GetFolderDocuments
       summary: Get document folders
       description: Get list of documents in a folder
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Document Folders
       parameters:
@@ -39,6 +40,7 @@ paths:
       operationId: AddFolder
       summary: Add document folder
       description: Creates a new folder
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document Folders
       parameters:
@@ -75,6 +77,7 @@ paths:
       operationId: MoveFolder
       summary: Move document folder
       description: Creates an asynchronous folder move request
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document Folders
       parameters:
@@ -113,6 +116,7 @@ paths:
       operationId: DeleteFolder
       summary: Delete document folder
       description: Delete a specific folder; folder must be empty
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Document Folders
       parameters:
@@ -144,6 +148,7 @@ paths:
       operationId: GetFolderPermissions
       summary: Get folder permissions
       description: Get list of permissions for a folder
+      x-formkiq-required-permission: GOVERN_DOCUMENT_FOLDERS
       tags:
         - Document Folders
       parameters:
@@ -178,6 +183,7 @@ paths:
 
         NOTE: Can only be called be ADMIN or GOVERN.
 
+      x-formkiq-required-permission: GOVERN_DOCUMENT_FOLDERS
       tags:
         - Document Folders
       parameters:

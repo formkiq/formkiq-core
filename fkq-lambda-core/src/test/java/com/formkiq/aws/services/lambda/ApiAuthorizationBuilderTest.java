@@ -23,6 +23,16 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRole;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRoles;
+import org.junit.jupiter.api.function.Executable;
+import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
+import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -679,7 +689,7 @@ class ApiAuthorizationBuilderTest {
         .collect(Collectors.joining(",")));
     assertEquals("READ", api0.getPermissions(DEFAULT_SITE_ID).stream().map(Enum::name)
         .collect(Collectors.joining(",")));
-    assertEquals("WRITE,DELETE",
+    assertEquals("DELETE,WRITE",
         api0.getPermissions("test").stream().map(Enum::name).collect(Collectors.joining(",")));
     assertEquals("groups: default (READ), test (DELETE,WRITE)", api0.getAccessSummary());
     assertEquals("default,test", String.join(",", api0.getRoles()));
@@ -1008,6 +1018,40 @@ class ApiAuthorizationBuilderTest {
   }
 
   /**
+   * User has 'default_user_management'.
+   */
+  @Test
+  void testApiAuthorizerUserManagement() throws Exception {
+    // given
+    String s0 = "[default_user_management]";
+    String s1 = "[finance_user_management]";
+
+    ApiGatewayRequestEvent event0 = getJwtEvent(s0);
+    ApiGatewayRequestEvent event1 = getJwtEvent(s1);
+
+    // when
+    final ApiAuthorization api0 = new ApiAuthorizationBuilder().build(event0);
+    final ApiAuthorization api1 = new ApiAuthorizationBuilder().build(event1);
+
+    // then
+    assertEquals(DEFAULT_SITE_ID, api0.getSiteId());
+    assertEquals(DEFAULT_SITE_ID, String.join(",", api0.getSiteIds()));
+    String permissionList =
+        "DELETE_USER_MANAGEMENT,GOVERN_USER_MANAGEMENT,READ_USER_MANAGEMENT,WRITE_USER_MANAGEMENT";
+    assertEquals(permissionList, api0.getAllPermissions().stream().map(Enum::name)
+        .sorted(String::compareTo).collect(Collectors.joining(",")));
+    assertEquals("groups: default (" + permissionList + ")", api0.getAccessSummary());
+    assertEquals("default_user_management", String.join(",", api0.getRoles()));
+
+    assertEquals("finance", api1.getSiteId());
+    assertEquals("finance", String.join(",", api1.getSiteIds()));
+    assertEquals(permissionList, api1.getAllPermissions().stream().map(Enum::name).sorted()
+        .collect(Collectors.joining(",")));
+    assertEquals("groups: finance (" + permissionList + ")", api1.getAccessSummary());
+    assertEquals("finance_user_management", String.join(",", api1.getRoles()));
+  }
+
+  /**
    * trying to access random site id.
    */
   @Test
@@ -1026,6 +1070,51 @@ class ApiAuthorizationBuilderTest {
       // then
       assertEquals("fkq access denied to siteId (anothersite)", e.getMessage());
     }
+  }
+
+  /** Compact claims take precedence over groups and legacy grants. */
+  @Test
+  void testCompactApiKeyClaims() throws Exception {
+    // given
+    String bitmap = new SiteApiPermissionRoles(List.of(new SiteApiPermissionRole("finance",
+        ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+            .permissions(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build())))
+        .exportPermissionsAsString();
+    ApiGatewayRequestEvent event = getApiKeyClaimsEvent();
+    event.getRequestContext().setAuthorizer(
+        Map.of("apiKeyClaims", Map.of("cognito:groups", "[finance other_WRITE API_KEY]",
+            "sitePermissions", bitmap, "cognito:username", "scoped key")));
+    // when
+    ApiAuthorization auth = new ApiAuthorizationBuilder().build(event);
+    // then
+    assertEquals("finance", auth.getSiteId());
+    assertEquals(List.of("finance"), auth.getSiteIds());
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES), auth.getAllPermissions());
+    assertEquals("scoped key", auth.getUsername());
+    assertFalse(auth.isAdmin("finance"));
+  }
+
+  /** Multiple compact site grants require an explicit site and remain independent. */
+  @Test
+  void testCompactMultipleSites() throws Exception {
+    // given
+    String bitmaps = new SiteApiPermissionRoles(List.of(
+        new SiteApiPermissionRole("finance",
+            ApiPermissionRole.builder(ApiPermissionRoleType.READ).build()),
+        new SiteApiPermissionRole("legal",
+            ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+                .permissions(Set.of(ApiPermission.WRITE_DOCUMENT_ATTRIBUTES)).build())))
+        .exportPermissionsAsString();
+    ApiGatewayRequestEvent event = getJwtEvent("finance legal", Map.of("sitesClaims",
+        gson.toJson(Map.of("cognito:groups", "finance legal", "sitePermissions", bitmaps))));
+    event.setQueryStringParameters(Map.of("siteId", "legal"));
+    // when
+    ApiAuthorization auth = new ApiAuthorizationBuilder().build(event);
+    // then
+    assertEquals("legal", auth.getSiteId());
+    assertEquals(Set.of(ApiPermission.READ), auth.getPermissions("finance"));
+    assertEquals(Set.of(ApiPermission.WRITE_DOCUMENT_ATTRIBUTES), auth.getPermissions("legal"));
+    assertTrue(auth.getPermissions("other").isEmpty());
   }
 
   /**
@@ -1076,6 +1165,20 @@ class ApiAuthorizationBuilderTest {
     assertEquals("no groups", api.getAccessSummary());
     assertNull(api.getRoles());
     assertEquals("System", api.getUsername());
+  }
+
+  /** Invalid compact claims fail closed instead of falling back to an ADMIN group. */
+  @Test
+  void testInvalidCompactClaims() {
+    // given
+    List<Object> invalid = List.of("{", "{\"default\":\"v2:AAAA\"}", Map.of("default", "bad"));
+    for (Object bitmap : invalid) {
+      ApiGatewayRequestEvent event = getJwtEvent("Admins", Map.of("sitePermissions", bitmap));
+      // when
+      Executable operation = () -> new ApiAuthorizationBuilder().build(event);
+      // then
+      assertThrows(UnauthorizedException.class, operation);
+    }
   }
 
   @Test
@@ -1174,4 +1277,5 @@ class ApiAuthorizationBuilderTest {
         .encodeToString(this.gson.toJson(claims).getBytes(StandardCharsets.UTF_8));
     return header + "." + payload + ".";
   }
+
 }

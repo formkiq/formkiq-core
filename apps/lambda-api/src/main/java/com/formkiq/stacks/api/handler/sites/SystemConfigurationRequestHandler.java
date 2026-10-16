@@ -26,6 +26,8 @@ package com.formkiq.stacks.api.handler.sites;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Locale;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
@@ -37,7 +39,6 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.aws.services.lambda.JsonToObject;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
-import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
@@ -47,21 +48,6 @@ import com.google.gson.Gson;
 
 /** {@link ApiGatewayRequestHandler} for "/system/configuration". */
 public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandler {
-
-
-
-  @Override
-  public void beforePatch(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
-      final AwsServiceCache awsServices) throws Exception {
-    checkAdminPermission(authorization);
-  }
-
-  private void checkAdminPermission(final ApiAuthorization authorization)
-      throws UnauthorizedException {
-    if (!authorization.getAllPermissions().contains(ApiPermission.ADMIN)) {
-      throw new UnauthorizedException("user is unauthorized");
-    }
-  }
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
@@ -76,6 +62,15 @@ public class SystemConfigurationRequestHandler implements ApiGatewayRequestHandl
   @Override
   public String getRequestUrl() {
     return "/system/configuration";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_SYSTEM_MANAGEMENT);
+      case "patch" -> Optional.of(ApiPermission.WRITE_SYSTEM_MANAGEMENT);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   private String getSiteId() {

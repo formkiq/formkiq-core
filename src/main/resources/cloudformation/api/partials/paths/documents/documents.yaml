@@ -6,6 +6,7 @@ paths:
   /documents:
     get:
       operationId: GetDocuments
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Documents
       description: Returns a list of the most recent documents added, ordered by inserted, descending
@@ -100,6 +101,7 @@ paths:
         
         See POST /documents/{documentId}/actions for adding actions to document schema
       summary: Add new document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Documents
       parameters:
@@ -223,6 +225,7 @@ paths:
         
         ATTRIBUTE target will regenerate the composite keys for a document based on the Classification / SiteSchema
       summary: Reindex metadata on a document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Reindex
       parameters:

@@ -27,10 +27,12 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -59,6 +61,12 @@ public class UpdateDocumentMatchingRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/tags";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "patch".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_DOCUMENT_TAGS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

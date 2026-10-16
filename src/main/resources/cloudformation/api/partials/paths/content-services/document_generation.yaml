@@ -13,6 +13,7 @@ paths:
 
         ; available as an Add-On Module
       summary: Add Document Generate
+      x-formkiq-required-permission: WRITE_DOCUMENT_GENERATION
       tags:
         - Document Generation
       parameters:

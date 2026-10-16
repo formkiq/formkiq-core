@@ -27,8 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Map;
 import java.util.List;
+import java.util.Collection;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.formkiq.aws.dynamodb.attributes.AttributeAccessApproval;
 import com.formkiq.aws.dynamodb.attributes.AttributeAccessCriterion;
@@ -38,6 +42,23 @@ import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 
 /** Tests for {@link ApiAuthorization}. */
 class ApiAuthorizationTest {
+
+  /** Admin fallback preserves the original umbrella grants instead of expanding all children. */
+  @Test
+  void testAdminFallbackKeepsUmbrellaPermissions() {
+    // given
+    var siteApiPermissionsRole = new SiteApiPermissionRole("adminSite",
+        ApiPermissionRole.builder(ApiPermissionRoleType.ADMIN).build());
+    ApiAuthorization authorization = new ApiAuthorization().addPermission(siteApiPermissionsRole);
+    Set<ApiPermission> expected = Set.of(ApiPermission.ADMIN, ApiPermission.READ,
+        ApiPermission.WRITE, ApiPermission.DELETE, ApiPermission.GOVERN);
+
+    // when
+    Collection<ApiPermission> permissions = authorization.getPermissions("anotherSite");
+
+    // then
+    assertEquals(expected, Set.copyOf(permissions));
+  }
 
   /** Test request approval uses the handler's default and preserves key overrides. */
   @Test
@@ -92,4 +113,45 @@ class ApiAuthorizationTest {
     assertEquals(List.of(rule), approval.conditionalRules());
     assertEquals("opa: denied", approval.deniedMessage());
   }
+
+  /** Replacement removes administrator grants while preserving request context. */
+  @Test
+  void testReplacePermissions() {
+    // given
+    ApiAuthorization auth =
+        new ApiAuthorization().username("shared user").addPermission(new SiteApiPermissionRole(
+            "admin", ApiPermissionRole.builder(ApiPermissionRoleType.ADMIN).build()));
+    SiteApiPermissionRoles replacement = new SiteApiPermissionRoles(java.util.List.of(
+        new SiteApiPermissionRole("shared",
+            ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+                .permissions(Set.of(ApiPermission.READ_DOCUMENTS)).build()),
+        new SiteApiPermissionRole("shared", ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+            .permissions(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build())));
+    // when
+    auth.replacePermissions(replacement);
+    // then
+    assertEquals(java.util.List.of("shared"), auth.getSiteIds());
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENTS, ApiPermission.READ_DOCUMENT_ATTRIBUTES),
+        auth.getPermissions("shared"));
+    assertTrue(auth.getPermissions("admin").isEmpty());
+    assertFalse(auth.isAdmin("shared"));
+    assertEquals("shared user", auth.getUsername());
+  }
+
+  /** A scoped grant remains scoped when reporting a site's permissions. */
+  @Test
+  void testScopedGrantsRemainScoped() {
+    // given
+    var siteApiPermissionsRole =
+        new SiteApiPermissionRole("site", ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+            .permissions(List.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build());
+    ApiAuthorization authorization = new ApiAuthorization().addPermission(siteApiPermissionsRole);
+
+    // when
+    Collection<ApiPermission> permissions = authorization.getPermissions("site");
+
+    // then
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES), Set.copyOf(permissions));
+  }
+
 }

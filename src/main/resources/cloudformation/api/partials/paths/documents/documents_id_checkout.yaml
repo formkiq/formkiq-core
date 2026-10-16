@@ -9,6 +9,7 @@ paths:
       summary: Perform document checkout
       description: |
         Creates a checkout for the document. Fails with **409 Conflict** if the document is already checkedout by another user; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Documents
       parameters:
@@ -41,6 +42,7 @@ paths:
       summary: Perform document legal hold checkout
       description: |
         Creates a legal hold checkout for the document. Fails with **409 Conflict** if the document is already checkedout by another user; available as an Add-On Module
+      x-formkiq-required-permission: GOVERN_DOCUMENTS
       tags:
         - Documents
       parameters:
@@ -70,6 +72,7 @@ paths:
       summary: Delete document legal hold checkout
       description: |
         Removes a legal hold checkout for the document; available as an Add-On Module
+      x-formkiq-required-permission: GOVERN_DOCUMENTS
       tags:
         - Documents
       parameters:

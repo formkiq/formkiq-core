@@ -30,6 +30,7 @@ import static software.amazon.awssdk.utils.StringUtils.isEmpty;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentCacheKey;
@@ -39,6 +40,7 @@ import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -178,6 +180,12 @@ public class DocumentIdContentRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/content";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "get".equalsIgnoreCase(method) ? Optional.of(ApiPermission.READ_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   private Map<String, AttributeValue> getVersionAttributes(final AwsServiceCache awsservice,

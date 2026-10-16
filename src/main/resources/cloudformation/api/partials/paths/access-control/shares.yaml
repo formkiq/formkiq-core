@@ -39,6 +39,7 @@ paths:
       operationId: AddFolderShare
       summary: Add folder share
       description: Creates a new folder share; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_SHARES
       tags:
         - Document Shares
       parameters:
@@ -81,6 +82,7 @@ paths:
       operationId: DeleteShare
       summary: Delete folder share
       description: Delete a specific document share; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENT_SHARES
       tags:
         - Document Shares
       parameters:

@@ -126,6 +126,7 @@ paths:
       operationId: GetUserActivities
       summary: Get user activities
       description: Retrieve a user's activities
+      x-formkiq-required-permission: GOVERN_USER_ACTIVITIES
       tags:
       - User Activities
       parameters:
@@ -161,6 +162,7 @@ paths:
       operationId: GetDocumentUserActivities
       summary: Get user activities for a document
       description: Retrieve a user's activities for a document
+      x-formkiq-required-permission: GOVERN_USER_ACTIVITIES
       tags:
       - User Activities
       parameters:
@@ -192,6 +194,7 @@ paths:
       operationId: GetResourceActivities
       summary: Get resource activities
       description: Retrieve an resource activities
+      x-formkiq-required-permission: GOVERN_USER_ACTIVITIES
       tags:
       - User Activities
       parameters:
@@ -245,6 +248,7 @@ paths:
   /attributes:
     get:
       operationId: GetAttributes
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
       - Attributes
       description: Returns a list of attributes
@@ -292,6 +296,7 @@ paths:
         Without supplied invocation authorization, auth.username is System and custom
         claim placeholders remain unchanged.
       summary: Add new attribute
+      x-formkiq-required-permission: WRITE_ATTRIBUTES
       tags:
       - Attributes
       parameters:
@@ -415,6 +420,7 @@ paths:
   /attributes/{key}:
     get:
       operationId: GetAttribute
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
       - Attributes
       description: Returns a attribute
@@ -444,6 +450,7 @@ paths:
       operationId: UpdateAttribute
       description: Updates existing attribute
       summary: Update existing attribute
+      x-formkiq-required-permission: WRITE_ATTRIBUTES
       tags:
       - Attributes
       parameters:
@@ -483,6 +490,7 @@ paths:
       operationId: DeleteAttribute
       description: Delete a attribute
       summary: Delete attribute
+      x-formkiq-required-permission: DELETE_ATTRIBUTES
       tags:
       - Attributes
       parameters:
@@ -504,6 +512,7 @@ paths:
   /attributes/{key}/allowedValues:
     get:
       operationId: GetAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
       - Attributes
       description: Returns an attribute's allowed values that spans across all classifications and site schema
@@ -539,6 +548,7 @@ paths:
 
         ; available as an Add-On Module
       summary: Add Document Generate
+      x-formkiq-required-permission: WRITE_DOCUMENT_GENERATION
       tags:
       - Document Generation
       parameters:
@@ -578,6 +588,7 @@ paths:
   /documents:
     get:
       operationId: GetDocuments
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       description: Returns a list of the most recent documents added, ordered by inserted, descending
@@ -672,6 +683,7 @@ paths:
 
         See POST /documents/{documentId}/actions for adding actions to document schema
       summary: Add new document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -793,6 +805,7 @@ paths:
 
         ATTRIBUTE target will regenerate the composite keys for a document based on the Classification / SiteSchema
       summary: Reindex metadata on a document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Reindex
       parameters:
@@ -842,6 +855,7 @@ paths:
             schema:
               $ref: '#/components/schemas/DocumentsCompressRequest'
       description: Compress documents into an .ZIP archive file, and returns a S3 presigned url for the location of the archive file. The operation is async and processing time depends on the number and size of documents included; a 404 status code is returned until the file is ready.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       responses:
@@ -867,6 +881,7 @@ paths:
       operationId: GetDocument
       summary: Get document
       description: Retrieves a document's details, i.e., metadata
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -896,6 +911,7 @@ paths:
       operationId: UpdateDocument
       summary: Update document
       description: "Update a document's details, i.e., metadata\n\nIf no content is specified, the endpoint will return a S3 Presigned that will allow for the uploading of Large document data. \n\nNOTE:\n- provided attributes will overwrite existing matching attribute keys in the document. Attributes not included in the request body will remain unchanged."
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -964,6 +980,7 @@ paths:
         The document can be permanently deleted by calling the DELETE /documents/{documentId} with softDelete=false or restored using the PUT /documents/{documentId}/restore.
 
         Only the GET /documents?softDeleted=true will return all the soft deleted documents.
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -987,6 +1004,7 @@ paths:
       operationId: GetDocumentActions
       summary: Get document actions
       description: Get document actions and their status
+      x-formkiq-required-permission: READ_DOCUMENT_ACTIONS
       tags:
       - Document Actions
       parameters:
@@ -1054,6 +1072,7 @@ paths:
         | RESIZE    | height    | The height of the image to resize (or 'auto'). | |
         | RESIZE    | outputType    | The output type of the image (optional). | |
         | RESIZE    | path    | The path to use when creating resized document (optional). | |
+      x-formkiq-required-permission: WRITE_DOCUMENT_ACTIONS
       tags:
       - Document Actions
       parameters:
@@ -1095,6 +1114,7 @@ paths:
       operationId: AddDocumentRetryAction
       summary: Retries failed document action(s)
       description: Retries all failed document action(s). Failed action status changes to "FAILED_RETRY" and a new "PENDING" action is created.
+      x-formkiq-required-permission: WRITE_DOCUMENT_ACTIONS
       tags:
       - Document Actions
       parameters:
@@ -1130,6 +1150,7 @@ paths:
       operationId: GetDocumentArtifacts
       summary: Get document artifacts
       description: Returns the list of artifact documents associated with the specified document
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -1160,6 +1181,7 @@ paths:
       operationId: PromoteDocumentArtifact
       summary: Promote document artifact
       description: Promotes a document artifact to the specified document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -1182,7 +1204,11 @@ paths:
     get:
       operationId: GetDocumentAttributes
       summary: Get document's attributes
-      description: Get a listing of a document's attributes
+      description: |-
+        Get a listing of a document's attributes
+
+        Requires READ_DOCUMENT_ATTRIBUTES or READ. ADMIN retains access.
+      x-formkiq-required-permission: READ_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1217,6 +1243,9 @@ paths:
 
         For an attribute defined with dataType JSON, supply one object in jsonValue.
         Do not combine jsonValue with scalar, entity, classification, or relationship value fields.
+
+        Requires WRITE_DOCUMENT_ATTRIBUTES or WRITE. ADMIN retains access.
+      x-formkiq-required-permission: WRITE_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1258,6 +1287,9 @@ paths:
         Note:
         - attributes in the request will overwrite existing attributes.
         - jsonValue replaces the entire JSON object; nested fields are not merged.
+
+        Requires WRITE_DOCUMENT_ATTRIBUTES or WRITE. ADMIN retains access.
+      x-formkiq-required-permission: WRITE_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1281,7 +1313,11 @@ paths:
     get:
       operationId: GetDocumentAttribute
       summary: Get document attribute by key
-      description: Get a document attribute by using its key
+      description: |-
+        Get a document attribute by using its key
+
+        Requires READ_DOCUMENT_ATTRIBUTES or READ. ADMIN retains access.
+      x-formkiq-required-permission: READ_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1313,6 +1349,9 @@ paths:
       description: |-
         Set an attribute value on a document. For an attribute defined with dataType JSON,
         supply jsonValue to replace the entire object. Nested fields are not merged.
+
+        Requires WRITE_DOCUMENT_ATTRIBUTES or WRITE. ADMIN retains access.
+      x-formkiq-required-permission: WRITE_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1348,6 +1387,9 @@ paths:
       description: |-
         Delete a document attribute by using its key. For a JSON attribute, this deletes the
         entire JSON object, subject to authorization and required-attribute validation.
+
+        Requires DELETE_DOCUMENT_ATTRIBUTES or DELETE. ADMIN retains access.
+      x-formkiq-required-permission: DELETE_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1373,6 +1415,9 @@ paths:
         Attributes defined with dataType JSON are rejected with 400 Bad Request, regardless of
         the supplied attributeValue. No data is changed. Delete the entire JSON attribute using
         DELETE /documents/{documentId}/attributes/{attributeKey} instead.
+
+        Requires DELETE_DOCUMENT_ATTRIBUTES or DELETE. ADMIN retains access.
+      x-formkiq-required-permission: DELETE_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1401,8 +1446,12 @@ paths:
   /documents/{documentId}/attributes/{attributeKey}/generate:
     post:
       operationId: GenerateDocumentAttributeValue
-      description: Allocates the next value from the numbering sequence configured for the attribute key and stores it on the document. If the document already has a value for the attribute key, the existing value is returned.
+      description: |-
+        Allocates the next value from the numbering sequence configured for the attribute key and stores it on the document. If the document already has a value for the attribute key, the existing value is returned.
+
+        Requires WRITE_DOCUMENT_ATTRIBUTES or WRITE. ADMIN retains access.
       summary: Generate document attribute value
+      x-formkiq-required-permission: WRITE_DOCUMENT_ATTRIBUTES
       tags:
       - Document Attributes
       parameters:
@@ -1447,6 +1496,7 @@ paths:
         Target determines whether a presigned download is returned, a new version is created, or a new document is created.
         ; available as an Add-On Module
       summary: Add Document Certification
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document Generation
       parameters:
@@ -1489,6 +1539,7 @@ paths:
       summary: Perform document checkout
       description: |
         Creates a checkout for the document. Fails with **409 Conflict** if the document is already checkedout by another user; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -1519,6 +1570,7 @@ paths:
       summary: Perform document legal hold checkout
       description: |
         Creates a legal hold checkout for the document. Fails with **409 Conflict** if the document is already checkedout by another user; available as an Add-On Module
+      x-formkiq-required-permission: GOVERN_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -1548,6 +1600,7 @@ paths:
       summary: Delete document legal hold checkout
       description: |
         Removes a legal hold checkout for the document; available as an Add-On Module
+      x-formkiq-required-permission: GOVERN_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -1566,6 +1619,7 @@ paths:
       operationId: GetDocumentContent
       summary: Get document's contents
       description: "Retrieves the content of the document with the specified `documentId`.\n- If the content is plain text and under 6 MB, the content will be returned directly.\n- If the content is plain text but exceeds 6 MB, an error will be returned.\n- For documents not in plain text format, pre-signed S3 URLs will be returned to download the content from S3.\nIt is recommended to use the `/documents/{documentId}/url` endpoint to retrieve pre-signed S3 URLs for downloading the content.\n\nIf the document has a Content-Type of text/, application/json, application/x-www-form-urlencoded the content field will be returned. \nAll other Content-Type, the contentUrl field will be returned, which is a S3 Presigned url.\n"
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -1604,6 +1658,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1638,6 +1693,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: WRITE_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1677,6 +1733,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1712,6 +1769,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1747,6 +1805,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: WRITE_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1777,6 +1836,7 @@ paths:
       operationId: GetDocumentAiPromptsResults
       summary: Get document AI results from LLM prompts
       description: Retrieve document AI results from LLM prompts; available as an Add-On Module
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1809,6 +1869,7 @@ paths:
       operationId: GetDocumentAiPromptResults
       summary: Get document AI results from LLM prompt
       description: Retrieve document AI results from an LLM prompt; available as an Add-On Module
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1841,6 +1902,7 @@ paths:
       operationId: AddDocumentAiPrompt
       summary: Add document AI result from LLM prompt
       description: Run an LLM prompt against a document; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -1876,6 +1938,7 @@ paths:
       operationId: GetDocumentFulltext
       summary: Get document's full-text
       description: Retrieve an OpenSearch document's details, i.e., metadata
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -1904,6 +1967,7 @@ paths:
       operationId: DeleteDocumentFulltext
       summary: Delete document full-text
       description: Remove full text search for a document from OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -1931,6 +1995,7 @@ paths:
       operationId: SetDocumentFulltext
       summary: Set document's full-text
       description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -1964,6 +2029,7 @@ paths:
       operationId: AddDocumentFulltext
       summary: Add document's full-text
       description: Add a document to OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -1997,6 +2063,7 @@ paths:
       operationId: UpdateDocumentFulltext
       summary: Update document's full-text
       description: Update a document in OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -2031,6 +2098,7 @@ paths:
       operationId: DeleteDocumentFulltextTag
       summary: Delete document full-text tag
       description: Remove document tags from OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -2050,6 +2118,7 @@ paths:
       operationId: DeleteDocumentFulltextTagAndValue
       summary: Delete document full-text tag/value
       description: Remove document tag/value from OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -2070,6 +2139,7 @@ paths:
       operationId: SetAntivirus
       summary: Antivirus document scan
       description: "Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module\n**Deprecated**. This endpoint is no longer recommended.  \nPlease use the **`/documents/{document}/malwareScan`** endpoint instead.\n"
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - MalwareScan
       parameters:
@@ -2106,6 +2176,7 @@ paths:
       operationId: GetMalwareScanResults
       summary: Get Malware Scan results
       description: Gets a Malware Scan results; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - MalwareScan
       parameters:
@@ -2150,6 +2221,7 @@ paths:
       summary: MalwareScan document scan
       description: |
         Perform an Anti-Malware / Antivirus scan on a document; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - MalwareScan
       parameters:
@@ -2185,6 +2257,7 @@ paths:
       operationId: GetDocumentNotifications
       summary: Get document notifications
       description: Get notifications attached to a document or one of its artifacts
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Document Notifications
       parameters:
@@ -2215,6 +2288,7 @@ paths:
       operationId: AddDocumentNotification
       summary: Add an ad hoc document notification
       description: Queue an ad hoc notification for a document or one of its artifacts
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document Notifications
       parameters:
@@ -2256,6 +2330,7 @@ paths:
       operationId: GetDocumentOcr
       summary: Get document ocr content
       description: "Get a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Document OCR
       parameters:
@@ -2288,6 +2363,7 @@ paths:
       operationId: AddDocumentOcr
       summary: Perform document ocr
       description: "Document optical character recognition (OCR) request; extract text and data from a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document OCR
       parameters:
@@ -2322,6 +2398,7 @@ paths:
       operationId: SetDocumentOcr
       summary: Set document ocr result
       description: "Set a document's optical character recognition (OCR) result for a document; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document OCR
       parameters:
@@ -2356,6 +2433,7 @@ paths:
       operationId: DeleteDocumentOcr
       summary: Delete document ocr
       description: "Delete a document's optical character recognition (OCR) result, if exists; \n\nTesseract available for all editions, but Textract engine and tables and forms options available as an Add-On Module"
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Document OCR
       parameters:
@@ -2374,6 +2452,7 @@ paths:
       operationId: PurgeDocument
       summary: Purge document
       description: Remove all objects from the S3 bucket, including previous versions and current version, and should remove all metadata as well, so that no trace of the document exists outside of the audit logs and any backups. Can only be called be ADMIN or GOVERN.
+      x-formkiq-required-permission: GOVERN_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -2396,6 +2475,7 @@ paths:
       - $ref: '#/components/parameters/documentIdParam'
       - $ref: '#/components/parameters/artifactIdParam'
       description: Restores a soft deleted document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       responses:
@@ -2421,6 +2501,7 @@ paths:
       operationId: GetDocumentReviews
       summary: Get document reviews
       description: Get a listing of reviews for a document, including the effective countedDecisionTypes policy for each review.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Document Reviews
       parameters:
@@ -2456,6 +2537,7 @@ paths:
         Omitted or null countedDecisionTypes defaults to [APPROVAL]. Only decision records of the
         configured types count toward requiredDecisions; other supported types may still be submitted.
         The same counting policy applies to document-level and artifact-scoped reviews.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document Reviews
       parameters:
@@ -2514,6 +2596,7 @@ paths:
       operationId: GetDocumentReview
       summary: Get document review
       description: Get a document review by review id, including its effective countedDecisionTypes policy. Reviews stored without an explicit policy return [APPROVAL]; historical completed reviews retain their status.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Document Reviews
       parameters:
@@ -2546,6 +2629,7 @@ paths:
         Update a document review by review id. Omitted properties retain their existing values.
         Changes to countedDecisionTypes or requiredDecisions apply when subsequent counted
         decisions are submitted. Updating the counting configuration does not change reviewStatus.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document Reviews
       parameters:
@@ -2577,6 +2661,7 @@ paths:
       operationId: GetDocumentReviewDecisions
       summary: Get document review decisions
       description: Get a listing of all decisions for a document review, including records whose types do not count toward completion.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Document Reviews
       parameters:
@@ -2622,6 +2707,7 @@ paths:
         uses the same counting-policy defaults and validation as ordinary review creation.
         Completion occurs when the qualifying count reaches or exceeds requiredDecisions.
         Decisions submitted to a review that is already COMPLETED return 409 Conflict without creating a decision, follow-up review, notification, or activity record.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document Reviews
       parameters:
@@ -2682,6 +2768,7 @@ paths:
       operationId: GetDocumentSyncs
       summary: Get document syncs
       description: Retrieve the document syncs with external services status
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -2711,6 +2798,7 @@ paths:
       operationId: AddDocumentSync
       summary: Add document sync to service
       description: Add a document to a service
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -2745,6 +2833,7 @@ paths:
       operationId: GetDocumentTags
       summary: Get document's tags
       description: Get a listing of a document's tags
+      x-formkiq-required-permission: READ_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -2781,6 +2870,7 @@ paths:
       operationId: AddDocumentTags
       summary: Add tag to document
       description: Add multiple tags to a document; this endpoint also accepts a different body parameter for adding a single tag
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -2829,6 +2919,7 @@ paths:
       operationId: UpdateDocumentTags
       summary: Update document tags
       description: Updates multiple tags to a document; this endpoint also accepts a different body parameter for updating a single tag
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -2869,6 +2960,7 @@ paths:
       operationId: SetDocumentTags
       summary: Set document's tags
       description: Set multiple tags to a document; this endpoint also accepts a different body parameter for setting a single tag
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -2910,6 +3002,7 @@ paths:
       operationId: GetDocumentTag
       summary: Get document tag by key
       description: Get a document tag by using its key
+      x-formkiq-required-permission: READ_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -2940,6 +3033,7 @@ paths:
       operationId: SetDocumentTag
       summary: Update document tag value(s)
       description: Update any and all values of a document tag, by using its key; you can supply one tag value or a list of tag values in the request body
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -2964,6 +3058,7 @@ paths:
       operationId: DeleteDocumentTag
       summary: Delete document tag
       description: Delete a document tag by using its key
+      x-formkiq-required-permission: DELETE_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -2983,6 +3078,7 @@ paths:
       operationId: DeleteDocumentTagAndValue
       summary: Delete document's tag value
       description: Delete a specific document tag's key/value combination; the request will be ignored if there is no valid key/value combination found
+      x-formkiq-required-permission: DELETE_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -3004,6 +3100,7 @@ paths:
       operationId: UpdateMatchingDocumentTags
       summary: Mass Update document tag(s)
       description: This API request allows the adding/updating of multiple document tag(s) based on document(s) that have the matching tag.
+      x-formkiq-required-permission: WRITE_DOCUMENT_TAGS
       tags:
       - Document Tags
       parameters:
@@ -3037,6 +3134,7 @@ paths:
       operationId: GetDocumentUpload
       summary: Get url to add large document
       description: Returns a URL that can be used to upload document content and create a new document; this endpoint (whether GET or POST) is required in order to add content that is larger than 5 MB
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -3082,6 +3180,7 @@ paths:
         If the document **Content-Type** is not specified during upload, the service will determine it
         asynchronously after the upload completes.
         This may result in a **temporary delay** before the content type and related metadata are available.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -3144,6 +3243,7 @@ paths:
       - $ref: '#/components/parameters/shareKeyParam'
       - $ref: '#/components/parameters/accelerateParam'
       description: Returns a URL that can be used to upload documents for a specific documentId; this endpoint is required in order to add content that is larger than 5 MB. If versions are enabled, this will create a new version of the document.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Documents
       responses:
@@ -3179,6 +3279,7 @@ paths:
         Each successful redemption generates a fresh S3 presigned URL valid for 20 seconds.
         The S3 request must start before expiry; a download already in progress can continue afterward.
         The S3 URL itself can be reused during those 20 seconds.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -3239,6 +3340,7 @@ paths:
       operationId: GetDocumentVersions
       summary: Get document's versions
       description: Get a listing of document content and metadata versions; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_VERSIONS
       tags:
       - Document Versions
       parameters:
@@ -3270,6 +3372,7 @@ paths:
       operationId: SetDocumentVersion
       summary: Set version of document
       description: Set document to a previous document version; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_VERSIONS
       tags:
       - Document Versions
       parameters:
@@ -3311,6 +3414,7 @@ paths:
       operationId: DeleteDocumentVersion
       summary: Delete document version
       description: Delete a specific previous document version; available as an Add-On Module
+      x-formkiq-required-permission: GOVERN_DOCUMENT_VERSIONS
       tags:
       - Document Versions
       parameters:
@@ -3331,6 +3435,7 @@ paths:
       operationId: GetDocumentWorkflows
       summary: Get document workflows
       description: Gets a document workflows; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -3372,6 +3477,7 @@ paths:
       operationId: AddDocumentWorkflow
       summary: Add document workflow
       description: Creates a document workflow; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -3420,6 +3526,7 @@ paths:
       operationId: GetDocumentWorkflow
       summary: Get document workflow
       description: Gets a document workflow; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -3463,6 +3570,7 @@ paths:
       operationId: AddDocumentWorkflowDecisions
       summary: Approve/Reject document in approval queue
       description: Approve/Reject document in approval queue; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -3510,6 +3618,7 @@ paths:
   /entityTypes:
     get:
       operationId: GetEntityTypes
+      x-formkiq-required-permission: READ_ENTITY
       tags:
       - Entity
       description: Returns a list of entity types
@@ -3541,6 +3650,7 @@ paths:
       operationId: AddEntityType
       description: Creates a Entity Type
       summary: Add New EntityType
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3578,6 +3688,7 @@ paths:
   /entityTypes/{entityTypeId}:
     get:
       operationId: GetEntityType
+      x-formkiq-required-permission: READ_ENTITY
       tags:
       - Entity
       description: Returns a entity type
@@ -3608,6 +3719,7 @@ paths:
       operationId: SetEntityType
       description: Sets a Entity Type
       summary: Set EntityType
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3648,6 +3760,7 @@ paths:
       operationId: DeleteEntityType
       description: Deletes Entity Type
       summary: Deletes Entity Type
+      x-formkiq-required-permission: DELETE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3663,6 +3776,7 @@ paths:
   /entities/{entityTypeId}:
     get:
       operationId: GetEntities
+      x-formkiq-required-permission: READ_ENTITY
       tags:
       - Entity
       description: Returns a list of entities
@@ -3695,6 +3809,7 @@ paths:
       operationId: AddEntity
       description: Creates a Entity
       summary: Add New Entity
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3734,6 +3849,7 @@ paths:
   /entities/{entityTypeId}/{entityId}:
     get:
       operationId: GetEntity
+      x-formkiq-required-permission: READ_ENTITY
       tags:
       - Entity
       description: Returns a entity
@@ -3765,6 +3881,7 @@ paths:
       operationId: SetEntity
       description: Sets a Entity
       summary: Set Entity
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3807,6 +3924,7 @@ paths:
       operationId: UpdateEntity
       description: Updates a Entity
       summary: Update Entity
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3848,6 +3966,7 @@ paths:
       operationId: DeleteEntity
       description: Deletes Entity
       summary: Deletes Entity
+      x-formkiq-required-permission: DELETE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3866,6 +3985,7 @@ paths:
       operationId: DeleteEntityAttribute
       description: Deletes Entity Attribute
       summary: Deletes Entity Attribute
+      x-formkiq-required-permission: DELETE_ENTITY
       tags:
       - Entity
       parameters:
@@ -3885,6 +4005,7 @@ paths:
       operationId: AddDocusignEnvelopes
       summary: Create Docusign Envelope request
       description: Create a DocuSign envelope for the selected document or artifact; available as an Add-On Module. Recipient tabs support signatures, initials, automatic signing dates, recipient-entered dates, and single-line or multiline text. See DocusignSigningTabs for the supported collections and validation rules.
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
       - E-Signature
       parameters:
@@ -4036,6 +4157,7 @@ paths:
       operationId: GetDocusignEnvelope
       summary: Get Docusign envelope and recipient status
       description: Retrieves the DocuSign envelope using include=recipients and returns the DocuSign response directly, including envelope status and recipient routing information. No FormKiQ fields or wrapper are added. The envelope must be associated with the selected document or artifact. This read-only operation does not update document attributes or download the signed document. Available as an Add-On Module. Repeated status polling must be at least 15 minutes apart. Use recipients.signers[].recipientId from this response as entries in the optional recipientIds array in POST /esignature/docusign/{documentId}/envelopes/{envelopeId}/reminders to request reminders for selected signers.
+      x-formkiq-required-permission: READ_E_SIGNATURE
       tags:
       - E-Signature
       parameters:
@@ -4118,6 +4240,7 @@ paths:
       operationId: AddDocusignEnvelopeReminders
       summary: Request DocuSign signing reminders
       description: Resends signing notifications for an in-progress DocuSign envelope; available as an Add-On Module. With no request body or an empty object, DocuSign reminds all eligible recipients at the current routing step. Supply recipientIds to remind only the selected eligible signers. Obtain IDs from recipients.signers[].recipientId in GET /esignature/docusign/{documentId}/envelopes/{envelopeId}. Every selected signer must still be awaiting action at the current routing step when this request is processed. Validate the entire selection before issuing a resend. Completed and future-step signers cannot be targeted. Invalid targeted requests never fall back to reminding all recipients. Recipient notification settings are respected; this operation does not send FormKiQ notifications to embedded-only or email-suppressed signers. Requires write access to the selected document or artifact and a matching stored envelope ID. The operation resends the existing invitation without changing recipients, documents, routing, or automatic reminder settings. Targeted responses report each selected recipient's acceptance or failure, with no overall status. Acceptance does not confirm notification delivery. Do not automatically retry after a timeout because the reminder may already have been requested.
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
       - E-Signature
       parameters:
@@ -4209,6 +4332,7 @@ paths:
       externalDocs:
         description: DocuSign Envelopes update API
         url: https://developers.docusign.com/docs/esign-rest-api/reference/envelopes/envelopes/update/
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
       - E-Signature
       parameters:
@@ -4274,6 +4398,7 @@ paths:
       operationId: AddDocusignRecipientView
       summary: Create Docusign Recipient View request
       description: DocuSign create Docusign Recipient View request; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
       - E-Signature
       parameters:
@@ -4316,6 +4441,7 @@ paths:
       operationId: AddDocusignSenderView
       summary: Create Docusign Sender View request
       description: DocuSign create Docusign Sender View request; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
       - E-Signature
       parameters:
@@ -4385,6 +4511,7 @@ paths:
       operationId: GetFolderDocuments
       summary: Get document folders
       description: Get list of documents in a folder
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Document Folders
       parameters:
@@ -4416,6 +4543,7 @@ paths:
       operationId: AddFolder
       summary: Add document folder
       description: Creates a new folder
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document Folders
       parameters:
@@ -4450,6 +4578,7 @@ paths:
       operationId: MoveFolder
       summary: Move document folder
       description: Creates an asynchronous folder move request
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Document Folders
       parameters:
@@ -4486,6 +4615,7 @@ paths:
       operationId: DeleteFolder
       summary: Delete document folder
       description: Delete a specific folder; folder must be empty
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Document Folders
       parameters:
@@ -4515,6 +4645,7 @@ paths:
       operationId: GetFolderPermissions
       summary: Get folder permissions
       description: Get list of permissions for a folder
+      x-formkiq-required-permission: GOVERN_DOCUMENT_FOLDERS
       tags:
       - Document Folders
       parameters:
@@ -4546,6 +4677,7 @@ paths:
         Sets a folders permissions
 
         NOTE: Can only be called be ADMIN or GOVERN.
+      x-formkiq-required-permission: GOVERN_DOCUMENT_FOLDERS
       tags:
       - Document Folders
       parameters:
@@ -4579,6 +4711,7 @@ paths:
       operationId: AddGoogleDocumentExport
       description: Exports a Google Document; available as an Add-On Module
       summary: Add Google Document Export
+      x-formkiq-required-permission: WRITE_GOOGLE_INTEGRATION
       tags:
       - Google Integration
       parameters:
@@ -4623,6 +4756,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
       - User Management
       responses:
@@ -4647,6 +4781,7 @@ paths:
       operationId: AddGroup
       description: Add a new group
       summary: Add a group
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
       - User Management
       requestBody:
@@ -4680,6 +4815,7 @@ paths:
       summary: Get a user group
       parameters:
       - $ref: '#/components/parameters/groupNamePath'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
       - User Management
       responses:
@@ -4704,6 +4840,7 @@ paths:
       operationId: DeleteGroup
       summary: Delete Group
       description: Delete Group
+      x-formkiq-required-permission: DELETE_USER_MANAGEMENT
       tags:
       - User Management
       parameters:
@@ -4735,6 +4872,7 @@ paths:
       - $ref: '#/components/parameters/groupNamePath'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
       - User Management
       responses:
@@ -4761,6 +4899,7 @@ paths:
       summary: Add User to a group
       parameters:
       - $ref: '#/components/parameters/groupNamePath'
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
       - User Management
       requestBody:
@@ -4792,6 +4931,7 @@ paths:
       operationId: RemoveUsernameFromGroup
       summary: Remove Username From Group
       description: Remove Username From Group
+      x-formkiq-required-permission: DELETE_USER_MANAGEMENT
       tags:
       - User Management
       parameters:
@@ -4823,6 +4963,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
       - User Management
       responses:
@@ -4847,6 +4988,7 @@ paths:
       operationId: AddUser
       description: Adds a user
       summary: Add User
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
       - User Management
       requestBody:
@@ -4880,6 +5022,7 @@ paths:
       summary: Get a user
       parameters:
       - $ref: '#/components/parameters/usernamePath'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
       - User Management
       responses:
@@ -4904,6 +5047,7 @@ paths:
       operationId: DeleteUsername
       summary: Delete Username
       description: Delete Username
+      x-formkiq-required-permission: DELETE_USER_MANAGEMENT
       tags:
       - User Management
       parameters:
@@ -4935,6 +5079,7 @@ paths:
       - $ref: '#/components/parameters/usernamePath'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
       - User Management
       responses:
@@ -4963,6 +5108,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/usernamePath'
       - $ref: '#/components/parameters/usernameOperationPath'
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
       - User Management
       responses:
@@ -4987,6 +5133,7 @@ paths:
     post:
       operationId: IndexFolderMove
       description: Perform an Folder Index Move
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
       - Custom Index
       parameters:
@@ -5029,6 +5176,7 @@ paths:
         Perform a delete on the Folder Index.
 
         When deleting a file from the "folder" index, you can set the indexKey to a URLEncoded path variable.
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Custom Index
       parameters:
@@ -5063,6 +5211,7 @@ paths:
     post:
       operationId: IndexSearch
       description: Perform a search on a index; this is currently available for both folder and tag indices
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Custom Index
       - Tag Index
@@ -5108,6 +5257,7 @@ paths:
   /mappings:
     get:
       operationId: GetMappings
+      x-formkiq-required-permission: READ_MAPPINGS
       tags:
       - Mappings
       description: Returns a list of mappings; available as an Add-On Module
@@ -5138,6 +5288,7 @@ paths:
       operationId: AddMapping
       description: Creates a new mapping; available as an Add-On Module
       summary: Add New Mapping
+      x-formkiq-required-permission: WRITE_MAPPINGS
       tags:
       - Mappings
       parameters:
@@ -5175,6 +5326,7 @@ paths:
   /mappings/{mappingId}:
     get:
       operationId: GetMapping
+      x-formkiq-required-permission: READ_MAPPINGS
       tags:
       - Mappings
       description: Get a mapping; available as an Add-On Module
@@ -5204,6 +5356,7 @@ paths:
       operationId: SetMapping
       description: Sets an mapping; available as an Add-On Module
       summary: Set Mapping
+      x-formkiq-required-permission: WRITE_MAPPINGS
       tags:
       - Mappings
       parameters:
@@ -5244,6 +5397,7 @@ paths:
       operationId: DeleteMapping
       description: Delete Mapping; available as an Add-On Module
       summary: Delete Mapping
+      x-formkiq-required-permission: DELETE_MAPPINGS
       tags:
       - Mappings
       parameters:
@@ -5272,6 +5426,7 @@ paths:
       operationId: GetExaminePdfUrl
       description: Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
       summary: Add Examine Pdf
+      x-formkiq-required-permission: READ_EXAMINE_OBJECTS
       tags:
       - Examine Objects
       parameters:
@@ -5302,6 +5457,7 @@ paths:
 
         File must have been uploaded previously using the GET /objects/examine/pdf API.
       summary: Add Examine Pdf
+      x-formkiq-required-permission: READ_EXAMINE_OBJECTS
       tags:
       - Examine Objects
       parameters:
@@ -5325,11 +5481,82 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/ocrObjectsLambdaApi200'
+  /permissions/catalog:
+    get:
+      operationId: GetPermissionCatalog
+      summary: Get API permission catalog
+      description: |-
+        Returns the supported API permission role types, grouped by permission group,
+        with the scoped permission names and descriptions in each group. Use this catalog when creating
+        API keys or mapping user roles to permissions.
+
+        Predefined role types contain their effective permissions, including permissions
+        inherited from other operation categories. CUSTOM contains all available scoped
+        permissions as selectable options; it does not automatically grant them.
+        Deprecated umbrella permissions are excluded from the permission lists, and empty
+        groups are omitted.
+
+        The catalog is available to authenticated callers without a site-specific API
+        permission. It describes supported grants rather than the caller's current
+        permissions or authority to assign those grants. No siteId is required.
+      tags:
+      - System Management
+      responses:
+        "200":
+          description: API permission catalog
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPermissionCatalogResponse'
+              examples:
+                CatalogStructure:
+                  summary: Abbreviated role type, group and permission hierarchy
+                  value:
+                    roleTypes:
+                    - name: READ
+                      groups:
+                      - name: DOCUMENTS
+                        label: Documents
+                        permissions:
+                        - name: READ_DOCUMENTS
+                          description: Read and search documents, their content, and related document data.
+                      - name: DOCUMENT_ATTRIBUTES
+                        label: Document Attributes
+                        permissions:
+                        - name: READ_DOCUMENT_ATTRIBUTES
+                          description: Read attributes assigned to documents.
+                    - name: CUSTOM
+                      groups:
+                      - name: DOCUMENTS
+                        label: Documents
+                        permissions:
+                        - name: READ_DOCUMENTS
+                          description: Read and search documents, their content, and related document data.
+                        - name: WRITE_DOCUMENTS
+                          description: Create, upload, and update documents, their content, and related document data.
+                        - name: DELETE_DOCUMENTS
+                          description: Delete documents and related document data.
+                        - name: GOVERN_DOCUMENTS
+                          description: Permanently delete documents and manage document governance, including legal holds.
+        "401":
+          description: Authentication required
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
   /publications/{documentId}:
     get:
       operationId: GetPublishedDocumentContent
       summary: Get published document's contents
       description: Get a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -5350,6 +5577,7 @@ paths:
       operationId: DeletePublishedDocumentContent
       summary: Delete published document's contents
       description: Delete a published document's contents. Certain content types, text/*, application/json, and application/x-www-form-urlencoded. return the  "content" field, while all other content types return a 'contentUrl' for retrieving the content.
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
       - Documents
       parameters:
@@ -5371,6 +5599,7 @@ paths:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/nextParam'
       - $ref: '#/components/parameters/limitParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       responses:
@@ -5395,6 +5624,7 @@ paths:
       operationId: AddQueue
       summary: Add queue
       description: Creates a new Queue; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -5444,6 +5674,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/queueIdParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       responses:
@@ -5468,6 +5699,7 @@ paths:
       operationId: DeleteQueue
       summary: Delete queue
       description: Delete a Queue; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -5496,6 +5728,7 @@ paths:
       operationId: GetWorkflowQueueDocuments
       summary: Get list of documents in queue
       description: List documents in Workflow Queue; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -5524,6 +5757,7 @@ paths:
   /rulesets:
     get:
       operationId: GetRulesets
+      x-formkiq-required-permission: READ_RULESETS
       tags:
       - Rulesets
       description: Returns a list of rule sets; available as an Add-On Module
@@ -5558,6 +5792,7 @@ paths:
       operationId: AddRuleset
       description: Creates a new ruleset; available as an Add-On Module
       summary: Add New Ruleset
+      x-formkiq-required-permission: WRITE_RULESETS
       tags:
       - Rulesets
       parameters:
@@ -5595,6 +5830,7 @@ paths:
   /rulesets/{rulesetId}:
     get:
       operationId: GetRuleset
+      x-formkiq-required-permission: READ_RULESETS
       tags:
       - Rulesets
       description: Get a rule sets; available as an Add-On Module
@@ -5624,6 +5860,7 @@ paths:
       operationId: UpdateRuleset
       description: Updates an existing ruleset; available as an Add-On Module
       summary: Update Ruleset
+      x-formkiq-required-permission: WRITE_RULESETS
       tags:
       - Rulesets
       parameters:
@@ -5663,6 +5900,7 @@ paths:
       operationId: DeleteRuleset
       description: Delete Ruleset; available as an Add-On Module
       summary: Delete Ruleset
+      x-formkiq-required-permission: DELETE_RULESETS
       tags:
       - Rulesets
       parameters:
@@ -5689,6 +5927,7 @@ paths:
   /rulesets/{rulesetId}/rules:
     get:
       operationId: GetRules
+      x-formkiq-required-permission: READ_RULESETS
       tags:
       - Rulesets
       description: Returns a list of rules in a ruleset; available as an Add-On Module
@@ -5720,6 +5959,7 @@ paths:
       operationId: AddRule
       description: Creates a new rule; available as an Add-On Module
       summary: Add New Rule
+      x-formkiq-required-permission: WRITE_RULESETS
       tags:
       - Rulesets
       parameters:
@@ -5758,6 +5998,7 @@ paths:
   /rulesets/{rulesetId}/rules/{ruleId}:
     get:
       operationId: GetRule
+      x-formkiq-required-permission: READ_RULESETS
       tags:
       - Rulesets
       description: Returns a rule in a ruleset; available as an Add-On Module
@@ -5788,6 +6029,7 @@ paths:
       operationId: UpdateRule
       description: Update Rule; available as an Add-On Module
       summary: Update Rule
+      x-formkiq-required-permission: WRITE_RULESETS
       tags:
       - Rulesets
       parameters:
@@ -5828,6 +6070,7 @@ paths:
       operationId: DeleteRule
       description: Delete Rule; available as an Add-On Module
       summary: Delete Rule
+      x-formkiq-required-permission: DELETE_RULESETS
       tags:
       - Rulesets
       parameters:
@@ -5857,6 +6100,7 @@ paths:
       operationId: DocumentSearch
       summary: Document search
       description: "Document search query request; \n\nSupports searching DynamoDB for document(s) by a single TAG key and/or value. Value can be \"exacted\" or \"begins_with\" matched. Search can be filtered to only check certain documentIds (up to 100 documentIds accepted).\n\nIf using Enteprise Composite Keys feature then multiple tag(s) can be searched for.\n\nFor attributes defined with dataType JSON, use an attribute criterion's json filter\nwith a path to compare a nested field. The eq and eqOr operators accept strings,\nincluding inside json filters. Match JSON boolean fields using the strings \"true\"\nor \"false\". Compare JSON numeric fields using gt, gte, lt, and lte.\nPaths support object properties and explicit array positions;\nwildcard, recursive, and array any-element matching are not supported.\nMultiple conditions on different paths under the same attribute key are supported.\nAll conditions must match the same document or artifact.\n\nJSON path filtering is applied after candidate records are read and does not reduce\nread capacity consumed for those candidates. A stored JSON value does not automatically\ncreate an index for its nested fields. Continue through empty filtered pages until the\nnext token is absent; candidate and time-budget limits still apply.\n\nIf Typesense is enabled, full text search is supported through the \"text\" parameter. Full text search will look for the text in the \"content\" and/or document \"metadata\".\n\nWhen `documentIds` is supplied, all supplied IDs are checked against the search criteria and all matching documents are returned. The `limit` query parameter is ignored. Up to 100 document IDs are accepted.\n\nUse the `projection` parameter to return matching documents or a count of matching documents. Count responses are capped at 10,000 and indicate when the count was truncated.\nMulti-attribute searches requiring additional attribute filtering use a 25-second processing budget\nfor index batches, attribute filtering, and document loading. The budget starts after index selection and empty-index prechecks. Searches with explicit\n`documentIds` or a composite key covering every search attribute are exempt.\nThe budget is checked before starting each read; an in-flight read is allowed to finish.\nIf the budget expires, document searches return completed matches with `truncated=true` and a `next` token;\ncount searches return a partial lower bound with `truncated=true`.\n\nSee requestBody examples below for commmon examples."
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Document Search
       parameters:
@@ -6013,6 +6257,7 @@ paths:
       operationId: SearchFulltext
       summary: Document full-text search
       description: Document full-text search (and more robust multi-tag search queries, powered by OpenSearch); available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -6080,6 +6325,7 @@ paths:
         Endpoint for allowing custom, complex queries using the OpenSearch search API (https://opensearch.org/docs/latest/opensearch/rest-api/search/); available as an Add-On Module
 
         Example Request Body: { "query": { "match_all": {} }}
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
       - Advanced Document Search
       parameters:
@@ -6143,6 +6389,7 @@ paths:
       operationId: AddFolderShare
       summary: Add folder share
       description: Creates a new folder share; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_SHARES
       tags:
       - Document Shares
       parameters:
@@ -6183,6 +6430,7 @@ paths:
       operationId: DeleteShare
       summary: Delete folder share
       description: Delete a specific document share; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENT_SHARES
       tags:
       - Document Shares
       parameters:
@@ -6210,6 +6458,7 @@ paths:
       operationId: AddShortlink
       summary: Add shortlink
       description: Create a shortlink for a target URL
+      x-formkiq-required-permission: WRITE_SHORTLINKS
       tags:
       - Shortlinks
       requestBody:
@@ -6277,6 +6526,7 @@ paths:
       operationId: AddSite
       description: Add Site
       summary: Add Site
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       requestBody:
@@ -6314,6 +6564,7 @@ paths:
       operationId: UpdateSite
       description: Update Site
       summary: Update Site
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6347,6 +6598,7 @@ paths:
       operationId: GetSiteGroups
       description: Returns list of groups and permissions belonging to site
       summary: Get group(s) and permissions belonging to site
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6374,6 +6626,7 @@ paths:
       operationId: GetSiteGroup
       description: Returns details of a group and permissions belonging to site
       summary: Get group and permissions belonging to site
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6401,6 +6654,7 @@ paths:
       operationId: DeleteSiteGroup
       description: Deletes Site Group and permissions
       summary: Deletes Site Group and permissions
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6416,8 +6670,16 @@ paths:
   /sites/{siteId}/groups/{groupName}/permissions:
     put:
       operationId: SetSiteGroupPermissions
-      description: Set Site's Group Permissions
+      description: |-
+        Replaces the group's permission grants for the specified site. Supply an optional
+        roleType to select a predefined role, or CUSTOM with a nonempty permissions array.
+        When roleType is omitted, permissions is required and is treated as an explicit
+        CUSTOM grant without adding inherited role permissions. For predefined role types,
+        omit permissions or supply an empty array. Nonempty permissions with a predefined
+        roleType are rejected. ADMIN roles and ADMIN permission grants are not allowed,
+        even for administrators.
       summary: Set Site's Group Permissions
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6429,6 +6691,30 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetGroupPermissionsRequest'
+            examples:
+              PredefinedRole:
+                summary: Grant the predefined User Management role
+                value:
+                  roleType: USER_MANAGEMENT
+              CustomRole:
+                summary: Grant document and document-attribute reads
+                value:
+                  roleType: CUSTOM
+                  permissions:
+                  - READ_DOCUMENTS
+                  - READ_DOCUMENT_ATTRIBUTES
+              ScopedPermissions:
+                summary: Omit roleType for explicit scoped grants
+                value:
+                  permissions:
+                  - READ_DOCUMENTS
+                  - READ_DOCUMENT_ATTRIBUTES
+              LegacyPermissions:
+                summary: Preserve explicit umbrella grants
+                value:
+                  permissions:
+                  - READ
+                  - WRITE
       responses:
         "200":
           description: 200 OK
@@ -6452,6 +6738,7 @@ paths:
       operationId: GetOpenSearchIndex
       description: "Returns the OpenSearch index settings \n\n(Deprecated use /sites/{siteId}/opensearch/indices)"
       summary: Get site(s) OpenSearch index settings
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6478,6 +6765,7 @@ paths:
       operationId: SetOpenSearchIndex
       description: Sets the OpenSearch index settings
       summary: Set site(s) OpenSearch index settings
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6510,6 +6798,7 @@ paths:
       operationId: DeleteOpenSearchIndex
       description: Deletes the OpenSearch index
       summary: Deletes site(s) OpenSearch index
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6526,6 +6815,7 @@ paths:
       operationId: GetAllOpenSearchIndices
       description: Returns all OpenSearch indices
       summary: Get all OpenSearch indices
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       responses:
@@ -6551,6 +6841,7 @@ paths:
       operationId: DeleteOpenSearchIndexByName
       description: Deletes the OpenSearch index by name
       summary: Deletes OpenSearch index by name
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6567,6 +6858,7 @@ paths:
       operationId: GetOpenSearchIndices
       description: Returns the OpenSearch indices
       summary: Get site(s) OpenSearch indices
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6593,6 +6885,7 @@ paths:
       operationId: SetOpenSearchIndices
       description: Sets the OpenSearch index to use for a SiteId
       summary: Set site(s) OpenSearch index to use for a SiteId
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6629,6 +6922,7 @@ paths:
 
         This endpoint is available to administrators when the fulltext OpenSearch module is installed and snapshot support is enabled. Snapshot repositories are not supported for OpenSearch Serverless.
       summary: List OpenSearch snapshot repositories
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       responses:
@@ -6657,6 +6951,7 @@ paths:
 
         This endpoint clears data no longer referenced by any existing snapshot. This operation is not supported for OpenSearch Serverless.
       summary: Cleanup OpenSearch snapshot repository
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6699,6 +6994,7 @@ paths:
 
         The repository stores manual snapshots for the site's OpenSearch index. It is named from the site and application environment and is created automatically when a snapshot is requested. Snapshot repositories are not supported for OpenSearch Serverless.
       summary: Get site OpenSearch snapshot repository
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6728,6 +7024,7 @@ paths:
 
         This removes the OpenSearch repository registration, not the site's index. This operation is not supported for OpenSearch Serverless.
       summary: Delete site OpenSearch snapshot repository
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6747,6 +7044,7 @@ paths:
 
         For provisioned OpenSearch domains, the response is read from the site's S3 snapshot repository. For OpenSearch Serverless, the response is read from the automated snapshot repository.
       summary: List site OpenSearch snapshots
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6777,6 +7075,7 @@ paths:
 
         For provisioned OpenSearch domains, the supplied snapshot name is resolved to the site's stored snapshot name before lookup. For OpenSearch Serverless, the response is read from the automated snapshot repository.
       summary: Get site OpenSearch snapshot
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6807,6 +7106,7 @@ paths:
 
         If the site's S3 snapshot repository does not already exist, it is registered before the snapshot is created. The supplied snapshot name is stored with the site prefix. This operation is not supported for OpenSearch Serverless.
       summary: Create site OpenSearch snapshot
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6837,6 +7137,7 @@ paths:
 
         The supplied snapshot name is resolved to the site's stored snapshot name before deletion. This operation is not supported for OpenSearch Serverless.
       summary: Delete site OpenSearch snapshot
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6857,6 +7158,7 @@ paths:
 
         The restored index is created from the site's current index name with the snapshot name and "_restored" suffix. For provisioned OpenSearch domains, the snapshot is read from the site's S3 snapshot repository. For OpenSearch Serverless, the snapshot is read from the automated snapshot repository.
       summary: Restore site OpenSearch snapshot
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6887,6 +7189,7 @@ paths:
 
         This deletes only the restored index named with the snapshot name and "_restored" suffix. It does not delete the original site index or the snapshot. This operation is not supported for OpenSearch Serverless.
       summary: Delete restored OpenSearch snapshot index
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -6904,6 +7207,7 @@ paths:
       operationId: GetSitesSchema
       description: Gets Sites schema
       summary: Get Sites Schema
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
       - Schemas
       parameters:
@@ -6931,6 +7235,7 @@ paths:
       operationId: SetSitesSchema
       description: Sets Sites schema
       summary: Set Sites Schema
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
       - Schemas
       parameters:
@@ -6968,6 +7273,7 @@ paths:
   /sites/{siteId}/schema/document/attributes/{key}/allowedValues:
     get:
       operationId: GetSitesSchemaAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
       - Schemas
       description: Returns an attribute's allowed values from the site schema
@@ -6999,6 +7305,7 @@ paths:
       operationId: GetSitesClassifications
       description: Gets Sites Classifications
       summary: Get Sites Classifications
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
       - Schemas
       parameters:
@@ -7027,6 +7334,7 @@ paths:
       operationId: AddClassification
       description: Add Classification
       summary: Add Classification
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
       - Schemas
       parameters:
@@ -7066,6 +7374,7 @@ paths:
       operationId: GetClassification
       description: Get Classification
       summary: Get Classification
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
       - Schemas
       parameters:
@@ -7094,6 +7403,7 @@ paths:
       operationId: DeleteClassification
       description: Delete Classification
       summary: Delete Classification
+      x-formkiq-required-permission: DELETE_SCHEMAS
       tags:
       - Schemas
       parameters:
@@ -7121,6 +7431,7 @@ paths:
       operationId: SetClassification
       description: Sets Classification
       summary: Set Classification
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
       - Schemas
       parameters:
@@ -7159,6 +7470,7 @@ paths:
   /sites/{siteId}/classifications/{classificationId}/attributes/{key}/allowedValues:
     get:
       operationId: GetClassificationAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
       - Schemas
       description: Returns an attribute's allowed values that spans for a specific classifications and site schema
@@ -7191,6 +7503,7 @@ paths:
       operationId: GetConfiguration
       description: Returns the list of sites that the user has access to
       summary: Get site configuration
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7217,6 +7530,7 @@ paths:
       operationId: UpdateConfiguration
       description: Update the System Management configuration
       summary: Update site configuration
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7256,6 +7570,7 @@ paths:
       operationId: GetNumberingSequences
       description: Returns the numbering sequences configured for a site
       summary: Get numbering sequences
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7285,6 +7600,7 @@ paths:
       operationId: GetNumberingSequence
       description: Returns the numbering sequence configured for an attribute key
       summary: Get numbering sequence
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7318,6 +7634,7 @@ paths:
       operationId: SetNumberingSequence
       description: Creates or updates the numbering sequence for an attribute key
       summary: Set numbering sequence
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7366,6 +7683,7 @@ paths:
       operationId: AddNotificationTest
       description: Queues a test email using the site's saved notification configuration
       summary: Send a test notification
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7405,6 +7723,7 @@ paths:
       operationId: GetApiKeys
       description: Returns the list of ApiKeys
       summary: Get API Keys
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7431,8 +7750,17 @@ paths:
         $ref: '#/components/x-amazon-apigateway-integrations/lambdaApi200'
     post:
       operationId: AddApiKey
-      description: Adds a new API Key
+      description: |-
+        Creates an API key for the specified site. Supply an optional roleType to select
+        a predefined role, or CUSTOM with a nonempty permissions array. When roleType is
+        omitted and a nonempty permissions array is supplied, that array is treated as an
+        explicit CUSTOM grant without adding inherited role permissions. If roleType and
+        permissions are both omitted, or permissions is empty with no roleType, the legacy
+        READ, WRITE and DELETE grants apply. For predefined role types, omit permissions
+        or supply an empty array; nonempty permissions are rejected. ADMIN roles and ADMIN
+        permission grants are not allowed, even for administrators.
       summary: Add API Key
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7445,8 +7773,34 @@ paths:
               $ref: '#/components/schemas/AddApiKeyRequest'
             examples:
               AddApiKey:
+                summary: Preserve the legacy default grants
                 value:
                   name: My API Key
+              PredefinedRole:
+                summary: Create a key with the predefined READ role
+                value:
+                  name: Document reader
+                  roleType: READ
+              CustomRole:
+                summary: Create a key with scoped read grants
+                value:
+                  name: Document and attribute reader
+                  roleType: CUSTOM
+                  permissions:
+                  - READ_DOCUMENTS
+                  - READ_DOCUMENT_ATTRIBUTES
+              ScopedPermissions:
+                summary: Omit roleType for explicit scoped grants
+                value:
+                  name: Document reader
+                  permissions:
+                  - READ_DOCUMENTS
+              LegacyPermissions:
+                summary: Preserve an explicit write-only umbrella grant
+                value:
+                  name: Document writer
+                  permissions:
+                  - WRITE
       responses:
         "200":
           description: 200 OK
@@ -7470,6 +7824,7 @@ paths:
       operationId: DeleteApiKey
       description: Adds a new API Key
       summary: Delete API Key
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7498,6 +7853,7 @@ paths:
       operationId: GetOpaAccessPolicies
       description: Returns a list of OPA Access Policies, can only be requested with ADMIN privileges
       summary: Get OPAs Access Policies
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
       - Access Control
       responses:
@@ -7523,6 +7879,7 @@ paths:
       operationId: GetOpaAccessPolicy
       description: Returns OPA Access Policy, can only be requested with ADMIN privileges
       summary: Get OPA Access Policy
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
       - Access Control
       parameters:
@@ -7553,6 +7910,7 @@ paths:
         request, against simulated request and user input. The operation does not persist
         policies or modify documents.
       summary: Test an OPA access policy, can only be requested with ADMIN privileges
+      x-formkiq-required-permission: ADMIN
       tags:
       - Access Control
       parameters:
@@ -7612,6 +7970,7 @@ paths:
       operationId: GetOpaAccessPolicyItems
       description: Returns OPA Access Policy Items, can only be requested with ADMIN privileges
       summary: Get OPA Access Policy Items
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
       - Access Control
       parameters:
@@ -7638,6 +7997,7 @@ paths:
       operationId: SetOpaAccessPolicyItems
       description: Sets opa access policy items
       summary: Set opa access policy items, can only be requested with ADMIN privileges
+      x-formkiq-required-permission: ADMIN
       tags:
       - Access Control
       parameters:
@@ -7676,6 +8036,7 @@ paths:
       operationId: DeleteOpaAccessPolicyItems
       summary: Delete OPA Access Policy Items
       description: Delete OPA Access Policy Items
+      x-formkiq-required-permission: ADMIN
       tags:
       - Access Control
       parameters:
@@ -7703,6 +8064,7 @@ paths:
       operationId: GetLocales
       description: Returns a list of locale(s) in a specified site
       summary: Get Locales
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7731,6 +8093,7 @@ paths:
       operationId: AddLocale
       description: Adds a new locale to the specified site
       summary: Add Locale
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7764,6 +8127,7 @@ paths:
       operationId: DeleteLocale
       summary: Delete Locale
       description: Delete Locale
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7792,6 +8156,7 @@ paths:
       operationId: GetLocaleResourceItems
       description: Returns the list resource items
       summary: Get Resource Items by Locale
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7821,6 +8186,7 @@ paths:
       operationId: AddLocaleResourceItem
       description: Adds a new localized resource item for a given locale
       summary: Add Locale Resource Item
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7880,6 +8246,7 @@ paths:
       operationId: GetLocaleResourceItem
       description: Returns the resource item
       summary: Get Resource Item by Locale
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7908,6 +8275,7 @@ paths:
       operationId: SetLocaleResourceItem
       description: Set a new Locale Resource Item
       summary: Set Locale Resource Item
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7942,6 +8310,7 @@ paths:
       operationId: DeleteLocaleResourceItem
       summary: Delete Local Resource Item
       description: Delete Local Resource Item
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       parameters:
@@ -7979,6 +8348,7 @@ paths:
         the ADMIN principal that issued it. The reason is signed into the token for audit and
         support traceability.
       summary: Generate a delegation token
+      x-formkiq-required-permission: ADMIN
       tags:
       - System Management
       parameters:
@@ -8018,6 +8388,7 @@ paths:
       operationId: GetSystemConfiguration
       description: Returns the system configuration
       summary: Get system configuration
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       responses:
@@ -8042,6 +8413,7 @@ paths:
       operationId: UpdateSystemConfiguration
       description: Update the system configuration
       summary: Update system configuration
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       requestBody:
@@ -8079,6 +8451,7 @@ paths:
       operationId: GetSystemInferenceModels
       description: Returns the system inference models
       summary: Get system inference models
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
       - System Management
       responses:
@@ -8104,6 +8477,7 @@ paths:
       operationId: AddSystemInferenceModelAgreement
       description: Agree to the Bedrock model usage agreement for a system inference model
       summary: Agree to a system inference model
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
       - System Management
       requestBody:
@@ -8227,6 +8601,7 @@ paths:
       operationId: AddWebhookDocument
       summary: Add webhook
       description: Receive an incoming private webhook and creates a document based on the webhook's body; requires authentication
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
       - Webhooks
       parameters:
@@ -8260,6 +8635,7 @@ paths:
     get:
       operationId: GetWebhooks
       summary: Get webhooks
+      x-formkiq-required-permission: READ_WEBHOOKS
       tags:
       - Webhooks
       description: Return a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
@@ -8289,6 +8665,7 @@ paths:
       operationId: AddWebhook
       summary: Add webhook
       description: Create a new webhook; once created, a webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
       - Webhooks
       parameters:
@@ -8321,6 +8698,7 @@ paths:
     get:
       operationId: GetWebhook
       summary: Get webhook
+      x-formkiq-required-permission: READ_WEBHOOKS
       tags:
       - Webhooks
       description: Return a webhook's details, i.e., its metadata
@@ -8349,6 +8727,7 @@ paths:
       operationId: DeleteWebhook
       summary: Delete webhook
       description: Delete a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
+      x-formkiq-required-permission: DELETE_WEBHOOKS
       tags:
       - Webhooks
       parameters:
@@ -8365,6 +8744,7 @@ paths:
       operationId: UpdateWebhook
       summary: Update webhook
       description: Updates a webhook's details, i.e., its metadata
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
       - Webhooks
       parameters:
@@ -8388,6 +8768,7 @@ paths:
       operationId: GetWebhookTags
       summary: Get webhook tags
       description: Get a webhook's tags
+      x-formkiq-required-permission: READ_WEBHOOKS
       tags:
       - Webhooks
       parameters:
@@ -8415,6 +8796,7 @@ paths:
       operationId: AddWebhookTag
       summary: Add webhook tag
       description: Add a tag to a webhook
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
       - Webhooks
       parameters:
@@ -8451,6 +8833,7 @@ paths:
       - $ref: '#/components/parameters/nextParam'
       - $ref: '#/components/parameters/limitParam'
       - $ref: '#/components/parameters/statusParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       responses:
@@ -8475,6 +8858,7 @@ paths:
       operationId: AddWorkflow
       summary: Add workflow
       description: Creates a new Workflow; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -8524,6 +8908,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/siteIdParam'
       - $ref: '#/components/parameters/workflowIdParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       responses:
@@ -8548,6 +8933,7 @@ paths:
       operationId: DeleteWorkflow
       summary: Delete workflow
       description: Delete a Workflow; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -8575,6 +8961,7 @@ paths:
       operationId: SetWorkflow
       summary: Set workflow
       description: Set a Workflow details; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -8622,6 +9009,7 @@ paths:
       operationId: UpdateWorkflow
       summary: Update workflow
       description: Update a Workflow details; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -8669,6 +9057,7 @@ paths:
       operationId: GetWorkflowDocuments
       summary: Get list of documents in workflow
       description: List documents in Workflow; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
       - Document Workflows
       parameters:
@@ -13763,11 +14152,28 @@ components:
           description: Last nodified timestamp of group
     SetGroupPermissionsRequest:
       type: object
+      description: |-
+        Replaces the group's grants for a site. roleType is optional. Supply a predefined
+        roleType with no permissions or an empty array, or CUSTOM with a nonempty
+        permissions array. Nonempty permissions with a predefined roleType are rejected. When
+        roleType is omitted, a nonempty permissions array is required and is treated as
+        an explicit CUSTOM grant without adding inherited role permissions. For example,
+        legacy WRITE grants write operations only and is not converted to the predefined
+        WRITE role, which also grants read and delete operations. Requests with neither
+        field, unknown role types or permission names, and invalid field combinations
+        are rejected. Administrator grants require an administrator caller.
       properties:
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
+          uniqueItems: true
+          description: |-
+            Explicit scoped or legacy umbrella grants. Required when roleType is omitted
+            or CUSTOM, and must then be nonempty. For predefined role types, omit this
+            field or supply an empty array.
           items:
-            $ref: '#/components/schemas/SiteGroupPermissions'
+            $ref: '#/components/schemas/ApiPermissionGrant'
     GetUsersInGroupResponse:
       type: object
       properties:
@@ -14347,6 +14753,241 @@ components:
         value:
           type: string
           description: Value of Field
+    GetPermissionCatalogResponse:
+      type: object
+      required:
+      - roleTypes
+      properties:
+        roleTypes:
+          type: array
+          description: Supported role types and their permission groups
+          items:
+            $ref: '#/components/schemas/PermissionCatalogRoleType'
+    PermissionCatalogRoleType:
+      type: object
+      required:
+      - name
+      - groups
+      properties:
+        name:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
+        groups:
+          type: array
+          description: |-
+            Nonempty groups of effective permissions for a predefined role type.
+            For CUSTOM, these groups contain all selectable scoped permissions.
+          items:
+            $ref: '#/components/schemas/PermissionCatalogGroup'
+    PermissionCatalogGroup:
+      type: object
+      required:
+      - name
+      - label
+      - permissions
+      properties:
+        name:
+          $ref: '#/components/schemas/ApiPermissionGroup'
+        label:
+          type: string
+          description: Display label for the permission group
+          example: Document Attributes
+        permissions:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Scoped permissions and their descriptions in this group
+          items:
+            $ref: '#/components/schemas/PermissionCatalogPermission'
+    PermissionCatalogPermission:
+      type: object
+      required:
+      - name
+      - description
+      properties:
+        name:
+          $ref: '#/components/schemas/ApiPermission'
+        description:
+          type: string
+          minLength: 1
+          description: Human-readable explanation of the permission
+          example: Read attributes assigned to documents.
+    ApiPermissionRoleType:
+      type: string
+      description: |-
+        A predefined permission role or CUSTOM for selecting individual permissions.
+        ADMIN grants all scoped permissions. GOVERN grants governance, read, write and
+        delete permissions outside the dedicated management roles. WRITE also grants
+        read and delete permissions. SYSTEM_MANAGEMENT and USER_MANAGEMENT grant their
+        respective management permissions. READ and DELETE grant their matching
+        operation permissions. CUSTOM has no implicit grants.
+      enum:
+      - ADMIN
+      - DELETE
+      - READ
+      - WRITE
+      - GOVERN
+      - SYSTEM_MANAGEMENT
+      - USER_MANAGEMENT
+      - CUSTOM
+    ApiPermissionGroup:
+      type: string
+      description: Permission group identifier
+      enum:
+      - ACCESS_CONTROL
+      - ATTRIBUTES
+      - DOCUMENT_ACTIONS
+      - DOCUMENT_ATTRIBUTES
+      - DOCUMENT_FOLDERS
+      - DOCUMENT_GENERATION
+      - DOCUMENT_SHARES
+      - DOCUMENT_TAGS
+      - DOCUMENT_VERSIONS
+      - DOCUMENT_WORKFLOWS
+      - DOCUMENTS
+      - E_SIGNATURE
+      - ENTITY
+      - EXAMINE_OBJECTS
+      - GOOGLE_INTEGRATION
+      - INTELLIGENT_DOCUMENT_PROCESSING
+      - MAPPINGS
+      - RULESETS
+      - SCHEMAS
+      - SHORTLINKS
+      - SYSTEM_MANAGEMENT
+      - USER_ACTIVITIES
+      - USER_MANAGEMENT
+      - WEBHOOKS
+    ApiPermission:
+      type: string
+      description: Scoped API permission identifier
+      enum:
+      - GOVERN_ACCESS_CONTROL
+      - READ_ATTRIBUTES
+      - WRITE_ATTRIBUTES
+      - DELETE_ATTRIBUTES
+      - READ_DOCUMENT_ACTIONS
+      - WRITE_DOCUMENT_ACTIONS
+      - READ_DOCUMENT_ATTRIBUTES
+      - WRITE_DOCUMENT_ATTRIBUTES
+      - DELETE_DOCUMENT_ATTRIBUTES
+      - GOVERN_DOCUMENT_FOLDERS
+      - WRITE_DOCUMENT_GENERATION
+      - WRITE_DOCUMENT_SHARES
+      - DELETE_DOCUMENT_SHARES
+      - READ_DOCUMENT_TAGS
+      - WRITE_DOCUMENT_TAGS
+      - DELETE_DOCUMENT_TAGS
+      - READ_DOCUMENT_VERSIONS
+      - WRITE_DOCUMENT_VERSIONS
+      - GOVERN_DOCUMENT_VERSIONS
+      - READ_DOCUMENT_WORKFLOWS
+      - WRITE_DOCUMENT_WORKFLOWS
+      - DELETE_DOCUMENT_WORKFLOWS
+      - READ_DOCUMENTS
+      - WRITE_DOCUMENTS
+      - DELETE_DOCUMENTS
+      - GOVERN_DOCUMENTS
+      - READ_E_SIGNATURE
+      - WRITE_E_SIGNATURE
+      - READ_ENTITY
+      - WRITE_ENTITY
+      - DELETE_ENTITY
+      - READ_EXAMINE_OBJECTS
+      - WRITE_GOOGLE_INTEGRATION
+      - READ_INTELLIGENT_DOCUMENT_PROCESSING
+      - WRITE_INTELLIGENT_DOCUMENT_PROCESSING
+      - READ_MAPPINGS
+      - WRITE_MAPPINGS
+      - DELETE_MAPPINGS
+      - READ_RULESETS
+      - WRITE_RULESETS
+      - DELETE_RULESETS
+      - READ_SCHEMAS
+      - WRITE_SCHEMAS
+      - DELETE_SCHEMAS
+      - WRITE_SHORTLINKS
+      - READ_SYSTEM_MANAGEMENT
+      - WRITE_SYSTEM_MANAGEMENT
+      - DELETE_SYSTEM_MANAGEMENT
+      - GOVERN_USER_ACTIVITIES
+      - READ_USER_MANAGEMENT
+      - WRITE_USER_MANAGEMENT
+      - DELETE_USER_MANAGEMENT
+      - GOVERN_USER_MANAGEMENT
+      - READ_WEBHOOKS
+      - WRITE_WEBHOOKS
+      - DELETE_WEBHOOKS
+    ApiPermissionGrant:
+      type: string
+      description: |-
+        An explicit permission grant. Scoped names match those returned by the permission
+        catalog. The legacy ADMIN, DELETE, READ, WRITE and GOVERN umbrella names are also
+        accepted for compatibility. These names are explicit grants, not selections of a
+        predefined role type; for example, WRITE alone does not imply READ or DELETE.
+        Use roleType to select a predefined role. Administrator grants require an
+        administrator caller.
+      enum:
+      - ADMIN
+      - DELETE
+      - READ
+      - WRITE
+      - GOVERN
+      - GOVERN_ACCESS_CONTROL
+      - READ_ATTRIBUTES
+      - WRITE_ATTRIBUTES
+      - DELETE_ATTRIBUTES
+      - READ_DOCUMENT_ACTIONS
+      - WRITE_DOCUMENT_ACTIONS
+      - READ_DOCUMENT_ATTRIBUTES
+      - WRITE_DOCUMENT_ATTRIBUTES
+      - DELETE_DOCUMENT_ATTRIBUTES
+      - GOVERN_DOCUMENT_FOLDERS
+      - WRITE_DOCUMENT_GENERATION
+      - WRITE_DOCUMENT_SHARES
+      - DELETE_DOCUMENT_SHARES
+      - READ_DOCUMENT_TAGS
+      - WRITE_DOCUMENT_TAGS
+      - DELETE_DOCUMENT_TAGS
+      - READ_DOCUMENT_VERSIONS
+      - WRITE_DOCUMENT_VERSIONS
+      - GOVERN_DOCUMENT_VERSIONS
+      - READ_DOCUMENT_WORKFLOWS
+      - WRITE_DOCUMENT_WORKFLOWS
+      - DELETE_DOCUMENT_WORKFLOWS
+      - READ_DOCUMENTS
+      - WRITE_DOCUMENTS
+      - DELETE_DOCUMENTS
+      - GOVERN_DOCUMENTS
+      - READ_E_SIGNATURE
+      - WRITE_E_SIGNATURE
+      - READ_ENTITY
+      - WRITE_ENTITY
+      - DELETE_ENTITY
+      - READ_EXAMINE_OBJECTS
+      - WRITE_GOOGLE_INTEGRATION
+      - READ_INTELLIGENT_DOCUMENT_PROCESSING
+      - WRITE_INTELLIGENT_DOCUMENT_PROCESSING
+      - READ_MAPPINGS
+      - WRITE_MAPPINGS
+      - DELETE_MAPPINGS
+      - READ_RULESETS
+      - WRITE_RULESETS
+      - DELETE_RULESETS
+      - READ_SCHEMAS
+      - WRITE_SCHEMAS
+      - DELETE_SCHEMAS
+      - WRITE_SHORTLINKS
+      - READ_SYSTEM_MANAGEMENT
+      - WRITE_SYSTEM_MANAGEMENT
+      - DELETE_SYSTEM_MANAGEMENT
+      - GOVERN_USER_ACTIVITIES
+      - READ_USER_MANAGEMENT
+      - WRITE_USER_MANAGEMENT
+      - DELETE_USER_MANAGEMENT
+      - GOVERN_USER_MANAGEMENT
+      - READ_WEBHOOKS
+      - WRITE_WEBHOOKS
+      - DELETE_WEBHOOKS
     WorkflowDocument:
       type: object
       properties:
@@ -15821,14 +16462,6 @@ components:
         classificationId:
           type: string
           description: Classification Id
-    ApiKeyPermission:
-      type: string
-      description: List of API permissions (defaults to READ / WRITE / DELETE)
-      enum:
-      - READ
-      - WRITE
-      - DELETE
-      - GOVERN
     OpaPolicy:
       type: object
       properties:
@@ -16016,6 +16649,10 @@ components:
           description: Request identifier used to locate restricted diagnostic logs.
     ApiKey:
       type: object
+      description: |-
+        An API key and its permission configuration. roleType is optional for legacy records.
+        A missing roleType means permissions contains explicit CUSTOM grants. A predefined
+        roleType determines the effective role grants, which can be discovered in the catalog.
       properties:
         name:
           type: string
@@ -16030,16 +16667,14 @@ components:
         insertedDate:
           type: string
           description: Inserted Timestamp
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
-          description: List of permissions
+          uniqueItems: true
+          description: Explicit CUSTOM or legacy permission grants.
           items:
-            type: string
-            enum:
-            - READ
-            - WRITE
-            - DELETE
-            - GOVERN
+            $ref: '#/components/schemas/ApiPermissionGrant'
         groups:
           type: array
           description: List of groups to add as custom claims to API Key
@@ -16097,11 +16732,19 @@ components:
           description: Name of the S3 bucket
     SiteGroup:
       type: object
+      description: |-
+        A group's permission configuration for a site. roleType is optional for legacy
+        records. A missing roleType means permissions contains explicit CUSTOM grants.
+        A predefined roleType determines the effective role grants.
       properties:
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
+          uniqueItems: true
+          description: Explicit CUSTOM or legacy permission grants.
           items:
-            $ref: '#/components/schemas/SiteGroupPermissions'
+            $ref: '#/components/schemas/ApiPermissionGrant'
     LocaleInfo:
       type: object
       required:
@@ -16279,6 +16922,18 @@ components:
           $ref: '#/components/schemas/ResourceItem'
     AddApiKeyRequest:
       type: object
+      required:
+      - name
+      description: |-
+        roleType is optional. A predefined roleType must be supplied without nonempty
+        permissions; an omitted or empty array is accepted.
+        CUSTOM requires a nonempty permissions array. When roleType is omitted, a nonempty
+        permissions array is an explicit CUSTOM grant: legacy WRITE grants write operations
+        only and is not converted to the predefined WRITE role, which also grants read and
+        delete operations. If neither field is supplied, or permissions is empty with no
+        roleType, the legacy READ, WRITE and DELETE defaults apply. Unknown role types or
+        permission names, and invalid field combinations, are rejected. ADMIN roles and ADMIN
+        permission grants are not allowed, even for administrators.
       properties:
         name:
           type: string
@@ -16288,10 +16943,18 @@ components:
           description: Optional list of groups to add as custom claims to API Key
           items:
             type: string
+        roleType:
+          $ref: '#/components/schemas/ApiPermissionRoleType'
         permissions:
           type: array
+          uniqueItems: true
+          description: |-
+            Explicit scoped or legacy umbrella grants for CUSTOM or an omitted roleType.
+            Required and nonempty when roleType is CUSTOM. For predefined role types,
+            omit this field or supply an empty array.
+            Legacy requests without roleType keep the default grants when this is empty.
           items:
-            $ref: '#/components/schemas/ApiKeyPermission'
+            $ref: '#/components/schemas/ApiPermissionGrant'
     AddApiKeyResponse:
       type: object
       properties:
@@ -16527,7 +17190,7 @@ components:
         permissions:
           type: array
           items:
-            $ref: '#/components/schemas/SiteGroupPermissions'
+            $ref: '#/components/schemas/ApiPermissionGrant'
         uploadEmail:
           type: string
           description: SiteId document upload email address
@@ -16548,15 +17211,6 @@ components:
       enum:
       - READ_WRITE
       - READ_ONLY
-    SiteGroupPermissions:
-      type: string
-      description: Site Group Permissions
-      enum:
-      - ADMIN
-      - DELETE
-      - READ
-      - WRITE
-      - GOVERN
     SiteConfig:
       type: object
       properties:

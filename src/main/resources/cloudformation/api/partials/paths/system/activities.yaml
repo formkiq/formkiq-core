@@ -8,6 +8,7 @@ paths:
       operationId: GetUserActivities
       summary: Get user activities
       description: Retrieve a user's activities
+      x-formkiq-required-permission: GOVERN_USER_ACTIVITIES
       tags:
         - User Activities
       parameters:
@@ -45,6 +46,7 @@ paths:
       operationId: GetDocumentUserActivities
       summary: Get user activities for a document
       description: Retrieve a user's activities for a document
+      x-formkiq-required-permission: GOVERN_USER_ACTIVITIES
       tags:
         - User Activities
       parameters:
@@ -78,6 +80,7 @@ paths:
       operationId: GetResourceActivities
       summary: Get resource activities 
       description: Retrieve an resource activities
+      x-formkiq-required-permission: GOVERN_USER_ACTIVITIES
       tags:
         - User Activities
       parameters:

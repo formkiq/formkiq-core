@@ -28,6 +28,9 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
 import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.fromS;
 
 import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
 import com.formkiq.aws.dynamodb.builder.DynamoDbAttributeMapBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbEntityBuilder;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
@@ -46,7 +49,8 @@ import java.util.stream.Collectors;
  * serialization helpers.
  */
 public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name, String userId,
-    Date insertedDate, List<ApiKeyPermission> permissions, Collection<String> groups) {
+    Date insertedDate, List<ApiPermission> permissions, ApiPermissionRoleType roleType,
+    Collection<String> groups) {
 
   /**
    * Expected full length of generated API keys.
@@ -61,6 +65,9 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
   /**
    * Canonical constructor enforcing required fields and defensive copies.
    *
+   * @param siteId site identifier
+   * @param roleType stored role type
+   * @param groups custom group claims
    * @param key DynamoDB key associated with this API key record
    * @param apiKey raw API key string
    * @param name name of the API key
@@ -75,6 +82,7 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
     Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
     permissions = permissions == null ? List.of() : List.copyOf(permissions);
+    roleType = roleType == null ? ApiPermissionRoleType.CUSTOM : roleType;
     groups = groups == null ? List.of() : List.copyOf(groups);
 
     insertedDate = new Date(insertedDate.getTime());
@@ -99,12 +107,16 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
     Collection<String> groups = DynamoDbTypes.toStrings(attributes.get("groups"));
     Date insertedDate = DynamoDbTypes.toDate(attributes.get("inserteddate"));
 
-    List<ApiKeyPermission> permissions = attributes.containsKey("permissions")
+    List<ApiPermission> permissions = attributes.containsKey("permissions")
         ? attributes.get("permissions").l().stream().map(AttributeValue::s)
-            .map(ApiKeyPermission::valueOf).toList()
+            .map(ApiPermission::valueOf).toList()
         : List.of();
 
-    return new ApiKey(key, siteId, apiKey, name, userId, insertedDate, permissions, groups);
+    ApiPermissionRoleType roleType = attributes.containsKey("roleType")
+        ? ApiPermissionRoleType.valueOf(attributes.get("roleType").s())
+        : ApiPermissionRoleType.CUSTOM;
+    return new ApiKey(key, siteId, apiKey, name, userId, insertedDate, permissions, roleType,
+        groups);
   }
 
   /**
@@ -113,9 +125,10 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
    * @return map of attribute names to AttributeValue
    */
   public Map<String, AttributeValue> getAttributes() {
-    DynamoDbAttributeMapBuilder map = key.getAttributesBuilder().withString("apiKey", apiKey)
-        .withStrings("groups", groups).withString("name", name).withString("userId", userId)
-        .withString("siteId", siteId).withDate("inserteddate", insertedDate);
+    DynamoDbAttributeMapBuilder map =
+        key.getAttributesBuilder().withString("apiKey", apiKey).withStrings("groups", groups)
+            .withString("name", name).withString("userId", userId).withString("siteId", siteId)
+            .withString("roleType", roleType.name()).withDate("inserteddate", insertedDate);
 
     if (!permissions.isEmpty()) {
       map.withAttributeValue("permissions",
@@ -123,6 +136,17 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
     }
 
     return map.build();
+  }
+
+  /**
+   * Resolve the stored role, preserving explicit grants on legacy records.
+   *
+   * @return permission role
+   */
+  public ApiPermissionRole permissionRole() {
+    return roleType == ApiPermissionRoleType.CUSTOM
+        ? ApiPermissionRole.builder(roleType).permissions(permissions).build()
+        : ApiPermissionRole.builder(roleType).build();
   }
 
   /**
@@ -163,7 +187,9 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
     private Date insertedDate = new Date();
 
     /** Permission list associated with this API key. */
-    private Collection<ApiKeyPermission> permissions = List.of();
+    private Collection<ApiPermission> permissions = List.of();
+    /** Selected role type. */
+    private ApiPermissionRoleType roleType = ApiPermissionRoleType.CUSTOM;
     /** Groups associated with this API key. */
     private Collection<String> groups = List.of();
 
@@ -188,10 +214,11 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
       Objects.requireNonNull(insertedDate, "insertedDate must not be null");
 
       DynamoDbKey key = buildKey(siteId);
-      List<ApiKeyPermission> perms = permissions == null ? List.of() : List.copyOf(permissions);
+      List<ApiPermission> perms = permissions == null ? List.of() : List.copyOf(permissions);
       List<String> g = groups == null ? List.of() : List.copyOf(groups);
 
-      return new ApiKey(key, getSiteIdName(siteId), apiKey, name, userId, insertedDate, perms, g);
+      return new ApiKey(key, getSiteIdName(siteId), apiKey, name, userId, insertedDate, perms,
+          roleType, g);
     }
 
 
@@ -252,12 +279,25 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
     }
 
     /**
+     * Set a predefined or custom permission role.
+     *
+     * @param role permission role
+     * @return this builder
+     */
+    public Builder permissionRole(final ApiPermissionRole role) {
+      this.roleType = role.getType();
+      this.permissions = role.getPermissions();
+      return this;
+    }
+
+    /**
      * Sets the list of permissions granted to this API key.
      *
-     * @param apiKeyPermissions list of ApiKeyPermission values
+     * @param apiKeyPermissions list of ApiPermission values
      * @return this builder instance
      */
-    public Builder permissions(final Collection<ApiKeyPermission> apiKeyPermissions) {
+    public Builder permissions(final Collection<ApiPermission> apiKeyPermissions) {
+      this.roleType = ApiPermissionRoleType.CUSTOM;
       this.permissions = apiKeyPermissions;
       return this;
     }

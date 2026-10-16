@@ -12,6 +12,7 @@ paths:
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
       description: Restores a soft deleted document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Documents
       responses:

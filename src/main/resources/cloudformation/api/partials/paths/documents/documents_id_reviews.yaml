@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentReviews
       summary: Get document reviews
       description: Get a listing of reviews for a document, including the effective countedDecisionTypes policy for each review.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Document Reviews
       parameters:
@@ -43,6 +44,7 @@ paths:
         Omitted or null countedDecisionTypes defaults to [APPROVAL]. Only decision records of the
         configured types count toward requiredDecisions; other supported types may still be submitted.
         The same counting policy applies to document-level and artifact-scoped reviews.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document Reviews
       parameters:
@@ -101,6 +103,7 @@ paths:
       operationId: GetDocumentReview
       summary: Get document review
       description: Get a document review by review id, including its effective countedDecisionTypes policy. Reviews stored without an explicit policy return [APPROVAL]; historical completed reviews retain their status.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Document Reviews
       parameters:
@@ -133,6 +136,7 @@ paths:
         Update a document review by review id. Omitted properties retain their existing values.
         Changes to countedDecisionTypes or requiredDecisions apply when subsequent counted
         decisions are submitted. Updating the counting configuration does not change reviewStatus.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document Reviews
       parameters:
@@ -166,6 +170,7 @@ paths:
       operationId: GetDocumentReviewDecisions
       summary: Get document review decisions
       description: Get a listing of all decisions for a document review, including records whose types do not count toward completion.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Document Reviews
       parameters:
@@ -211,6 +216,7 @@ paths:
         uses the same counting-policy defaults and validation as ordinary review creation.
         Completion occurs when the qualifying count reaches or exceeds requiredDecisions.
         Decisions submitted to a review that is already COMPLETED return 409 Conflict without creating a decision, follow-up review, notification, or activity record.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Document Reviews
       parameters:

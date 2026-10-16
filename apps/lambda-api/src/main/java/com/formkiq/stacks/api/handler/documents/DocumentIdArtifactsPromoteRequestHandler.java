@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
@@ -49,6 +50,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import static com.formkiq.strings.Strings.isEmpty;
@@ -71,6 +73,12 @@ public class DocumentIdArtifactsPromoteRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/artifacts/promoteArtifact";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "put".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

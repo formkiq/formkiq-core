@@ -7,6 +7,7 @@ paths:
     post:
       operationId: IndexFolderMove
       description: Perform an Folder Index Move
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Custom Index
       parameters:
@@ -51,6 +52,7 @@ paths:
         Perform a delete on the Folder Index.
         
         When deleting a file from the "folder" index, you can set the indexKey to a URLEncoded path variable.
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Custom Index
       parameters:
@@ -87,6 +89,7 @@ paths:
     post:
       operationId: IndexSearch
       description: Perform a search on a index; this is currently available for both folder and tag indices
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Custom Index
         - Tag Index

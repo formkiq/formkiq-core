@@ -23,6 +23,14 @@
  */
 package com.formkiq.stacks.api.handler;
 
+import java.util.Map;
+import java.util.Set;
+
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.client.model.ApiPermissionRoleType;
+import com.formkiq.testutils.api.SetBearerPermissionMap;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,7 +44,7 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
-import com.formkiq.client.model.ApiKeyPermission;
+import com.formkiq.client.model.ApiPermissionGrant;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.client.model.ApiKey;
@@ -62,7 +70,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
       setBearerToken("Admins");
       AddApiKeyRequest req = new AddApiKeyRequest().name("test key")
-          .groups(List.of("test1", "test2")).permissions(List.of(ApiKeyPermission.READ));
+          .groups(List.of("test1", "test2")).permissions(Set.of(ApiPermissionGrant.READ));
 
       // when
       AddApiKeyResponse response = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req)
@@ -75,11 +83,82 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
           .submitOk(this.client, siteId).response();
       List<ApiKey> apiKeys = notNull(keys.getApiKeys());
       assertEquals(1, apiKeys.size());
-      assertEquals("test key", apiKeys.get(0).getName());
-      assertEquals("READ", notNull(apiKeys.get(0).getPermissions()).stream().map(Enum::name)
+      assertEquals("test key", apiKeys.getFirst().getName());
+      assertEquals("READ", notNull(apiKeys.getFirst().getPermissions()).stream().map(Enum::name)
           .collect(Collectors.joining(",")));
-      assertEquals("test1,test2", String.join(",", notNull(apiKeys.get(0).getGroups())));
+      assertEquals("test1,test2", String.join(",", notNull(apiKeys.getFirst().getGroups())));
     }
+  }
+
+  /** Attribute-only grants save successfully without a role type. */
+  @Test
+  public void testCreateAttributePermissionsWithoutRoleType() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken("Admins");
+    Set<ApiPermissionGrant> permissions = Set.of(ApiPermissionGrant.READ_ATTRIBUTES,
+        ApiPermissionGrant.WRITE_ATTRIBUTES, ApiPermissionGrant.DELETE_ATTRIBUTES);
+    AddApiKeyRequest request =
+        new AddApiKeyRequest().name("attribute access").roleType(null).permissions(permissions);
+
+    // when
+    AddApiKeyResponse created = new AddApiKeyRequestBuilder().withAddApiKeyRequest(request)
+        .submitOk(client, siteId).response();
+    List<ApiKey> keys = new GetApiKeysRequestBuilder().getApiKeys(client, siteId);
+
+    // then
+    assertNotNull(created.getApiKey());
+    assertEquals(1, keys.size());
+    assertEquals(ApiPermissionRoleType.CUSTOM, keys.getFirst().getRoleType());
+    assertEquals(permissions, keys.getFirst().getPermissions());
+  }
+
+  /** An omitted role type and CUSTOM both retain exact requested grants. */
+  @Test
+  public void testCreateCustomAndLegacyGrants() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    for (ApiPermissionRoleType type : Arrays.asList(null, ApiPermissionRoleType.CUSTOM)) {
+      String siteId = ID.uuid();
+      AddApiKeyRequest request = new AddApiKeyRequest().name("scoped").roleType(type)
+          .addPermissionsItem(ApiPermissionGrant.WRITE)
+          .addPermissionsItem(ApiPermissionGrant.READ_DOCUMENT_ATTRIBUTES);
+      // when
+      new AddApiKeyRequestBuilder().withAddApiKeyRequest(request).submitOk(client, siteId);
+      ApiKey key = new GetApiKeysRequestBuilder().getApiKeys(client, siteId).getFirst();
+
+      // then
+      assertEquals(ApiPermissionRoleType.CUSTOM, key.getRoleType());
+      assertEquals(Set.of(ApiPermissionGrant.WRITE, ApiPermissionGrant.READ_DOCUMENT_ATTRIBUTES),
+          key.getPermissions());
+    }
+  }
+
+  /**
+   * All predefined roles are persisted and returned by the management API.
+   * 
+   * @param type predefined role
+   */
+  @ParameterizedTest
+  @EnumSource(value = ApiPermissionRoleType.class, mode = EnumSource.Mode.EXCLUDE,
+      names = {"ADMIN", "CUSTOM"})
+  public void testCreatePredefinedRole(final ApiPermissionRoleType type) throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken("Admins");
+    AddApiKeyRequest request = new AddApiKeyRequest().name("role").roleType(type);
+
+    // when
+    new AddApiKeyRequestBuilder().withAddApiKeyRequest(request).submitOk(client, siteId);
+    ApiKey key = new GetApiKeysRequestBuilder().getApiKeys(client, siteId).getFirst();
+
+    // then
+    assertEquals(type, key.getRoleType());
+    assertEquals(
+        ApiPermissionRole
+            .builder(com.formkiq.aws.dynamodb.ApiPermissionRoleType.valueOf(type.name())).build()
+            .getPermissions().stream().map(Enum::name).collect(Collectors.toSet()),
+        notNull(key.getPermissions()).stream().map(Enum::name).collect(Collectors.toSet()));
   }
 
   /**
@@ -129,22 +208,21 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       assertNotNull(response.getApiKey());
 
       // when
-      GetApiKeysResponse apiKeysResponse = new GetApiKeysRequestBuilder().withNext(null)
-          .withLimit(null).submitOk(this.client, siteId).response();
+      List<ApiKey> apiKeys = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
+          .getApiKeys(this.client, siteId);
 
       // then
-      List<ApiKey> apiKeys = notNull(apiKeysResponse.getApiKeys());
       assertEquals(1, apiKeys.size());
-      assertTrue(Objects.requireNonNull(apiKeys.get(0).getApiKey()).contains("**************"));
-      assertNotNull(apiKeys.get(0).getInsertedDate());
-      assertEquals(apiKeyName, apiKeys.get(0).getName());
-      assertEquals("DELETE,READ,WRITE", notNull(apiKeys.get(0).getPermissions()).stream()
+      assertTrue(Objects.requireNonNull(apiKeys.getFirst().getApiKey()).contains("**************"));
+      assertNotNull(apiKeys.getFirst().getInsertedDate());
+      assertEquals(apiKeyName, apiKeys.getFirst().getName());
+      assertEquals("DELETE,READ,WRITE", notNull(apiKeys.getFirst().getPermissions()).stream()
           .map(Enum::name).sorted().collect(Collectors.joining(",")));
-      assertEquals("joesmith", apiKeys.get(0).getUserId());
-      assertEquals(siteId, apiKeys.get(0).getSiteId());
+      assertEquals("joesmith", apiKeys.getFirst().getUserId());
+      assertEquals(siteId, apiKeys.getFirst().getSiteId());
 
       // given
-      String apiKey = apiKeys.get(0).getApiKey();
+      String apiKey = apiKeys.getFirst().getApiKey();
       assertNotNull(apiKey);
 
       // when
@@ -153,7 +231,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
       // then
       assertEquals("ApiKey deleted", delResponse.getMessage());
-      apiKeysResponse = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
+      var apiKeysResponse = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
           .submitOk(this.client, siteId).response();
       assertEquals(0, notNull(apiKeysResponse.getApiKeys()).size());
     }
@@ -214,7 +292,7 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
 
       String apiKeyName = "test key";
       AddApiKeyRequest req =
-          new AddApiKeyRequest().name(apiKeyName).addPermissionsItem(ApiKeyPermission.GOVERN);
+          new AddApiKeyRequest().name(apiKeyName).addPermissionsItem(ApiPermissionGrant.GOVERN);
 
       // when
       AddApiKeyResponse response = new AddApiKeyRequestBuilder().withAddApiKeyRequest(req)
@@ -224,18 +302,17 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       assertNotNull(response.getApiKey());
 
       // when
-      GetApiKeysResponse getApiKeys = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
-          .submitOk(this.client, siteId).response();
+      var apiKeys = new GetApiKeysRequestBuilder().withNext(null).withLimit(null)
+          .getApiKeys(this.client, siteId);
 
       // then
-      List<ApiKey> apiKeys = notNull(getApiKeys.getApiKeys());
       assertEquals(1, apiKeys.size());
-      assertTrue(Objects.requireNonNull(apiKeys.get(0).getApiKey()).contains("**************"));
-      assertNotNull(apiKeys.get(0).getInsertedDate());
-      assertEquals(apiKeyName, apiKeys.get(0).getName());
-      assertEquals("GOVERN", notNull(apiKeys.get(0).getPermissions()).stream().map(Enum::name)
+      assertTrue(Objects.requireNonNull(apiKeys.getFirst().getApiKey()).contains("**************"));
+      assertNotNull(apiKeys.getFirst().getInsertedDate());
+      assertEquals(apiKeyName, apiKeys.getFirst().getName());
+      assertEquals("GOVERN", notNull(apiKeys.getFirst().getPermissions()).stream().map(Enum::name)
           .sorted().collect(Collectors.joining(",")));
-      assertEquals(siteId, apiKeys.get(0).getSiteId());
+      assertEquals(siteId, apiKeys.getFirst().getSiteId());
     }
   }
 
@@ -302,4 +379,70 @@ public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTes
       }
     }
   }
+
+  /** Cross-field validation rejects invalid role assignments without creating keys. */
+  @Test
+  public void testInvalidRoleRequests() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken("Admins");
+    Map<AddApiKeyRequest, String> invalid = java.util.Map.of(
+        new AddApiKeyRequest().name("empty").roleType(ApiPermissionRoleType.CUSTOM),
+        "'permissions' must contain at least one permission when 'roleType' is 'CUSTOM'.",
+        new AddApiKeyRequest().name("mixed").roleType(ApiPermissionRoleType.READ)
+            .addPermissionsItem(ApiPermissionGrant.READ_DOCUMENTS),
+        "'permissions' must be omitted or empty when 'roleType' is 'READ'. "
+            + "Use 'CUSTOM' to specify individual permissions.");
+
+    for (var entry : invalid.entrySet()) {
+      // when
+      var response = new AddApiKeyRequestBuilder().withAddApiKeyRequest(entry.getKey())
+          .submitError(client, siteId);
+      // then
+      assertEquals(400, response.exception().getCode());
+      assertEquals("{\"message\":\"" + entry.getValue() + "\"}",
+          response.exception().getResponseBody());
+    }
+
+    // when
+    var keys = new GetApiKeysRequestBuilder().getApiKeys(client, siteId);
+
+    // then
+    assertTrue(keys.isEmpty());
+  }
+
+  /** System management grants can manage keys but cannot grant administrator access. */
+  @Test
+  public void testSystemManagementCreateKey() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    new SetBearerPermissionMap().apply(client, List.of("manager"),
+        Map.of(siteId, List.of("WRITE_SYSTEM_MANAGEMENT", "READ_SYSTEM_MANAGEMENT")), Map.of());
+    AddApiKeyRequest request =
+        new AddApiKeyRequest().name("scoped").roleType(ApiPermissionRoleType.READ);
+
+    // when
+    new AddApiKeyRequestBuilder().withAddApiKeyRequest(request).submitOk(client, siteId);
+    var keys = new GetApiKeysRequestBuilder().getApiKeys(client, siteId);
+
+    // then
+    assertEquals(1, keys.size());
+
+    // given
+    Map<AddApiKeyRequest, String> adminRequests = Map.of(
+        new AddApiKeyRequest().name("admin").roleType(ApiPermissionRoleType.ADMIN),
+        "{\"errors\":[{\"key\":\"roleType\",\"error\":\"'ADMIN' roleType is not allowed\"},"
+            + "{\"key\":\"roleType\",\"error\":\"'ADMIN' permission is not allowed\"}]}",
+        new AddApiKeyRequest().name("custom admin").addPermissionsItem(ApiPermissionGrant.ADMIN),
+        "{\"errors\":[{\"key\":\"roleType\",\"error\":\"'ADMIN' permission is not allowed\"}]}");
+    for (var entry : adminRequests.entrySet()) {
+      // when
+      var response = new AddApiKeyRequestBuilder().withAddApiKeyRequest(entry.getKey())
+          .submitError(client, siteId);
+      // then
+      assertEquals(400, response.exception().getCode());
+      assertEquals(entry.getValue(), response.exception().getResponseBody());
+    }
+  }
+
 }

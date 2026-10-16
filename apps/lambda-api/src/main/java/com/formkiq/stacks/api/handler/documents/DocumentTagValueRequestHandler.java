@@ -26,6 +26,7 @@ package com.formkiq.stacks.api.handler.documents;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -35,6 +36,7 @@ import com.formkiq.aws.services.lambda.exceptions.NotFoundException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.dynamodb.DocumentService;
 
+import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 
@@ -77,5 +79,11 @@ public class DocumentTagValueRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/tags/{tagKey}/{tagValue}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "delete".equalsIgnoreCase(method) ? Optional.of(ApiPermission.DELETE_DOCUMENT_TAGS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

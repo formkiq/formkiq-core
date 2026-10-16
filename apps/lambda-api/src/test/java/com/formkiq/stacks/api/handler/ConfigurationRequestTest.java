@@ -1185,7 +1185,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Patch System Configuration empty as Admin.
+   * Deny system configuration updates without system management permission.
    */
   @Test
   public void testUpdateSystemConfigurationAsUser() {
@@ -1200,6 +1200,8 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertNotNull(update.exception());
 
     assertEquals(HttpStatus.UNAUTHORIZED, update.exception().getCode());
-    assertEquals("{\"message\":\"user is unauthorized\"}", update.exception().getResponseBody());
+    assertEquals(
+        "{\"message\":\"fkq access denied (groups: " + DEFAULT_SITE_ID + " (DELETE,READ,WRITE))\"}",
+        update.exception().getResponseBody());
   }
 }

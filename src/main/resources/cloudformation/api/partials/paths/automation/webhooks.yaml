@@ -42,6 +42,7 @@ paths:
       operationId: AddWebhookDocument
       summary: Add webhook
       description: Receive an incoming private webhook and creates a document based on the webhook's body; requires authentication
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
         - Webhooks
       parameters:
@@ -77,6 +78,7 @@ paths:
     get:
       operationId: GetWebhooks
       summary: Get webhooks
+      x-formkiq-required-permission: READ_WEBHOOKS
       tags:
         - Webhooks
       description: Return a list of webhooks; each webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
@@ -106,6 +108,7 @@ paths:
       operationId: AddWebhook
       summary: Add webhook
       description: Create a new webhook; once created, a webhook's id can be provided to an external service, allowing data to be sent, received, and processed via that webhook
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
         - Webhooks
       parameters:
@@ -140,6 +143,7 @@ paths:
     get:
       operationId: GetWebhook
       summary: Get webhook
+      x-formkiq-required-permission: READ_WEBHOOKS
       tags:
         - Webhooks
       description: Return a webhook's details, i.e., its metadata
@@ -168,6 +172,7 @@ paths:
       operationId: DeleteWebhook
       summary: Delete webhook
       description: Delete a webhook; this will disable sending, receiving, or processing of data from external services to this webhook
+      x-formkiq-required-permission: DELETE_WEBHOOKS
       tags:
         - Webhooks
       parameters:
@@ -184,6 +189,7 @@ paths:
       operationId: UpdateWebhook
       summary: Update webhook
       description: Updates a webhook's details, i.e., its metadata
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
         - Webhooks
       parameters:
@@ -209,6 +215,7 @@ paths:
       operationId: GetWebhookTags
       summary: Get webhook tags
       description: Get a webhook's tags
+      x-formkiq-required-permission: READ_WEBHOOKS
       tags:
         - Webhooks
       parameters:
@@ -236,6 +243,7 @@ paths:
       operationId: AddWebhookTag
       summary: Add webhook tag
       description: Add a tag to a webhook
+      x-formkiq-required-permission: WRITE_WEBHOOKS
       tags:
         - Webhooks
       parameters:

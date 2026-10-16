@@ -11,6 +11,7 @@
         <allow pkg="com.formkiq.strings" />
 
         <allow pkg="com.github.f4b6a3.ulid" />
+        <allow pkg="com.google.gson" />
 		<allow pkg="com.formkiq.aws.dynamodb" />
 		<allow pkg="com.formkiq.graalvm.annotations" />
 		<allow pkg="com.formkiq.module.lambdaservices" />

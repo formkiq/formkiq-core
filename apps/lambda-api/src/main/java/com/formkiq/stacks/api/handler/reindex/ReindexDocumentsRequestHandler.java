@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.reindex;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -37,6 +38,7 @@ import com.formkiq.validation.ValidationException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 
@@ -53,6 +55,12 @@ public class ReindexDocumentsRequestHandler
   @Override
   public String getRequestUrl() {
     return "/reindex/documents/{documentId}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "post".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

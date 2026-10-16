@@ -12,6 +12,7 @@ paths:
         as an Add-On Module. Recipient tabs support signatures, initials, automatic
         signing dates, recipient-entered dates, and single-line or multiline text.
         See DocusignSigningTabs for the supported collections and validation rules.
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
       parameters:
@@ -175,6 +176,7 @@ paths:
         response as entries in the optional recipientIds array in
         POST /esignature/docusign/{documentId}/envelopes/{envelopeId}/reminders
         to request reminders for selected signers.
+      x-formkiq-required-permission: READ_E_SIGNATURE
       tags:
         - E-Signature
       parameters:
@@ -282,6 +284,7 @@ paths:
         Acceptance does not confirm notification delivery. Do not automatically
         retry after a timeout
         because the reminder may already have been requested.
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
       parameters:
@@ -397,6 +400,7 @@ paths:
       externalDocs:
         description: DocuSign Envelopes update API
         url: https://developers.docusign.com/docs/esign-rest-api/reference/envelopes/envelopes/update/
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
       parameters:
@@ -469,6 +473,7 @@ paths:
       operationId: AddDocusignRecipientView
       summary: Create Docusign Recipient View request
       description: DocuSign create Docusign Recipient View request; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
       parameters:
@@ -513,6 +518,7 @@ paths:
       operationId: AddDocusignSenderView
       summary: Create Docusign Sender View request
       description: DocuSign create Docusign Sender View request; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
       parameters:

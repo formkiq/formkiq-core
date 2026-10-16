@@ -58,6 +58,7 @@ import com.formkiq.module.ocr.DocumentOcrServiceExtension;
 import com.formkiq.module.ocr.DocumentsOcrRequestHandler;
 import com.formkiq.module.typesense.TypeSenseService;
 import com.formkiq.module.typesense.TypeSenseServiceExtension;
+import com.formkiq.stacks.api.handler.PermissionCatalogRequestHandler;
 import com.formkiq.stacks.api.handler.SearchRequestHandler;
 import com.formkiq.stacks.api.handler.UserChangePasswordRequestHandler;
 import com.formkiq.stacks.api.handler.UserConfirmRegistrationRequestHandler;
@@ -258,6 +259,7 @@ public abstract class AbstractCoreRequestHandler extends AbstractRestApiRequestH
 
   private static void addSystemEndpoints() {
     addRequestHandler(new VersionRequestHandler());
+    addRequestHandler(new PermissionCatalogRequestHandler());
     addRequestHandler(new SitesRequestHandler());
     addRequestHandler(new ConfigurationRequestHandler());
     addRequestHandler(new NumberingSequencesRequestHandler());

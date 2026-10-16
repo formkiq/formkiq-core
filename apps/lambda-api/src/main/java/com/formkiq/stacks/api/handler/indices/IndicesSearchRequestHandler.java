@@ -68,11 +68,9 @@ public class IndicesSearchRequestHandler
   }
 
   @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    String siteId = authorization.getSiteId();
-    boolean access = authorization.getPermissions(siteId).contains(ApiPermission.READ);
-    return Optional.of(access);
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "post".equalsIgnoreCase(method) ? Optional.of(ApiPermission.READ_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

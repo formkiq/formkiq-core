@@ -23,7 +23,10 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import java.util.Optional;
+
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -86,5 +89,13 @@ public class DocumentAttributesValueRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/attributes/{attributeKey}/{attributeValue}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method) {
+      case "delete" -> Optional.of(ApiPermission.DELETE_DOCUMENT_ATTRIBUTES);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 }

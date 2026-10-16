@@ -6,6 +6,7 @@ paths:
   /attributes:
     get:
       operationId: GetAttributes
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
         - Attributes
       description: Returns a list of attributes
@@ -53,6 +54,7 @@ paths:
         Without supplied invocation authorization, auth.username is System and custom
         claim placeholders remain unchanged.
       summary: Add new attribute
+      x-formkiq-required-permission: WRITE_ATTRIBUTES
       tags:
         - Attributes
       parameters:
@@ -178,6 +180,7 @@ paths:
   /attributes/{key}:
     get:
       operationId: GetAttribute
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
         - Attributes
       description: Returns a attribute
@@ -208,6 +211,7 @@ paths:
       description: |-
         Updates existing attribute
       summary: Update existing attribute
+      x-formkiq-required-permission: WRITE_ATTRIBUTES
       tags:
         - Attributes
       parameters:
@@ -248,6 +252,7 @@ paths:
       description: |-
         Delete a attribute
       summary: Delete attribute
+      x-formkiq-required-permission: DELETE_ATTRIBUTES
       tags:
         - Attributes
       parameters:
@@ -271,6 +276,7 @@ paths:
   /attributes/{key}/allowedValues:
     get:
       operationId: GetAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
         - Attributes
       description: |-

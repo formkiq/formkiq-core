@@ -11,6 +11,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/limitParam'
         - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
         - User Management
       responses:
@@ -35,6 +36,7 @@ paths:
       operationId: AddGroup
       description: Add a new group
       summary: Add a group
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
         - User Management
       requestBody:
@@ -70,6 +72,7 @@ paths:
       summary: Get a user group
       parameters:
         - $ref: '#/components/parameters/groupNamePath'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
         - User Management
       responses:
@@ -94,6 +97,7 @@ paths:
       operationId: DeleteGroup
       summary: Delete Group
       description: Delete Group
+      x-formkiq-required-permission: DELETE_USER_MANAGEMENT
       tags:
         - User Management
       parameters:
@@ -127,6 +131,7 @@ paths:
         - $ref: '#/components/parameters/groupNamePath'
         - $ref: '#/components/parameters/limitParam'
         - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
         - User Management
       responses:
@@ -153,6 +158,7 @@ paths:
       summary: Add User to a group
       parameters:
         - $ref: '#/components/parameters/groupNamePath'
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
         - User Management
       requestBody:
@@ -186,6 +192,7 @@ paths:
       operationId: RemoveUsernameFromGroup
       summary: Remove Username From Group
       description: Remove Username From Group
+      x-formkiq-required-permission: DELETE_USER_MANAGEMENT
       tags:
         - User Management
       parameters:
@@ -219,6 +226,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/limitParam'
         - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
         - User Management
       responses:
@@ -243,6 +251,7 @@ paths:
       operationId: AddUser
       description: Adds a user
       summary: Add User
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
         - User Management
       requestBody:
@@ -278,6 +287,7 @@ paths:
       summary: Get a user
       parameters:
         - $ref: '#/components/parameters/usernamePath'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
         - User Management
       responses:
@@ -302,6 +312,7 @@ paths:
       operationId: DeleteUsername
       summary: Delete Username
       description: Delete Username
+      x-formkiq-required-permission: DELETE_USER_MANAGEMENT
       tags:
         - User Management
       parameters:
@@ -335,6 +346,7 @@ paths:
         - $ref: '#/components/parameters/usernamePath'
         - $ref: '#/components/parameters/limitParam'
         - $ref: '#/components/parameters/nextParam'
+      x-formkiq-required-permission: READ_USER_MANAGEMENT
       tags:
         - User Management
       responses:
@@ -365,6 +377,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/usernamePath'
         - $ref: '#/components/parameters/usernameOperationPath'
+      x-formkiq-required-permission: WRITE_USER_MANAGEMENT
       tags:
         - User Management
       responses:
@@ -455,11 +468,28 @@ components:
     #@overlay/match missing_ok=True
     SetGroupPermissionsRequest:
       type: object
+      description: |-
+        Replaces the group's grants for a site. roleType is optional. Supply a predefined
+        roleType with no permissions or an empty array, or CUSTOM with a nonempty
+        permissions array. Nonempty permissions with a predefined roleType are rejected. When
+        roleType is omitted, a nonempty permissions array is required and is treated as
+        an explicit CUSTOM grant without adding inherited role permissions. For example,
+        legacy WRITE grants write operations only and is not converted to the predefined
+        WRITE role, which also grants read and delete operations. Requests with neither
+        field, unknown role types or permission names, and invalid field combinations
+        are rejected. Administrator grants require an administrator caller.
       properties:
+        roleType:
+          $ref: "#/components/schemas/ApiPermissionRoleType"
         permissions:
           type: "array"
+          uniqueItems: true
+          description: |-
+            Explicit scoped or legacy umbrella grants. Required when roleType is omitted
+            or CUSTOM, and must then be nonempty. For predefined role types, omit this
+            field or supply an empty array.
           items:
-            $ref: "#/components/schemas/SiteGroupPermissions"
+            $ref: "#/components/schemas/ApiPermissionGrant"
     #@overlay/match missing_ok=True
     GetUsersInGroupResponse:
       type: object
