@@ -25,11 +25,11 @@ package com.formkiq.stacks.api.handler.groups;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.services.lambda.AdminRequestHandler;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.UserManagementRequestHandler;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.stacks.api.transformers.GroupsResponseToMap;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GetGroupResponse;
@@ -38,7 +38,7 @@ import java.util.Map;
 
 /** {@link ApiGatewayRequestHandler} for "/groups/{groupName}". */
 public class GroupRequestHandler
-    implements AdminRequestHandler, ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements UserManagementRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link GroupRequestHandler} URL. */
   public static final String URL = "/groups/{groupName}";

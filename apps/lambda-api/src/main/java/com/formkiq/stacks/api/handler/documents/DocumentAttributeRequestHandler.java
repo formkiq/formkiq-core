@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
@@ -249,6 +250,16 @@ public class DocumentAttributeRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/attributes/{attributeKey}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method) {
+      case "get" -> Optional.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES);
+      case "put" -> Optional.of(ApiPermission.WRITE_DOCUMENT_ATTRIBUTES);
+      case "delete" -> Optional.of(ApiPermission.DELETE_DOCUMENT_ATTRIBUTES);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   @Override

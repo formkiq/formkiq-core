@@ -13,6 +13,7 @@ paths:
         - $ref: '#/components/parameters/nextParam'
         - $ref: '#/components/parameters/limitParam'
         - $ref: '#/components/parameters/statusParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       responses:
@@ -37,6 +38,7 @@ paths:
       operationId: AddWorkflow
       summary: Add workflow
       description: Creates a new Workflow; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:

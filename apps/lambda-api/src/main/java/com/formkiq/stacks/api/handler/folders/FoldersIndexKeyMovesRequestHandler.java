@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.folders;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.folderpermissions.StringToFolder;
 import com.formkiq.aws.dynamodb.folders.FolderMoveRequest;
@@ -39,6 +40,7 @@ import com.formkiq.stacks.dynamodb.folders.FolderIndexProcessor;
 import com.formkiq.validation.ValidationBuilder;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
@@ -62,6 +64,12 @@ public class FoldersIndexKeyMovesRequestHandler
   @Override
   public String getRequestUrl() {
     return "/folders/{indexKey}/moves";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "post".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

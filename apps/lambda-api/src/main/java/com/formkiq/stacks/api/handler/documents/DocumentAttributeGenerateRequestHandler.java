@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import java.util.Optional;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
@@ -58,6 +61,14 @@ public class DocumentAttributeGenerateRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/attributes/{attributeKey}/generate";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method) {
+      case "post" -> Optional.of(ApiPermission.WRITE_DOCUMENT_ATTRIBUTES);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   private AttributeValidationAccess getValidationAccess(final ApiAuthorization authorization,

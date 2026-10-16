@@ -23,6 +23,9 @@
  */
 package com.formkiq.stacks.api.handler.webhooks;
 
+import java.util.Locale;
+import java.util.Optional;
+
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 
 import java.time.ZoneOffset;
@@ -33,6 +36,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.useractivities.ActivityResourceType;
 import com.formkiq.aws.dynamodb.useractivities.ChangeRecord;
 import com.formkiq.aws.dynamodb.useractivities.UserActivityType;
@@ -98,6 +102,16 @@ public class WebhooksIdRequestHandler
   @Override
   public String getRequestUrl() {
     return "/webhooks/{webhookId}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_WEBHOOKS);
+      case "patch" -> Optional.of(ApiPermission.WRITE_WEBHOOKS);
+      case "delete" -> Optional.of(ApiPermission.DELETE_WEBHOOKS);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   private String getUrl(final AwsServiceCache awsServices, final String siteId,

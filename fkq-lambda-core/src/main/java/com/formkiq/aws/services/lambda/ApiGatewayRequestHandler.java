@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.services.lambda;
 
+import java.util.Locale;
 import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
@@ -161,11 +162,38 @@ public interface ApiGatewayRequestHandler {
   }
 
   /**
+   * Get the sites whose grants may satisfy the required permission.
+   *
+   * @return SELECTED_SITE by default; global handlers may opt into ANY_SITE
+   */
+  default ApiPermissionScope getPermissionScope() {
+    return ApiPermissionScope.SELECTED_SITE;
+  }
+
+  /**
    * Get Request Url.
    * 
    * @return {@link String}
    */
   String getRequestUrl();
+
+  /**
+   * Get the mandatory permission for a request method. GET and HEAD require READ; POST, PUT and
+   * PATCH require WRITE; DELETE requires DELETE. Handlers may override this requirement for scoped
+   * grants or operations with a different permission policy. Only the existing ADMIN bypass can
+   * skip a declared permission.
+   *
+   * @param method HTTP method
+   * @return required permission, or empty when authorization is decided solely by custom policies
+   */
+  default Optional<ApiPermission> getRequiredPermission(String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get", "head" -> Optional.of(ApiPermission.READ);
+      case "post", "put", "patch" -> Optional.of(ApiPermission.WRITE);
+      case "delete" -> Optional.of(ApiPermission.DELETE);
+      default -> Optional.empty();
+    };
+  }
 
   /**
    * Head Request Handler.
@@ -185,7 +213,9 @@ public interface ApiGatewayRequestHandler {
   }
 
   /**
-   * Authorization override for {@link ApiGatewayRequestHandler}.
+   * Additional authorization policy for {@link ApiGatewayRequestHandler}. A true decision does not
+   * bypass {@link #getRequiredPermission(String)}. An empty decision adds no restriction to a
+   * declared permission; handlers without a required permission must explicitly allow access.
    * 
    * @param awsServiceCache {@link AwsServiceCache}
    * @param method {@link String}

@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentFulltext
       summary: Get document's full-text
       description: Retrieve an OpenSearch document's details, i.e., metadata
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:
@@ -36,6 +37,7 @@ paths:
       operationId: DeleteDocumentFulltext
       summary: Delete document full-text
       description: Remove full text search for a document from OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:
@@ -63,6 +65,7 @@ paths:
       operationId: SetDocumentFulltext
       summary: Set document's full-text
       description: Set all text/tags found within a document to OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:
@@ -96,6 +99,7 @@ paths:
       operationId: AddDocumentFulltext
       summary: Add document's full-text
       description: Add a document to OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:
@@ -129,6 +133,7 @@ paths:
       operationId: UpdateDocumentFulltext
       summary: Update document's full-text
       description: Update a document in OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:
@@ -165,6 +170,7 @@ paths:
       operationId: DeleteDocumentFulltextTag
       summary: Delete document full-text tag
       description: Remove document tags from OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:
@@ -186,6 +192,7 @@ paths:
       operationId: DeleteDocumentFulltextTagAndValue
       summary: Delete document full-text tag/value
       description: Remove document tag/value from OpenSearch; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Advanced Document Search
       parameters:

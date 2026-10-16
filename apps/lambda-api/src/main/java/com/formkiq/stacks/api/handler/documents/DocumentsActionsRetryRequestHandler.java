@@ -27,11 +27,13 @@ import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -66,6 +68,12 @@ public class DocumentsActionsRetryRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/actions/retry";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "post".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_DOCUMENT_ACTIONS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

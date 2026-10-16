@@ -26,6 +26,7 @@ package com.formkiq.module.lambda.ocr.handlers;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -72,5 +73,11 @@ public class ObjectExaminePdfHandler
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "get".equalsIgnoreCase(method) ? Optional.of(ApiPermission.READ_EXAMINE_OBJECTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

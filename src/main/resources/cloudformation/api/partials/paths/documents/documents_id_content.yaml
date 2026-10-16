@@ -17,6 +17,7 @@ paths:
         If the document has a Content-Type of text/, application/json, application/x-www-form-urlencoded the content field will be returned. 
         All other Content-Type, the contentUrl field will be returned, which is a S3 Presigned url.
 
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Documents
       parameters:

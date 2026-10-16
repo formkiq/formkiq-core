@@ -8,6 +8,7 @@ paths:
       operationId: AddShortlink
       summary: Add shortlink
       description: Create a shortlink for a target URL
+      x-formkiq-required-permission: WRITE_SHORTLINKS
       tags:
         - Shortlinks
       requestBody:

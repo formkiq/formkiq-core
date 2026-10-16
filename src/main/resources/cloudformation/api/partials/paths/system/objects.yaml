@@ -9,6 +9,7 @@ paths:
       description: |-
         Get Signed URL for PDF Object Upload of a document to be examined by calling GET /objects/examine/{id}/pdf
       summary: Add Examine Pdf
+      x-formkiq-required-permission: READ_EXAMINE_OBJECTS
       tags:
         - Examine Objects
       parameters:
@@ -40,6 +41,7 @@ paths:
         
         File must have been uploaded previously using the GET /objects/examine/pdf API.
       summary: Add Examine Pdf
+      x-formkiq-required-permission: READ_EXAMINE_OBJECTS
       tags:
         - Examine Objects
       parameters:

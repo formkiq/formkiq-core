@@ -426,7 +426,7 @@ public class DocumentAttributesRequestTest extends AbstractAwsIntegrationTest {
       ApiClient writer = apiClients.getFirst();
       new AddAttributeRequestBuilder().keyAsString(key).submitOk(writer, siteId);
       String documentId = new AddDocumentRequestBuilder().content("some content")
-          .submitOk(writer, siteId).response().getDocumentId();
+          .contentType("text/plain").submitOk(writer, siteId).response().getDocumentId();
       new WaitForDocumentContentRequestBuilder(documentId).content("some content").submitOk(writer,
           siteId);
       new AddDocumentAttributeRequestBuilder(DocumentArtifact.of(documentId, null))

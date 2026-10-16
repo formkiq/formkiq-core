@@ -28,13 +28,16 @@ import static com.formkiq.aws.dynamodb.objects.Objects.throwIfNull;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.DynamodbRecordToMap;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.model.DocumentSyncRecord;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
@@ -123,6 +126,15 @@ public class DocumentsSyncsRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/syncs";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_DOCUMENTS);
+      case "post" -> Optional.of(ApiPermission.WRITE_DOCUMENTS);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   private void verifyDocument(final AwsServiceCache awsservice, final String siteId,

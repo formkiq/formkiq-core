@@ -23,6 +23,8 @@
  */
 package com.formkiq.stacks.api.handler.documents;
 
+import java.util.Optional;
+
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 
 import java.util.Collection;
@@ -33,6 +35,7 @@ import java.util.Map;
 
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.FindDocumentById;
@@ -135,6 +138,15 @@ public class DocumentAttributesRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/attributes";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method) {
+      case "get" -> Optional.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES);
+      case "post", "put" -> Optional.of(ApiPermission.WRITE_DOCUMENT_ATTRIBUTES);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   @Override

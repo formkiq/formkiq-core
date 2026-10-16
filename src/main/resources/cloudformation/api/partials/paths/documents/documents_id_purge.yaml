@@ -9,6 +9,7 @@ paths:
       summary: Purge document
       description: |-
         Remove all objects from the S3 bucket, including previous versions and current version, and should remove all metadata as well, so that no trace of the document exists outside of the audit logs and any backups. Can only be called be ADMIN or GOVERN.
+      x-formkiq-required-permission: GOVERN_DOCUMENTS
       tags:
         - Documents
       parameters:

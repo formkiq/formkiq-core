@@ -38,6 +38,7 @@ paths:
       operationId: AddSite
       description: Add Site
       summary: Add Site
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       requestBody:
@@ -76,6 +77,7 @@ paths:
       operationId: UpdateSite
       description: Update Site
       summary: Update Site
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -111,6 +113,7 @@ paths:
       operationId: GetSiteGroups
       description: Returns list of groups and permissions belonging to site
       summary: Get group(s) and permissions belonging to site
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -140,6 +143,7 @@ paths:
       operationId: GetSiteGroup
       description: Returns details of a group and permissions belonging to site
       summary: Get group and permissions belonging to site
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -167,6 +171,7 @@ paths:
       operationId: DeleteSiteGroup
       description: Deletes Site Group and permissions
       summary: Deletes Site Group and permissions
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -184,8 +189,16 @@ paths:
   /sites/{siteId}/groups/{groupName}/permissions:
     put:
       operationId: SetSiteGroupPermissions
-      description: Set Site's Group Permissions
+      description: |-
+        Replaces the group's permission grants for the specified site. Supply an optional
+        roleType to select a predefined role, or CUSTOM with a nonempty permissions array.
+        When roleType is omitted, permissions is required and is treated as an explicit
+        CUSTOM grant without adding inherited role permissions. For predefined role types,
+        omit permissions or supply an empty array. Nonempty permissions with a predefined
+        roleType are rejected. ADMIN roles and ADMIN permission grants are not allowed,
+        even for administrators.
       summary: Set Site's Group Permissions
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -197,6 +210,30 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SetGroupPermissionsRequest'
+            examples:
+              PredefinedRole:
+                summary: Grant the predefined User Management role
+                value:
+                  roleType: USER_MANAGEMENT
+              CustomRole:
+                summary: Grant document and document-attribute reads
+                value:
+                  roleType: CUSTOM
+                  permissions:
+                    - READ_DOCUMENTS
+                    - READ_DOCUMENT_ATTRIBUTES
+              ScopedPermissions:
+                summary: Omit roleType for explicit scoped grants
+                value:
+                  permissions:
+                    - READ_DOCUMENTS
+                    - READ_DOCUMENT_ATTRIBUTES
+              LegacyPermissions:
+                summary: Preserve explicit umbrella grants
+                value:
+                  permissions:
+                    - READ
+                    - WRITE
       responses:
         '200':
           description: "200 OK"
@@ -225,6 +262,7 @@ paths:
 
         (Deprecated use /sites/{siteId}/opensearch/indices)
       summary: Get site(s) OpenSearch index settings
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -251,6 +289,7 @@ paths:
       operationId: SetOpenSearchIndex
       description: Sets the OpenSearch index settings
       summary: Set site(s) OpenSearch index settings
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -283,6 +322,7 @@ paths:
       operationId: DeleteOpenSearchIndex
       description: Deletes the OpenSearch index
       summary: Deletes site(s) OpenSearch index
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -301,6 +341,7 @@ paths:
       operationId: GetAllOpenSearchIndices
       description: Returns all OpenSearch indices
       summary: Get all OpenSearch indices
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       responses:
@@ -328,6 +369,7 @@ paths:
       operationId: DeleteOpenSearchIndexByName
       description: Deletes the OpenSearch index by name
       summary: Deletes OpenSearch index by name
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -346,6 +388,7 @@ paths:
       operationId: GetOpenSearchIndices
       description: Returns the OpenSearch indices
       summary: Get site(s) OpenSearch indices
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -372,6 +415,7 @@ paths:
       operationId: SetOpenSearchIndices
       description: Sets the OpenSearch index to use for a SiteId
       summary: Set site(s) OpenSearch index to use for a SiteId
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -410,6 +454,7 @@ paths:
 
         This endpoint is available to administrators when the fulltext OpenSearch module is installed and snapshot support is enabled. Snapshot repositories are not supported for OpenSearch Serverless.
       summary: List OpenSearch snapshot repositories
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       responses:
@@ -440,6 +485,7 @@ paths:
 
         This endpoint clears data no longer referenced by any existing snapshot. This operation is not supported for OpenSearch Serverless.
       summary: Cleanup OpenSearch snapshot repository
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -484,6 +530,7 @@ paths:
 
         The repository stores manual snapshots for the site's OpenSearch index. It is named from the site and application environment and is created automatically when a snapshot is requested. Snapshot repositories are not supported for OpenSearch Serverless.
       summary: Get site OpenSearch snapshot repository
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -513,6 +560,7 @@ paths:
 
         This removes the OpenSearch repository registration, not the site's index. This operation is not supported for OpenSearch Serverless.
       summary: Delete site OpenSearch snapshot repository
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -534,6 +582,7 @@ paths:
 
         For provisioned OpenSearch domains, the response is read from the site's S3 snapshot repository. For OpenSearch Serverless, the response is read from the automated snapshot repository.
       summary: List site OpenSearch snapshots
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -566,6 +615,7 @@ paths:
 
         For provisioned OpenSearch domains, the supplied snapshot name is resolved to the site's stored snapshot name before lookup. For OpenSearch Serverless, the response is read from the automated snapshot repository.
       summary: Get site OpenSearch snapshot
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -596,6 +646,7 @@ paths:
 
         If the site's S3 snapshot repository does not already exist, it is registered before the snapshot is created. The supplied snapshot name is stored with the site prefix. This operation is not supported for OpenSearch Serverless.
       summary: Create site OpenSearch snapshot
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -626,6 +677,7 @@ paths:
 
         The supplied snapshot name is resolved to the site's stored snapshot name before deletion. This operation is not supported for OpenSearch Serverless.
       summary: Delete site OpenSearch snapshot
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -648,6 +700,7 @@ paths:
 
         The restored index is created from the site's current index name with the snapshot name and "_restored" suffix. For provisioned OpenSearch domains, the snapshot is read from the site's S3 snapshot repository. For OpenSearch Serverless, the snapshot is read from the automated snapshot repository.
       summary: Restore site OpenSearch snapshot
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -678,6 +731,7 @@ paths:
 
         This deletes only the restored index named with the snapshot name and "_restored" suffix. It does not delete the original site index or the snapshot. This operation is not supported for OpenSearch Serverless.
       summary: Delete restored OpenSearch snapshot index
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -697,6 +751,7 @@ paths:
       operationId: GetSitesSchema
       description: Gets Sites schema
       summary: Get Sites Schema
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -724,6 +779,7 @@ paths:
       operationId: SetSitesSchema
       description: Sets Sites schema
       summary: Set Sites Schema
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -763,6 +819,7 @@ paths:
   /sites/{siteId}/schema/document/attributes/{key}/allowedValues:
     get:
       operationId: GetSitesSchemaAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
         - Schemas
       description: |-
@@ -797,6 +854,7 @@ paths:
       operationId: GetSitesClassifications
       description: Gets Sites Classifications
       summary: Get Sites Classifications
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -825,6 +883,7 @@ paths:
       operationId: AddClassification
       description: Add Classification
       summary: Add Classification
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -866,6 +925,7 @@ paths:
       operationId: GetClassification
       description: Get Classification
       summary: Get Classification
+      x-formkiq-required-permission: READ_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -894,6 +954,7 @@ paths:
       operationId: DeleteClassification
       description: Delete Classification
       summary: Delete Classification
+      x-formkiq-required-permission: DELETE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -921,6 +982,7 @@ paths:
       operationId: SetClassification
       description: Sets Classification
       summary: Set Classification
+      x-formkiq-required-permission: WRITE_SCHEMAS
       tags:
         - Schemas
       parameters:
@@ -961,6 +1023,7 @@ paths:
   /sites/{siteId}/classifications/{classificationId}/attributes/{key}/allowedValues:
     get:
       operationId: GetClassificationAttributeAllowedValues
+      x-formkiq-required-permission: READ_ATTRIBUTES
       tags:
         - Schemas
       description: |-
@@ -996,6 +1059,7 @@ paths:
       operationId: GetConfiguration
       description: Returns the list of sites that the user has access to
       summary: Get site configuration
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1022,6 +1086,7 @@ paths:
       operationId: UpdateConfiguration
       description: Update the System Management configuration
       summary: Update site configuration
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1063,6 +1128,7 @@ paths:
       operationId: GetNumberingSequences
       description: Returns the numbering sequences configured for a site
       summary: Get numbering sequences
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1094,6 +1160,7 @@ paths:
       operationId: GetNumberingSequence
       description: Returns the numbering sequence configured for an attribute key
       summary: Get numbering sequence
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1127,6 +1194,7 @@ paths:
       operationId: SetNumberingSequence
       description: Creates or updates the numbering sequence for an attribute key
       summary: Set numbering sequence
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1177,6 +1245,7 @@ paths:
       operationId: AddNotificationTest
       description: Queues a test email using the site's saved notification configuration
       summary: Send a test notification
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1218,6 +1287,7 @@ paths:
       operationId: GetApiKeys
       description: Returns the list of ApiKeys
       summary: Get API Keys
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1244,8 +1314,17 @@ paths:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
     post:
       operationId: AddApiKey
-      description: Adds a new API Key
+      description: |-
+        Creates an API key for the specified site. Supply an optional roleType to select
+        a predefined role, or CUSTOM with a nonempty permissions array. When roleType is
+        omitted and a nonempty permissions array is supplied, that array is treated as an
+        explicit CUSTOM grant without adding inherited role permissions. If roleType and
+        permissions are both omitted, or permissions is empty with no roleType, the legacy
+        READ, WRITE and DELETE grants apply. For predefined role types, omit permissions
+        or supply an empty array; nonempty permissions are rejected. ADMIN roles and ADMIN
+        permission grants are not allowed, even for administrators.
       summary: Add API Key
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1258,8 +1337,34 @@ paths:
               $ref: '#/components/schemas/AddApiKeyRequest'
             examples:
               AddApiKey:
+                summary: Preserve the legacy default grants
                 value:
                   name: My API Key
+              PredefinedRole:
+                summary: Create a key with the predefined READ role
+                value:
+                  name: Document reader
+                  roleType: READ
+              CustomRole:
+                summary: Create a key with scoped read grants
+                value:
+                  name: Document and attribute reader
+                  roleType: CUSTOM
+                  permissions:
+                    - READ_DOCUMENTS
+                    - READ_DOCUMENT_ATTRIBUTES
+              ScopedPermissions:
+                summary: Omit roleType for explicit scoped grants
+                value:
+                  name: Document reader
+                  permissions:
+                    - READ_DOCUMENTS
+              LegacyPermissions:
+                summary: Preserve an explicit write-only umbrella grant
+                value:
+                  name: Document writer
+                  permissions:
+                    - WRITE
       responses:
         '200':
           description: 200 OK
@@ -1285,6 +1390,7 @@ paths:
       operationId: DeleteApiKey
       description: Adds a new API Key
       summary: Delete API Key
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1315,6 +1421,7 @@ paths:
       operationId: GetOpaAccessPolicies
       description: Returns a list of OPA Access Policies, can only be requested with ADMIN privileges
       summary: Get OPAs Access Policies
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
         - Access Control
       responses:
@@ -1342,6 +1449,7 @@ paths:
       operationId: GetOpaAccessPolicy
       description: Returns OPA Access Policy, can only be requested with ADMIN privileges
       summary: Get OPA Access Policy
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
         - Access Control
       parameters:
@@ -1374,6 +1482,7 @@ paths:
         request, against simulated request and user input. The operation does not persist
         policies or modify documents.
       summary: Test an OPA access policy, can only be requested with ADMIN privileges
+      x-formkiq-required-permission: ADMIN
       tags:
         - Access Control
       parameters:
@@ -1435,6 +1544,7 @@ paths:
       operationId: GetOpaAccessPolicyItems
       description: Returns OPA Access Policy Items, can only be requested with ADMIN privileges
       summary: Get OPA Access Policy Items
+      x-formkiq-required-permission: GOVERN_ACCESS_CONTROL
       tags:
         - Access Control
       parameters:
@@ -1462,6 +1572,7 @@ paths:
       description: |-
         Sets opa access policy items
       summary: Set opa access policy items, can only be requested with ADMIN privileges
+      x-formkiq-required-permission: ADMIN
       tags:
         - Access Control
       parameters:
@@ -1500,6 +1611,7 @@ paths:
       operationId: DeleteOpaAccessPolicyItems
       summary: Delete OPA Access Policy Items
       description: Delete OPA Access Policy Items
+      x-formkiq-required-permission: ADMIN
       tags:
         - Access Control
       parameters:
@@ -1529,6 +1641,7 @@ paths:
       operationId: GetLocales
       description: Returns a list of locale(s) in a specified site
       summary: Get Locales
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1557,6 +1670,7 @@ paths:
       operationId: AddLocale
       description: Adds a new locale to the specified site
       summary: Add Locale
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1592,6 +1706,7 @@ paths:
       operationId: DeleteLocale
       summary: Delete Locale
       description: Delete Locale
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1622,6 +1737,7 @@ paths:
       operationId: GetLocaleResourceItems
       description: Returns the list resource items
       summary: Get Resource Items by Locale
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1651,6 +1767,7 @@ paths:
       operationId: AddLocaleResourceItem
       description: Adds a new localized resource item for a given locale
       summary: Add Locale Resource Item
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1712,6 +1829,7 @@ paths:
       operationId: GetLocaleResourceItem
       description: Returns the resource item
       summary: Get Resource Item by Locale
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1740,6 +1858,7 @@ paths:
       operationId: SetLocaleResourceItem
       description: Set a new Locale Resource Item
       summary: Set Locale Resource Item
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -1774,6 +1893,7 @@ paths:
       operationId: DeleteLocaleResourceItem
       summary: Delete Local Resource Item
       description: Delete Local Resource Item
+      x-formkiq-required-permission: DELETE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       parameters:
@@ -2238,16 +2358,6 @@ components:
           description: "Classification Id"
 
     #@overlay/match missing_ok=True
-    ApiKeyPermission:
-      type: string
-      description: List of API permissions (defaults to READ / WRITE / DELETE)
-      enum:
-        - READ
-        - WRITE
-        - DELETE
-        - GOVERN
-
-    #@overlay/match missing_ok=True
     OpaPolicy:
       type: "object"
       properties:
@@ -2459,6 +2569,10 @@ components:
     #@overlay/match missing_ok=True
     ApiKey:
       type: "object"
+      description: |-
+        An API key and its permission configuration. roleType is optional for legacy records.
+        A missing roleType means permissions contains explicit CUSTOM grants. A predefined
+        roleType determines the effective role grants, which can be discovered in the catalog.
       properties:
         name:
           type: "string"
@@ -2473,16 +2587,14 @@ components:
         insertedDate:
           type: "string"
           description: "Inserted Timestamp"
+        roleType:
+          $ref: "#/components/schemas/ApiPermissionRoleType"
         permissions:
           type: "array"
-          description: "List of permissions"
+          uniqueItems: true
+          description: Explicit CUSTOM or legacy permission grants.
           items:
-            type: "string"
-            enum:
-              - READ
-              - WRITE
-              - DELETE
-              - GOVERN
+            $ref: "#/components/schemas/ApiPermissionGrant"
         groups:
           type: "array"
           description: "List of groups to add as custom claims to API Key"
@@ -2549,11 +2661,19 @@ components:
     #@overlay/match missing_ok=True
     SiteGroup:
       type: object
+      description: |-
+        A group's permission configuration for a site. roleType is optional for legacy
+        records. A missing roleType means permissions contains explicit CUSTOM grants.
+        A predefined roleType determines the effective role grants.
       properties:
+        roleType:
+          $ref: "#/components/schemas/ApiPermissionRoleType"
         permissions:
           type: "array"
+          uniqueItems: true
+          description: Explicit CUSTOM or legacy permission grants.
           items:
-            $ref: "#/components/schemas/SiteGroupPermissions"
+            $ref: "#/components/schemas/ApiPermissionGrant"
 
     #@overlay/match missing_ok=True
     LocaleInfo:
@@ -2765,6 +2885,18 @@ components:
     #@overlay/match missing_ok=True
     AddApiKeyRequest:
       type: object
+      required:
+        - name
+      description: |-
+        roleType is optional. A predefined roleType must be supplied without nonempty
+        permissions; an omitted or empty array is accepted.
+        CUSTOM requires a nonempty permissions array. When roleType is omitted, a nonempty
+        permissions array is an explicit CUSTOM grant: legacy WRITE grants write operations
+        only and is not converted to the predefined WRITE role, which also grants read and
+        delete operations. If neither field is supplied, or permissions is empty with no
+        roleType, the legacy READ, WRITE and DELETE defaults apply. Unknown role types or
+        permission names, and invalid field combinations, are rejected. ADMIN roles and ADMIN
+        permission grants are not allowed, even for administrators.
       properties:
         name:
           type: "string"
@@ -2774,10 +2906,18 @@ components:
           description: "Optional list of groups to add as custom claims to API Key"
           items:
             type: "string"
+        roleType:
+          $ref: "#/components/schemas/ApiPermissionRoleType"
         permissions:
           type: "array"
+          uniqueItems: true
+          description: |-
+            Explicit scoped or legacy umbrella grants for CUSTOM or an omitted roleType.
+            Required and nonempty when roleType is CUSTOM. For predefined role types,
+            omit this field or supply an empty array.
+            Legacy requests without roleType keep the default grants when this is empty.
           items:
-            $ref: "#/components/schemas/ApiKeyPermission"
+            $ref: "#/components/schemas/ApiPermissionGrant"
 
     #@overlay/match missing_ok=True
     AddApiKeyResponse:
@@ -3071,7 +3211,7 @@ components:
         permissions:
           type: "array"
           items:
-            $ref: "#/components/schemas/SiteGroupPermissions"
+            $ref: "#/components/schemas/ApiPermissionGrant"
         uploadEmail:
           type: "string"
           description: "SiteId document upload email address"
@@ -3094,16 +3234,6 @@ components:
       enum:
         - READ_WRITE
         - READ_ONLY
-    #@overlay/match missing_ok=True
-    SiteGroupPermissions:
-      type: string
-      description: "Site Group Permissions"
-      enum:
-        - ADMIN
-        - DELETE
-        - READ
-        - WRITE
-        - GOVERN
     #@overlay/match missing_ok=True
     SiteConfig:
       type: "object"

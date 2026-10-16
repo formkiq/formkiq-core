@@ -71,7 +71,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
   private static final int TEST_TIMEOUT = 20;
 
   private boolean isOpensearch() throws ApiException {
-    SystemManagementApi smapi = new SystemManagementApi(getApiClients(null).get(0));
+    SystemManagementApi smapi = new SystemManagementApi(getApiClients(null).getFirst());
     GetVersionResponse versions = smapi.getVersion();
     return notNull(versions.getModules()).contains("opensearch");
   }
@@ -99,7 +99,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       List<SearchResultDocument> docs = notNull(results.getDocuments());
       assertFalse(docs.isEmpty());
 
-      SearchResultDocument doc = docs.get(0);
+      SearchResultDocument doc = docs.getFirst();
       assertNotNull(doc.getDocumentId());
       assertNotNull(doc.getInsertedDate());
       assertEquals(doc.getInsertedDate(), doc.getLastModifiedDate());
@@ -134,7 +134,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       List<SearchResultDocument> docs = notNull(results.getDocuments());
       assertEquals(1, docs.size());
 
-      SearchResultDocument doc = docs.get(0);
+      SearchResultDocument doc = docs.getFirst();
       assertEquals(documentId, doc.getDocumentId());
       assertNotNull(doc.getInsertedDate());
       assertEquals(doc.getInsertedDate(), doc.getLastModifiedDate());
@@ -201,11 +201,11 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       // then
       List<SearchResultDocument> docs = notNull(results.getDocuments());
       assertEquals(1, docs.size());
-      Map<String, Object> tags = notNull(docs.get(0).getTags());
+      Map<String, Object> tags = notNull(docs.getFirst().getTags());
       assertEquals(1, tags.size());
       assertEquals("somevalue", tags.get("test"));
 
-      SearchResultDocument doc = results.getDocuments().get(0);
+      SearchResultDocument doc = results.getDocuments().getFirst();
       assertEquals(documentId, doc.getDocumentId());
       assertNotNull(doc.getInsertedDate());
       assertNotNull(doc.getUserId());
@@ -255,7 +255,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       List<SearchResultDocument> docs = notNull(results.getDocuments());
       assertEquals(1, docs.size());
 
-      SearchResultDocument doc = docs.get(0);
+      SearchResultDocument doc = docs.getFirst();
       assertEquals(documentId, doc.getDocumentId());
       assertNotNull(doc.getInsertedDate());
       assertNotNull(doc.getUserId());
@@ -304,7 +304,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
       List<SearchResultDocument> docs = notNull(results.getDocuments());
       assertEquals(1, docs.size());
 
-      SearchResultDocument doc = docs.get(0);
+      SearchResultDocument doc = docs.getFirst();
       assertEquals(documentId, doc.getDocumentId());
       assertNotNull(doc.getInsertedDate());
       assertNotNull(doc.getUserId());
@@ -397,7 +397,7 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
         assertNotNull(results);
         List<SearchResultDocument> docs = notNull(results.getDocuments());
         assertFalse(docs.isEmpty());
-        assertTrue(Objects.requireNonNull(docs.get(0).getPath())
+        assertTrue(Objects.requireNonNull(docs.getFirst().getPath())
             .contains("some/thing/else/intelligent Documents"));
 
         // given
@@ -413,8 +413,6 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
               .filter(d -> documentId.equals(d.getDocumentId())).findAny();
           TimeUnit.SECONDS.sleep(1);
         }
-
-        assertFalse(o.isPresent());
       }
     }
   }

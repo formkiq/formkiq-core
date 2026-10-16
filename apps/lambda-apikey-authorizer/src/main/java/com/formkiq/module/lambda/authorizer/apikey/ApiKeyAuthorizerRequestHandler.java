@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2CustomAuthorizerEvent;
@@ -39,6 +38,8 @@ import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.lambdaservices.logger.LogLevel;
 import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.stacks.dynamodb.ApiKey;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRole;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRoles;
 import com.formkiq.stacks.dynamodb.ApiKeysService;
 import com.formkiq.stacks.dynamodb.ApiKeysServiceExtension;
 import com.google.gson.Gson;
@@ -125,13 +126,15 @@ public class ApiKeyAuthorizerRequestHandler
 
     String apiKeyName = api.name();
     String group = createGroup(isAuthorized, siteId, api.groups());
-    String permissions =
-        api.permissions().stream().map(Enum::name).sorted().collect(Collectors.joining(","));
+    Collection<SiteApiPermissionRole> roles =
+        isAuthorized ? List.of(new SiteApiPermissionRole(siteId, api.permissionRole())) : List.of();
+    String permissions = new SiteApiPermissionRoles(roles).exportPermissionsAsString();
 
     log(logger, input, isAuthorized, group);
 
-    return Map.of("isAuthorized", isAuthorized, "context", Map.of("apiKeyClaims", Map
-        .of("permissions", permissions, "cognito:groups", group, "cognito:username", apiKeyName)));
+    return Map.of("isAuthorized", isAuthorized, "context",
+        Map.of("apiKeyClaims", Map.of("sitePermissions", permissions, "cognito:groups", group,
+            "cognito:username", apiKeyName)));
   }
 
   private void log(final Logger logger, final APIGatewayV2CustomAuthorizerEvent input,
