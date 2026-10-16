@@ -23,40 +23,26 @@
  */
 package com.formkiq.stacks.dynamodb;
 
-import java.util.ArrayList;
+import com.formkiq.strings.ObjectPath;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /** Parses the supported JSON path subset and resolves native DynamoDB document fields. */
 final class JsonAttributeSearchPath {
 
-  /** One property name or zero-based array position. */
-  private static final Pattern SEGMENT =
-      Pattern.compile("\\G(?:\\.([A-Za-z_][A-Za-z0-9_]*)" + "|\\[(0|[1-9][0-9]*)\\]"
-          + "|\\['((?:[^'\\\\]|\\\\.)+)'\\]" + "|\\[\"((?:[^\"\\\\]|\\\\.)+)\"\\])");
-  /** Capture group for single-quoted property names. */
-  private static final int SINGLE_QUOTED = 3;
-  /** Capture group for double-quoted property names. */
-  private static final int DOUBLE_QUOTED = 4;
-
   static List<Object> parse(final String path) {
     if (path == null || !path.startsWith("$") || path.length() < 2) {
       throw new IllegalArgumentException("invalid JSON search path");
     }
-    Matcher matcher = SEGMENT.matcher(path);
-    matcher.region(1, path.length());
-    List<Object> segments = new ArrayList<>();
-    int end = 1;
-    while (matcher.find()) {
-      segments.add(segment(matcher));
-      end = matcher.end();
+    try {
+      List<Object> segments = ObjectPath.parse(path).segments();
+      if (segments.contains("")) {
+        throw new IllegalArgumentException("empty JSON search key");
+      }
+      return segments;
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("invalid JSON search path", e);
     }
-    if (end != path.length()) {
-      throw new IllegalArgumentException("invalid JSON search path");
-    }
-    return List.copyOf(segments);
   }
 
   static AttributeValue resolve(final AttributeValue root, final List<Object> segments) {
@@ -73,30 +59,6 @@ final class JsonAttributeSearchPath {
       }
     }
     return current;
-  }
-
-  private static Object segment(final Matcher matcher) {
-    if (matcher.group(1) != null) {
-      return matcher.group(1);
-    }
-    if (matcher.group(2) != null) {
-      try {
-        return Integer.valueOf(matcher.group(2));
-      } catch (NumberFormatException e) {
-        return Integer.MAX_VALUE;
-      }
-    }
-    String quoted = matcher.group(SINGLE_QUOTED) != null ? matcher.group(SINGLE_QUOTED)
-        : matcher.group(DOUBLE_QUOTED);
-    StringBuilder name = new StringBuilder();
-    for (int i = 0; i < quoted.length(); i++) {
-      char character = quoted.charAt(i);
-      if (character == '\\') {
-        character = quoted.charAt(++i);
-      }
-      name.append(character);
-    }
-    return name.toString();
   }
 
   private JsonAttributeSearchPath() {}
