@@ -135,7 +135,8 @@ public class ApiKeyAuthorizerRequestHandler
     return Map.of("isAuthorized", isAuthorized, "context",
         Map.of("apiKeyClaims",
             Map.of("sitePermissions", permissions, "cognito:groups", group, "cognito:username",
-                apiKeyName, "customClaims", isAuthorized ? api.customClaims() : Map.of())));
+                apiKeyName, "customClaims",
+                gson.toJson(isAuthorized ? api.customClaims() : Map.of()))));
   }
 
   private void log(final Logger logger, final APIGatewayV2CustomAuthorizerEvent input,
