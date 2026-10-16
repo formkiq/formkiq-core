@@ -101,7 +101,7 @@ public class ApiKeyAuthorizerRequestHandler
 
   private String getIdentitySource(final APIGatewayV2CustomAuthorizerEvent input) {
     List<String> identitySource = input.getIdentitySource();
-    return !identitySource.isEmpty() ? identitySource.get(0) : null;
+    return !identitySource.isEmpty() ? identitySource.getFirst() : null;
   }
 
   @Override
@@ -133,8 +133,9 @@ public class ApiKeyAuthorizerRequestHandler
     log(logger, input, isAuthorized, group);
 
     return Map.of("isAuthorized", isAuthorized, "context",
-        Map.of("apiKeyClaims", Map.of("sitePermissions", permissions, "cognito:groups", group,
-            "cognito:username", apiKeyName)));
+        Map.of("apiKeyClaims",
+            Map.of("sitePermissions", permissions, "cognito:groups", group, "cognito:username",
+                apiKeyName, "customClaims", isAuthorized ? api.customClaims() : Map.of())));
   }
 
   private void log(final Logger logger, final APIGatewayV2CustomAuthorizerEvent input,

@@ -1345,6 +1345,17 @@ paths:
                 value:
                   name: Document reader
                   roleType: READ
+              CustomClaims:
+                summary: Create a key with custom application claims
+                value:
+                  name: Legal integration
+                  roleType: READ
+                  customClaims:
+                    custom:department: Legal
+                    customerId: acme
+                    roles:
+                      - reviewer
+                    internal: true
               CustomRole:
                 summary: Create a key with scoped read grants
                 value:
@@ -2600,6 +2611,15 @@ components:
           description: "List of groups to add as custom claims to API Key"
           items:
             type: "string"
+        customClaims:
+          type: object
+          description: |-
+            Custom claims associated with the API key and exposed in the requesting caller's
+            userClaims. Values may be strings, numbers, Booleans, arrays, or objects.
+            Null-valued object fields are omitted.
+            These claims do not override the key's username, site, groups, role, or permissions.
+            Keys created without custom claims have an empty claims map.
+          additionalProperties: true
 
 
 
@@ -2906,6 +2926,17 @@ components:
           description: "Optional list of groups to add as custom claims to API Key"
           items:
             type: "string"
+        customClaims:
+          type: object
+          description: |-
+            Optional custom application claims to associate with the API key. Values may be
+            strings, numbers, Booleans, arrays, or objects and retain their JSON types.
+            Null-valued object fields are omitted.
+            Claims are exposed through userClaims when authenticating with this key and do not
+            override its username, site, groups, role, or permissions. Omission means no custom
+            claims.
+          additionalProperties: true
+          default: {}
         roleType:
           $ref: "#/components/schemas/ApiPermissionRoleType"
         permissions:
@@ -3179,9 +3210,11 @@ components:
             type: string
         userClaims:
           type: object
-          description: Map of custom JWT claims
-          additionalProperties:
-            type: object
+          description: |-
+            Custom claims for the authenticated caller, from a JWT or API key. Values retain
+            their JSON types, including strings, numbers, Booleans, arrays, and objects.
+            Null-valued object fields are omitted.
+          additionalProperties: true
         sites:
           type: array
           description: List of sites

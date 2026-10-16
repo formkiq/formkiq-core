@@ -26,11 +26,12 @@ package com.formkiq.stacks.api.handler.sites;
 import com.formkiq.graalvm.annotations.Reflectable;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Request to add a new API Key.
  */
 @Reflectable
 public record AddApiKeyRequest(String name, List<String> groups, String roleType,
-    List<String> permissions) {
+    List<String> permissions, Map<String, Object> customClaims) {
 }

@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.systemmanagement;
 
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.GetSitesResponse;
 import com.formkiq.client.model.SiteStatus;
 import com.formkiq.testutils.api.ApiHttpResponse;
@@ -42,6 +43,19 @@ public class GetSitesRequestBuilder implements HttpRequestBuilder<GetSitesRespon
    * constructor.
    */
   public GetSitesRequestBuilder() {}
+
+  /**
+   * Get Sites.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link GetSitesResponse}
+   * @throws ApiException ApiException
+   */
+  public GetSitesResponse getSites(final ApiClient apiClient, final String siteId)
+      throws ApiException {
+    return submitOk(apiClient, siteId).response();
+  }
 
   public GetSitesRequestBuilder setStatus(final SiteStatus siteStatus) {
     status = siteStatus;

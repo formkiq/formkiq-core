@@ -24,6 +24,7 @@
 package com.formkiq.stacks.dynamodb;
 
 import java.util.Collection;
+import java.util.Map;
 
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.aws.dynamodb.ApiPermissionRole;
@@ -36,16 +37,17 @@ import com.formkiq.aws.dynamodb.ApiPermissionRole;
 public interface ApiKeysService {
 
   /**
-   * Create an API key with a stored permission role.
+   * Create an API key with a stored permission role and custom application claims.
    *
    * @param siteId site identifier
    * @param name key name
    * @param role permission role
    * @param groups custom group claims
+   * @param customClaims custom JSON claims, or null for no claims
    * @return API key value
    */
-  String createApiKey(String siteId, String name, ApiPermissionRole role,
-      Collection<String> groups);
+  String createApiKey(String siteId, String name, ApiPermissionRole role, Collection<String> groups,
+      Map<String, Object> customClaims);
 
   /**
    * Delete Api Key.

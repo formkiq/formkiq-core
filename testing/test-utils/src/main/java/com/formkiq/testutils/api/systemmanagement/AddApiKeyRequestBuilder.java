@@ -25,6 +25,7 @@ package com.formkiq.testutils.api.systemmanagement;
 
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
+import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddApiKeyRequest;
 import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
@@ -37,6 +38,18 @@ public class AddApiKeyRequestBuilder implements HttpRequestBuilder<AddApiKeyResp
 
   /** Request parameter. */
   private AddApiKeyRequest addApiKeyRequest;
+
+  /**
+   * Get API Key.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   * @throws ApiException ApiException
+   */
+  public String getApiKey(final ApiClient apiClient, final String siteId) throws ApiException {
+    return submitOk(apiClient, siteId).response().getApiKey();
+  }
 
   @Override
   public ApiHttpResponse<AddApiKeyResponse> submit(final ApiClient apiClient, final String siteId) {
