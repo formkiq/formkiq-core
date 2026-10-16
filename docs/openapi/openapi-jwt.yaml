@@ -278,6 +278,19 @@ paths:
 
         Use dataType JSON for one structured JSON object per document attribute key.
         Supply the value through jsonValue when adding the attribute to a document.
+
+        To define a watermark, use dataType WATERMARK and supply watermark.text for text
+        or watermark.imageDocumentId for an image. Text supports `${...}` references to
+        document attributes, document fields, metadata, and the authorization available
+        to the watermark invocation.
+        For example, `${attributes.CustomerName[0]}` selects the first CustomerName value,
+        `${document.path}` selects the document path, and `${auth.username}` selects the
+        current invocation's username. The request examples include sample source values
+        and the expected rendered text.
+
+        The presigned-URL download flow does not forward the downloader's authorization.
+        Without supplied invocation authorization, auth.username is System and custom
+        claim placeholders remain unchanged.
       summary: Add new attribute
       tags:
       - Attributes
@@ -290,6 +303,86 @@ paths:
             schema:
               $ref: '#/components/schemas/AddAttributeRequest'
             examples:
+              Text_Watermark:
+                summary: Static text watermark
+                value:
+                  attribute:
+                    key: confidentialWatermark
+                    dataType: WATERMARK
+                    watermark:
+                      text: Confidential
+              Variable_Watermark:
+                summary: Variable text watermark
+                description: |-
+                  Given CustomerName values ["Acme"], document path "invoice.pdf", username
+                  "mike@example.com", and custom:department claim "Sales" supplied to the watermark
+                  invocation, the expected output is:
+
+                  ```text
+                  Confidential — Acme
+                  File: invoice.pdf
+                  User: mike@example.com
+                  Department: Sales
+                  ```
+                value:
+                  attribute:
+                    key: personalizedWatermark
+                    dataType: WATERMARK
+                    watermark:
+                      text: |-
+                        Confidential — ${attributes.CustomerName[0]}
+                        File: ${document.path}
+                        User: ${auth.username}
+                        Department: ${auth.claims["custom:department"]}
+              Indexed_Attribute_Watermark:
+                summary: Indexed attribute values and literal keys
+                description: |-
+                  Given Reviewer values ["Alice", "Bob"] and the attribute key "Invoice.Number"
+                  with values ["INV-123"], the expected rendered text is "Reviewed by Bob — INV-123".
+                  `[1]` selects the second value; quoted brackets preserve the dot in the attribute key.
+                value:
+                  attribute:
+                    key: reviewerWatermark
+                    dataType: WATERMARK
+                    watermark:
+                      text: Reviewed by ${attributes.Reviewer[1]} — ${attributes["Invoice.Number"][0]}
+              JSON_Attribute_Watermark:
+                summary: Nested JSON attribute values
+                description: |-
+                  Given a Contract JSON attribute with the following jsonValue:
+
+                  ```json
+                  {
+                    "customer": {"name": "Acme"},
+                    "items": [
+                      {"description": "First"},
+                      {"description": "Second"},
+                      {"description": "Third"}
+                    ]
+                  }
+                  ```
+
+                  The expected rendered text is "Acme — Third". Contract[0] selects the attribute
+                  value, while items[2] selects the third element within its JSON array.
+                value:
+                  attribute:
+                    key: contractWatermark
+                    dataType: WATERMARK
+                    watermark:
+                      text: ${attributes.Contract[0].customer.name} — ${attributes.Contract[0].items[2].description}
+              Auth_Claims_Watermark:
+                summary: Custom claims (requires invocation authorization)
+                description: |-
+                  Given invocation claims {"custom:department": "Sales", "roles": ["reviewer", "editor"]},
+                  the expected rendered text is "Sales — reviewer". These claims must be supplied to
+                  the watermark invocation. The presigned-URL download flow does not forward them;
+                  without those claims, the placeholders remain unchanged.
+                value:
+                  attribute:
+                    key: departmentWatermark
+                    dataType: WATERMARK
+                    watermark:
+                      text: ${auth.claims["custom:department"]} — ${auth.claims.roles[0]}
               JSON_Attribute:
                 value:
                   attribute:
@@ -9530,7 +9623,54 @@ components:
           description: Watermark Font Size
         text:
           type: string
-          description: Watermark text
+          description: |-
+            Text to render as a watermark. `${...}` references are resolved before rendering
+            text onto a PDF or image. Static text remains unchanged.
+
+            Use `${...}` markers with explicit namespaces, property access, and zero-based
+            list indices. These markers match document generation, but watermark expressions
+            are limited to value paths; full FreeMarker expressions and directives are not supported.
+
+            | Reference | Meaning | Example resolved value |
+            |---|---|---|
+            | `${attributes.CustomerName[0]}` | First value of `CustomerName` | `Acme` |
+            | `${attributes.Reviewer[1]}` | Second reviewer from `["Alice", "Bob"]` | `Bob` |
+            | `${attributes["Invoice.Number"][0]}` | Attribute whose key contains a dot | `INV-123` |
+            | `${attributes.Contract[0].customer.name}` | Property inside a JSON attribute | `Acme` |
+            | `${attributes.Contract[0].items[2].description}` | Third item inside that JSON object | `Third` |
+            | `${document.documentId}` | Standard document ID | `doc-123` |
+            | `${document.path}` | Standard document path | `invoice.pdf` |
+            | `${document.contentType}` | Standard document content type | `application/pdf` |
+            | `${document.insertedDate}` | Document creation date; example uses ISO 8601 UTC formatting | `2026-10-15T12:00:00Z` |
+            | `${metadata.Department}` | Custom document metadata | `Legal` |
+            | `${auth.username}` | Invocation username; defaults to `System` | `mike@example.com` |
+            | `${auth.claims["custom:department"]}` | Custom authentication claim | `Sales` |
+            | `${auth.claims.roles[0]}` | First role from `["reviewer", "editor"]` | `reviewer` |
+
+            Every document attribute is represented as a list, including a single-valued
+            attribute. In `attributes.Contract[0].items[2]`, `[0]` selects the attribute value
+            and `[2]` selects a JSON array element. Repeated scalar attribute values use
+            DynamoDB sort-key order, not original insertion order; JSON arrays retain their
+            own order.
+
+            Dots traverse properties. Single- or double-quoted bracket keys select exact
+            names containing dots, spaces, colons, or other punctuation. Within a quoted
+            key, a backslash escapes the next character. JSON attributes and claims retain
+            their native object, list, number, Boolean, and string types until a final value
+            is selected. Watermark text must select scalar values; whole objects and lists
+            are rejected.
+
+            The original placeholder is preserved for unknown
+            properties, null values, and out-of-range indices. Malformed paths are rejected.
+            Wildcards, slices, negative indices, and recursive descent are not supported.
+
+            Substitution runs once. Markers inside replacement values remain literal text.
+
+            The auth namespace uses authorization available to the watermark invocation.
+            The presigned-URL download flow does not forward the downloader's identity or
+            custom claims. Without supplied invocation authorization, auth.username resolves
+            to System and custom claim placeholders remain unchanged. The document.userId
+            field identifies the stored document's user and can differ from auth.username.
         rotation:
           type: number
           description: Watermark Rotation

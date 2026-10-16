@@ -25,11 +25,21 @@ package com.formkiq.aws.dynamodb.documentattributes;
 
 import com.formkiq.aws.dynamodb.DynamoDbQuery;
 import com.formkiq.aws.dynamodb.DynamoDbQueryBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.QueryResult;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 /**
- * {@link DynamoDbQuery} to find all Document Attribute Key.
+ * Loads all pages of document attribute records matching an attribute key's sort-key prefix.
+ * Results retain DynamoDB's query order and are scoped to the supplied document or artifact and
+ * site. The query methods use {@code limit} as the page size for each request, without capping the
+ * total number of returned records. A supplied continuation token selects the starting position;
+ * the completed result has no continuation key.
  */
 public class QueryDocumentAttributesByKey implements DynamoDbQuery {
 
@@ -39,7 +49,7 @@ public class QueryDocumentAttributesByKey implements DynamoDbQuery {
   private final String key;
 
   /**
-   * constructor.
+   * Creates a query for a document or artifact and an attribute key.
    * 
    * @param documentArtifact {@link DocumentArtifact}
    * @param attributeKey {@link String}
@@ -59,5 +69,31 @@ public class QueryDocumentAttributesByKey implements DynamoDbQuery {
     String sk = r.sk();
     return DynamoDbQueryBuilder.builder().pk(pk).beginsWith(sk).nextToken(nextToken).limit(limit)
         .build(tableName);
+  }
+
+  /**
+   * Loads all remaining matching attribute records from the specified table, following continuation
+   * keys until DynamoDB reports no more pages. Database failures propagate to the caller instead of
+   * returning partial results.
+   *
+   * @param db document database
+   * @param tableName table queried on every page
+   * @param siteId document site, or null for the default site
+   * @param nextToken continuation token for the starting position, or null to start at the
+   *        beginning
+   * @param limit page size for each request, not a limit on the total number of returned records
+   * @return all remaining matching records with an empty continuation key
+   */
+  @Override
+  public QueryResult query(final DynamoDbService db, final String tableName, final String siteId,
+      final String nextToken, final int limit) {
+    List<Map<String, AttributeValue>> items = new ArrayList<>();
+    String token = nextToken;
+    do {
+      QueryResult page = DynamoDbQuery.super.query(db, tableName, siteId, token, limit);
+      items.addAll(page.items());
+      token = page.toNextToken();
+    } while (token != null);
+    return new QueryResult(items, Map.of());
   }
 }

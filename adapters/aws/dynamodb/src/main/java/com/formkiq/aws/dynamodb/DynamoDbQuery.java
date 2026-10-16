@@ -27,30 +27,33 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /**
- * DynamoDb Query Builder.
+ * Builds and executes DynamoDB queries. The default query implementation returns one page;
+ * implementations may override it to load all pages.
  *
  */
 public interface DynamoDbQuery {
   /**
-   * Builds a {@link QueryRequest}.
+   * Builds a {@link QueryRequest} for one page.
    *
    * @param tableName DynamoDb Table Name.
    * @param siteId Site Identifier
-   * @param nextToken Next Token
-   * @param limit int
+   * @param nextToken continuation token for the starting position, or null for the first page
+   * @param limit page size requested from DynamoDB
    * @return QueryRequest
    */
   QueryRequest build(String tableName, String siteId, String nextToken, int limit);
 
   /**
-   * Find the first record to match {@link QueryRequest}.
+   * Queries one page from the specified table. The default implementation makes one database
+   * request and returns its continuation key so callers can request the next page. Implementations
+   * that load all pages may override this method.
    *
    * @param db {@link DynamoDbService}
    * @param tableName DynamoDb Table Name.
    * @param siteId Site Identifier
-   * @param nextToken Next Token
-   * @param limit int
-   * @return QueryResult
+   * @param nextToken continuation token for the starting position, or null for the first page
+   * @param limit page size requested from DynamoDB
+   * @return the page's items and continuation key, if more results may be available
    */
   default QueryResult query(DynamoDbService db, String tableName, String siteId, String nextToken,
       int limit) {
@@ -60,13 +63,15 @@ public interface DynamoDbQuery {
   }
 
   /**
-   * Find the first record to match {@link QueryRequest}.
+   * Queries using the service's default table, delegating to
+   * {@link #query(DynamoDbService, String, String, String, int)}. That method returns one page by
+   * default; implementations may override it to load all pages.
    *
    * @param db {@link DynamoDbService}
    * @param siteId Site Identifier
-   * @param nextToken Next Token
-   * @param limit int
-   * @return QueryResult
+   * @param nextToken continuation token for the starting position, or null for the first page
+   * @param limit page size requested from DynamoDB
+   * @return the query's items and continuation key, if more results may be available
    */
   default QueryResult query(DynamoDbService db, String siteId, String nextToken, int limit) {
     return query(db, db.getTableName(), siteId, nextToken, limit);
