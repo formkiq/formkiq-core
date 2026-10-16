@@ -26,7 +26,7 @@ package com.formkiq.testutils.api.systemmanagement;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.AddApiKeyRequest;
-import com.formkiq.client.model.ApiKeyPermission;
+import com.formkiq.client.model.ApiPermissionGrant;
 import com.formkiq.client.model.AddApiKeyResponse;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
@@ -45,12 +45,14 @@ public class AddSiteApiKeyRequestBuilder implements HttpRequestBuilder<AddApiKey
    * constructor.
    * 
    * @param name {@link String}
-   * @param permissions {@link ApiKeyPermission}
+   * @param permissions {@link ApiPermissionGrant}
    * @param groups {@link String}
    */
-  public AddSiteApiKeyRequestBuilder(final String name, final List<ApiKeyPermission> permissions,
-      final List<String> groups) {
-    req = new AddApiKeyRequest().name(name).permissions(permissions).groups(groups);
+  public AddSiteApiKeyRequestBuilder(final String name,
+      final java.util.Collection<ApiPermissionGrant> permissions, final List<String> groups) {
+    req = new AddApiKeyRequest().name(name)
+        .permissions(permissions == null ? null : new java.util.LinkedHashSet<>(permissions))
+        .groups(groups);
   }
 
   @Override

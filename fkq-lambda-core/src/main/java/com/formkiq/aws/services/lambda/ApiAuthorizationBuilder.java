@@ -28,6 +28,7 @@ import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.strings.Strings.isEmpty;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -43,6 +44,11 @@ import java.util.stream.Collectors;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRole;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRoles;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRolesMerger;
 import com.formkiq.aws.services.lambda.exceptions.ForbiddenException;
 import com.formkiq.aws.services.lambda.exceptions.UnauthorizedException;
 import com.google.gson.Gson;
@@ -58,15 +64,13 @@ import com.google.gson.reflect.TypeToken;
 public class ApiAuthorizationBuilder {
 
   /** Standard and Cognito-managed claims to exclude. */
-  private static final Set<String> EXCLUDED_CLAIMS =
-      Set.of("sub", "cognito:groups", "iss", "client_id", "origin_jti", "event_id", "token_use",
-          "scope", "auth_time", "exp", "iat", "jti", "username", "sitesClaims", "cognito:username");
+  private static final Set<String> EXCLUDED_CLAIMS = Set.of("sub", "cognito:groups", "iss",
+      "client_id", "origin_jti", "event_id", "token_use", "scope", "sitePermissions", "auth_time",
+      "exp", "iat", "jti", "username", "sitesClaims", "cognito:username");
   /** Cognito Admin Group Name. */
   private static final String COGNITO_ADMIN_GROUP = "Admins";
   /** The suffix for the 'readonly' Cognito group. */
   public static final String COGNITO_READ_SUFFIX = "_read";
-  /** The suffix for the 'readonly' Cognito group. */
-  public static final String COGNITO_GOVERN_SUFFIX = "_govern";
   /** Global Site Urls. */
   private static final Collection<String> GLOBAL_SITE_URLS =
       Set.of("/changePassword", "/confirmRegistration", "/forgotPassword", "/forgotPasswordConfirm",
@@ -132,67 +136,9 @@ public class ApiAuthorizationBuilder {
       claims = claims.substring(0, claims.length() - 1);
     }
 
-    String delimiterRegex = claims.indexOf(',') >= 0 ? "," : " ";
+    String delimiterRegex = claims.indexOf(',') >= 0 ? "," : "\\s+";
     for (String token : claims.split(delimiterRegex)) {
       addClaimValue(groups, token);
-    }
-  }
-
-  /**
-   * Add Permissions.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @param authorization {@link ApiAuthorization}
-   * @param groups {@link Collection} {@link String}
-   * @param admin boolean
-   */
-  private void addPermissions(final ApiGatewayRequestEvent event,
-      final ApiAuthorization authorization, final Collection<String> groups, final boolean admin) {
-
-    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
-    Map<String, List<String>> permissionsMap = getPermissionsMap(event);
-
-    if (permissionsMap != null) {
-
-      String siteId = event.getQueryStringParameter("siteId");
-
-      permissionsMap.forEach((group, perms) -> {
-        List<ApiPermission> permissions = perms.stream()
-            .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
-        authorization.addPermission(group, permissions);
-      });
-
-      if (permissionsMap.size() == 1 && siteId == null) {
-        authorization.siteId(permissionsMap.keySet().iterator().next());
-      }
-
-    } else {
-
-      for (String group : groups) {
-
-        if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
-          if (group.endsWith(COGNITO_READ_SUFFIX)) {
-            authorization.addPermission(group.replace(COGNITO_READ_SUFFIX, ""),
-                List.of(ApiPermission.READ));
-          } else if (group.endsWith(COGNITO_GOVERN_SUFFIX)) {
-            authorization.addPermission(group.replace(COGNITO_GOVERN_SUFFIX, ""),
-                List.of(ApiPermission.GOVERN, ApiPermission.READ, ApiPermission.WRITE,
-                    ApiPermission.DELETE));
-          } else if (admin) {
-            authorization.addPermission(group, List.of(ApiPermission.values()));
-          } else if (claims.containsKey("permissions")) {
-
-            String[] list = claims.get("permissions").toString().split(",");
-            List<ApiPermission> permissions = Arrays.stream(list)
-                .map(ApiAuthorizationBuilder::toApiPermission).collect(Collectors.toList());
-            authorization.addPermission(group, permissions);
-
-          } else {
-            authorization.addPermission(group,
-                Arrays.asList(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE));
-          }
-        }
-      }
     }
   }
 
@@ -226,7 +172,9 @@ public class ApiAuthorizationBuilder {
         .username(getUsername(event)).customEmail(getCustomEmail(event)).samlGroups(samlGroups)
         .roles(roles).roleSiteMap(roleSiteMap).userClaims(userClaims);
 
-    addPermissions(event, authorization, groups, admin);
+    SiteApiPermissionRoles siteApiPermissionRoles = createPermissionRoles(event, groups, admin);
+
+    siteApiPermissionRoles.roles().forEach(authorization::addPermission);
 
     if (this.interceptors != null) {
       for (ApiAuthorizationInterceptor i : this.interceptors) {
@@ -241,9 +189,81 @@ public class ApiAuthorizationBuilder {
     return authorization;
   }
 
-  private String findDefaultSiteIdFromEventAndGroups(final ApiGatewayRequestEvent event,
-      final Collection<String> groups) {
+  /**
+   * Create permission roles, combining grants for duplicate site IDs.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @param groups {@link Collection} {@link String}
+   * @param admin boolean
+   * @return {@link SiteApiPermissionRoles}
+   */
+  private SiteApiPermissionRoles createPermissionRoles(final ApiGatewayRequestEvent event,
+      final Collection<String> groups, final boolean admin) throws UnauthorizedException {
 
+    SiteApiPermissionRoles compact = getSitePermissions(event);
+    if (compact != null) {
+      return compact;
+    }
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+    Map<String, List<String>> permissionsMap = getPermissionsMap(event);
+
+    Collection<SiteApiPermissionRole> siteApiPermissionRoles = new ArrayList<>();
+
+    if (permissionsMap != null) {
+
+      permissionsMap.forEach((group, perms) -> {
+        List<ApiPermission> permissions = perms.stream()
+            .map(ApiAuthorizationBuilder::toApiPermission).filter(Objects::nonNull).toList();
+        var permissionRole = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+            .permissions(permissions).build();
+        siteApiPermissionRoles.add(new SiteApiPermissionRole(group, permissionRole));
+      });
+
+    } else {
+
+      for (String group : groups) {
+
+        String siteId = group;
+        ApiPermissionRole permissionRole;
+
+        if (!COGNITO_ADMIN_GROUP.equalsIgnoreCase(group)) {
+
+          var permissionRoleType = ApiPermissionRoleType.fromSuffix(group);
+          if (permissionRoleType.isPresent()) {
+            var type = permissionRoleType.get();
+            siteId = group.substring(0, group.length() - type.name().length() - 1);
+            permissionRole = ApiPermissionRole.builder(type).build();
+          } else if (admin) {
+            permissionRole = ApiPermissionRole.builder(ApiPermissionRoleType.ADMIN).build();
+          } else if (claims.containsKey("permissions")) {
+
+            String[] list = claims.get("permissions").toString().split(",");
+            var permissions =
+                Arrays.stream(list).map(ApiAuthorizationBuilder::toApiPermission).toList();
+            permissionRole = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+                .permissions(permissions).build();
+
+          } else {
+            permissionRole = ApiPermissionRole.builder(ApiPermissionRoleType.WRITE).build();
+          }
+
+          var siteApiPermissionRole = new SiteApiPermissionRole(siteId, permissionRole);
+          siteApiPermissionRoles.add(siteApiPermissionRole);
+        }
+      }
+    }
+
+    return new SiteApiPermissionRoles(
+        new SiteApiPermissionRolesMerger().apply(siteApiPermissionRoles));
+  }
+
+  private String findDefaultSiteIdFromEventAndGroups(final ApiGatewayRequestEvent event,
+      final Collection<String> groups) throws UnauthorizedException {
+
+    SiteApiPermissionRoles compact = getSitePermissions(event);
+    if (compact != null) {
+      return compact.roles().size() == 1 ? compact.roles().iterator().next().siteId() : null;
+    }
     Map<String, List<String>> permissionsMap = getPermissionsMap(event);
 
     if (permissionsMap != null) {
@@ -251,9 +271,10 @@ public class ApiAuthorizationBuilder {
     }
 
     Collection<String> filteredGroups =
-        groups.stream().filter(g -> !g.equalsIgnoreCase(COGNITO_ADMIN_GROUP))
-            .map(g -> g.endsWith(COGNITO_READ_SUFFIX) ? g.replace(COGNITO_READ_SUFFIX, "") : g)
-            .map(g -> g.endsWith(COGNITO_GOVERN_SUFFIX) ? g.replace(COGNITO_GOVERN_SUFFIX, "") : g)
+        groups.stream().filter(group -> !group.equalsIgnoreCase(COGNITO_ADMIN_GROUP))
+            .map(group -> ApiPermissionRoleType.fromSuffix(group)
+                .map(type -> group.substring(0, group.length() - type.name().length() - 1))
+                .orElse(group))
             .collect(Collectors.toSet());
 
     return filteredGroups.size() == 1 ? filteredGroups.iterator().next() : null;
@@ -423,6 +444,23 @@ public class ApiAuthorizationBuilder {
     }
 
     return siteId;
+  }
+
+  private SiteApiPermissionRoles getSitePermissions(final ApiGatewayRequestEvent event)
+      throws UnauthorizedException {
+    Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
+    if (!claims.containsKey("sitePermissions")) {
+      return null;
+    }
+    try {
+      Object encoded = claims.get("sitePermissions");
+      if (!(encoded instanceof String value)) {
+        throw new IllegalArgumentException("sitePermissions must be a JSON string");
+      }
+      return SiteApiPermissionRoles.importPermissions(value);
+    } catch (IllegalArgumentException e) {
+      throw new UnauthorizedException("invalid site permissions");
+    }
   }
 
   /**

@@ -25,6 +25,7 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -53,6 +54,11 @@ public class UserLoginRequestHandler
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return Optional.empty();
   }
 
   @Override

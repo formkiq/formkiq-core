@@ -11,6 +11,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/workflowIdParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       responses:
@@ -35,6 +36,7 @@ paths:
       operationId: DeleteWorkflow
       summary: Delete workflow
       description: Delete a Workflow; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -62,6 +64,7 @@ paths:
       operationId: SetWorkflow
       summary: Set workflow
       description: Set a Workflow details; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -109,6 +112,7 @@ paths:
       operationId: UpdateWorkflow
       summary: Update workflow
       description: Update a Workflow details; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -158,6 +162,7 @@ paths:
       operationId: GetWorkflowDocuments
       summary: Get list of documents in workflow
       description: List documents in Workflow; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:

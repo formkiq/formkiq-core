@@ -229,7 +229,7 @@ public class AwsResourceTest extends AbstractAwsTest {
     // new DocumentItemDynamoDb(key, new Date(), "test");
 
     // when
-    getDocumentService().saveDocument(null, record, null);
+    getDocumentService().saveDocument(null, record, new SaveDocumentOptions());
     key = writeToDocuments(key, contentType);
 
     // then

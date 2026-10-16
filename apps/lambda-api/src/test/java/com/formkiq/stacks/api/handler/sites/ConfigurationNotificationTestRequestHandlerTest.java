@@ -29,7 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
-import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRole;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.module.events.EventService;
 import com.formkiq.module.events.EventServiceMock;
@@ -42,7 +44,7 @@ import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotification;
 import com.formkiq.stacks.dynamodb.config.SiteConfigurationNotificationProvider;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
-import java.util.List;
+
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -93,8 +95,9 @@ class ConfigurationNotificationTestRequestHandlerTest {
   private static final String SITE_ID = "site123";
 
   private ApiAuthorization authorization() {
-    return new ApiAuthorization().username("admin@example.com").addPermission(SITE_ID,
-        List.of(ApiPermission.ADMIN));
+    var apiPermissionRole = ApiPermissionRole.builder(ApiPermissionRoleType.ADMIN).build();
+    return new ApiAuthorization().username("admin@example.com")
+        .addPermission(new SiteApiPermissionRole(SITE_ID, apiPermissionRole));
   }
 
   private AwsServiceCache cache(final EventServiceMock events,

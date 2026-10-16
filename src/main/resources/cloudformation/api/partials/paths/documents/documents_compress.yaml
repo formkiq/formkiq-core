@@ -17,6 +17,7 @@ paths:
               $ref: '#/components/schemas/DocumentsCompressRequest'
       description: |-
         Compress documents into an .ZIP archive file, and returns a S3 presigned url for the location of the archive file. The operation is async and processing time depends on the number and size of documents included; a 404 status code is returned until the file is ready.
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Documents
       responses:

@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentWorkflows
       summary: Get document workflows
       description: Gets a document workflows; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -49,6 +50,7 @@ paths:
       operationId: AddDocumentWorkflow
       summary: Add document workflow
       description: Creates a document workflow; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -99,6 +101,7 @@ paths:
       operationId: GetDocumentWorkflow
       summary: Get document workflow
       description: Gets a document workflow; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -144,6 +147,7 @@ paths:
       operationId: AddDocumentWorkflowDecisions
       summary: Approve/Reject document in approval queue
       description: Approve/Reject document in approval queue; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:

@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentArtifacts
       summary: Get document artifacts
       description: Returns the list of artifact documents associated with the specified document
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Documents
       parameters:
@@ -39,6 +40,7 @@ paths:
       operationId: PromoteDocumentArtifact
       summary: Promote document artifact
       description: Promotes a document artifact to the specified document
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Documents
       parameters:

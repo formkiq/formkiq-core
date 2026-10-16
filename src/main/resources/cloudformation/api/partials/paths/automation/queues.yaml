@@ -12,6 +12,7 @@ paths:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/nextParam'
         - $ref: '#/components/parameters/limitParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       responses:
@@ -36,6 +37,7 @@ paths:
       operationId: AddQueue
       summary: Add queue
       description: Creates a new Queue; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -87,6 +89,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/queueIdParam'
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       responses:
@@ -111,6 +114,7 @@ paths:
       operationId: DeleteQueue
       summary: Delete queue
       description: Delete a Queue; available as an Add-On Module
+      x-formkiq-required-permission: DELETE_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:
@@ -141,6 +145,7 @@ paths:
       operationId: GetWorkflowQueueDocuments
       summary: Get list of documents in queue
       description: List documents in Workflow Queue; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_WORKFLOWS
       tags:
         - Document Workflows
       parameters:

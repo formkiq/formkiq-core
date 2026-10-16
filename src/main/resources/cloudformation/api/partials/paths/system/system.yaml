@@ -8,6 +8,7 @@ paths:
       operationId: GetSystemConfiguration
       description: Returns the system configuration
       summary: Get system configuration
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       responses:
@@ -32,6 +33,7 @@ paths:
       operationId: UpdateSystemConfiguration
       description: Update the system configuration
       summary: Update system configuration
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       requestBody:
@@ -71,6 +73,7 @@ paths:
       operationId: GetSystemInferenceModels
       description: Returns the system inference models
       summary: Get system inference models
+      x-formkiq-required-permission: READ_SYSTEM_MANAGEMENT
       tags:
         - System Management
       responses:
@@ -98,6 +101,7 @@ paths:
       operationId: AddSystemInferenceModelAgreement
       description: Agree to the Bedrock model usage agreement for a system inference model
       summary: Agree to a system inference model
+      x-formkiq-required-permission: WRITE_SYSTEM_MANAGEMENT
       tags:
         - System Management
       requestBody:

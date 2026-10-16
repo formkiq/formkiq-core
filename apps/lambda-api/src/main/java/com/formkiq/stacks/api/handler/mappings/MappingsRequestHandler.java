@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.mappings;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -38,7 +39,9 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.mappings.MappingService;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/mappings". */
 public class MappingsRequestHandler
@@ -76,6 +79,15 @@ public class MappingsRequestHandler
   @Override
   public String getRequestUrl() {
     return "/mappings";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_MAPPINGS);
+      case "post" -> Optional.of(ApiPermission.WRITE_MAPPINGS);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   @Override

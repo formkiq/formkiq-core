@@ -8,6 +8,7 @@ paths:
       operationId: GetDocumentVersions
       summary: Get document's versions
       description: Get a listing of document content and metadata versions; available as an Add-On Module
+      x-formkiq-required-permission: READ_DOCUMENT_VERSIONS
       tags:
         - Document Versions
       parameters:
@@ -39,6 +40,7 @@ paths:
       operationId: SetDocumentVersion
       summary: Set version of document
       description: Set document to a previous document version; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_DOCUMENT_VERSIONS
       tags:
         - Document Versions
       parameters:
@@ -82,6 +84,7 @@ paths:
       operationId: DeleteDocumentVersion
       summary: Delete document version
       description: Delete a specific previous document version; available as an Add-On Module
+      x-formkiq-required-permission: GOVERN_DOCUMENT_VERSIONS
       tags:
         - Document Versions
       parameters:

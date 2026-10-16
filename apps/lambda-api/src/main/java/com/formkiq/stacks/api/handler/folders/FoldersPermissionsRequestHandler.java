@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.folders;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -55,11 +56,9 @@ public class FoldersPermissionsRequestHandler
   }
 
   @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsservice, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    String siteId = authorization.getSiteId();
-    boolean access = authorization.isAdminOrGovern(siteId);
-    return Optional.of(access);
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "put".equalsIgnoreCase(method) ? Optional.of(ApiPermission.GOVERN_DOCUMENT_FOLDERS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   @Override

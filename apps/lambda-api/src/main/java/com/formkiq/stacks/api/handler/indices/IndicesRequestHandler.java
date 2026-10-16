@@ -28,10 +28,12 @@ import static com.formkiq.aws.dynamodb.folders.FolderIndexRecord.INDEX_FILE_SK;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
@@ -124,6 +126,12 @@ public class IndicesRequestHandler
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "delete".equalsIgnoreCase(method) ? Optional.of(ApiPermission.DELETE_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 
   private void initIndexService(final AwsServiceCache awsServiceCache) {

@@ -13,6 +13,7 @@ dependencies {
   implementation libs.aws.sdk.url.connection.client
   implementation libs.formkiq.graalvm.annotations
   implementation libs.ulid.creator
+  implementation libs.gson
 
   testImplementation libs.junit.jupiter.engine
   testImplementation libs.junit.jupiter.params

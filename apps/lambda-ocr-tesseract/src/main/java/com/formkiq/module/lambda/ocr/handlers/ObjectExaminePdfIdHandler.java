@@ -29,11 +29,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -97,5 +99,11 @@ public class ObjectExaminePdfIdHandler
   @Override
   public String getRequestUrl() {
     return URL;
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "get".equalsIgnoreCase(method) ? Optional.of(ApiPermission.READ_EXAMINE_OBJECTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

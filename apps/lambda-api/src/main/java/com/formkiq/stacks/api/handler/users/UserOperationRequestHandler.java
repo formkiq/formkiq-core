@@ -28,16 +28,15 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
-import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.UserManagementRequestHandler;
 import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
-import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/users/{username}/{userOperation}". */
 public class UserOperationRequestHandler
-    implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
+    implements UserManagementRequestHandler, ApiGatewayRequestEventUtil {
 
   /** {@link UserOperationRequestHandler} URL. */
   public static final String URL = "/users/{username}/{userOperation}";
@@ -45,13 +44,6 @@ public class UserOperationRequestHandler
   @Override
   public String getRequestUrl() {
     return URL;
-  }
-
-  @Override
-  public Optional<Boolean> isAuthorized(final AwsServiceCache awsServiceCache, final String method,
-      final ApiGatewayRequestEvent event, final ApiAuthorization authorization) {
-    boolean access = authorization.getAllPermissions().contains(ApiPermission.ADMIN);
-    return Optional.of(access);
   }
 
   @Override

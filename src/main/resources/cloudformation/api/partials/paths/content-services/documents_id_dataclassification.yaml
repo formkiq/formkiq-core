@@ -12,6 +12,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
         - Intelligent Document Processing
       parameters:
@@ -46,6 +47,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: WRITE_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
         - Intelligent Document Processing
       parameters:
@@ -87,6 +89,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -124,6 +127,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -159,6 +163,7 @@ paths:
         **Deprecated**. This endpoint is no longer recommended.
         Please use **`/documents/{documentId}/ai/prompts/{llmPromptEntityName}`** instead.
       deprecated: true
+      x-formkiq-required-permission: WRITE_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -191,6 +196,7 @@ paths:
       operationId: GetDocumentAiPromptsResults
       summary: Get document AI results from LLM prompts
       description: Retrieve document AI results from LLM prompts; available as an Add-On Module
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -225,6 +231,7 @@ paths:
       operationId: GetDocumentAiPromptResults
       summary: Get document AI results from LLM prompt
       description: Retrieve document AI results from an LLM prompt; available as an Add-On Module
+      x-formkiq-required-permission: READ_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:
@@ -257,6 +264,7 @@ paths:
       operationId: AddDocumentAiPrompt
       summary: Add document AI result from LLM prompt
       description: Run an LLM prompt against a document; available as an Add-On Module
+      x-formkiq-required-permission: WRITE_INTELLIGENT_DOCUMENT_PROCESSING
       tags:
       - Intelligent Document Processing
       parameters:

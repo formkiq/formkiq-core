@@ -8,6 +8,7 @@ paths:
       operationId: GetDocument
       summary: Get document
       description: Retrieves a document's details, i.e., metadata
+      x-formkiq-required-permission: READ_DOCUMENTS
       tags:
         - Documents
       parameters:
@@ -43,6 +44,7 @@ paths:
 
         NOTE:
         - provided attributes will overwrite existing matching attribute keys in the document. Attributes not included in the request body will remain unchanged.
+      x-formkiq-required-permission: WRITE_DOCUMENTS
       tags:
         - Documents
       parameters:
@@ -109,6 +111,7 @@ paths:
         The document can be permanently deleted by calling the DELETE /documents/{documentId} with softDelete=false or restored using the PUT /documents/{documentId}/restore.
 
         Only the GET /documents?softDeleted=true will return all the soft deleted documents.
+      x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Documents
       parameters:

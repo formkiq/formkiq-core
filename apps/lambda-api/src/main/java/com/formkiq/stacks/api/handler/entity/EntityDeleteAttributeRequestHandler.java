@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
@@ -42,6 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_OK;
 
@@ -113,5 +115,11 @@ public class EntityDeleteAttributeRequestHandler
   @Override
   public String getRequestUrl() {
     return "/entities/{entityTypeId}/{entityId}/attributes/{attributeKey}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "delete".equalsIgnoreCase(method) ? Optional.of(ApiPermission.DELETE_ENTITY)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

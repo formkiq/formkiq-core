@@ -24,6 +24,7 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.AttributeValueToMapConfig;
 import com.formkiq.aws.dynamodb.DynamoDbService;
@@ -34,6 +35,7 @@ import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 
+import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/artifacts". */
 public class DocumentIdArtifactsRequestHandler
@@ -65,5 +67,11 @@ public class DocumentIdArtifactsRequestHandler
   @Override
   public String getRequestUrl() {
     return "/documents/{documentId}/artifacts";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "get".equalsIgnoreCase(method) ? Optional.of(ApiPermission.READ_DOCUMENTS)
+        : ApiGatewayRequestHandler.super.getRequiredPermission(method);
   }
 }

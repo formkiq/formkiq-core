@@ -16,6 +16,7 @@ paths:
         the ADMIN principal that issued it. The reason is signed into the token for audit and
         support traceability.
       summary: Generate a delegation token
+      x-formkiq-required-permission: ADMIN
       tags:
         - System Management
       parameters:

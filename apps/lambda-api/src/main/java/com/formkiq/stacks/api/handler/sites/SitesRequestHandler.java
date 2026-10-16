@@ -169,6 +169,11 @@ public class SitesRequestHandler implements ApiGatewayRequestHandler, ApiGateway
     return "/sites";
   }
 
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return Optional.empty();
+  }
+
   /**
    * Generate random {@link String}.
    * 

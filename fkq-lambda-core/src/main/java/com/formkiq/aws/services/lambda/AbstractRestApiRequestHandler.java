@@ -170,7 +170,11 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
    */
   private Optional<Boolean> checkPermission(final ApiPermission permission,
       final Collection<ApiPermission> permissions) {
-    return permissions.contains(permission) ? Optional.of(Boolean.TRUE) : Optional.empty();
+    return permission != null && permissions.stream()
+        .anyMatch(grant -> grant != null && (grant == permission
+            || grant.getGroup() == null && grant.getType() == permission.getType()))
+                ? Optional.of(Boolean.TRUE)
+                : Optional.empty();
   }
 
   /**
@@ -399,17 +403,15 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     hasAccess = isAuthorizedHandler(event, authorization, hasAccess);
 
     String siteId = authorization.getSiteId();
-    if (siteId != null) {
-      Collection<ApiPermission> permissions = authorization.getPermissions(siteId);
-
-      if (hasAccess.isEmpty()) {
-        hasAccess = switch (method) {
-          case "head", "get" -> checkPermission(ApiPermission.READ, permissions);
-          case "post", "patch", "put" -> checkPermission(ApiPermission.WRITE, permissions);
-          case "delete" -> checkPermission(ApiPermission.DELETE, permissions);
-          default -> Optional.empty();
-        };
-      }
+    Optional<ApiPermission> requiredPermission = handler.getRequiredPermission(method);
+    if (requiredPermission.isPresent()) {
+      Collection<ApiPermission> permissions = switch (handler.getPermissionScope()) {
+        case ANY_SITE -> authorization.getAllPermissions();
+        case SELECTED_SITE -> siteId != null ? authorization.getPermissions(siteId) : List.of();
+      };
+      boolean permissionGranted =
+          checkPermission(requiredPermission.get(), permissions).orElse(Boolean.FALSE);
+      hasAccess = Optional.of(permissionGranted && hasAccess.orElse(Boolean.TRUE));
     }
 
     hasAccess =
@@ -430,7 +432,7 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
       Optional<Boolean> ah =
           authorizationHandler.isAuthorized(getAwsServices(), event, authorization);
       if (ah.isPresent()) {
-        isAuthorized = ah;
+        isAuthorized = Optional.of(hasAccess.orElse(Boolean.TRUE) && ah.get());
       }
     }
     return isAuthorized;

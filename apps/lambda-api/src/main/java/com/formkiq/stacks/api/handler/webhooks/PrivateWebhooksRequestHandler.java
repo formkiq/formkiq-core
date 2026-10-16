@@ -24,6 +24,9 @@
 package com.formkiq.stacks.api.handler.webhooks;
 
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
+import com.formkiq.aws.dynamodb.ApiPermission;
+
+import java.util.Optional;
 
 /** {@link ApiGatewayRequestHandler} for "/private/webhooks". */
 public class PrivateWebhooksRequestHandler extends PublicWebhooksRequestHandler {
@@ -31,6 +34,12 @@ public class PrivateWebhooksRequestHandler extends PublicWebhooksRequestHandler 
   @Override
   public String getRequestUrl() {
     return "/private/webhooks";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return "post".equalsIgnoreCase(method) ? Optional.of(ApiPermission.WRITE_WEBHOOKS)
+        : super.getRequiredPermission(method);
   }
 
   @Override

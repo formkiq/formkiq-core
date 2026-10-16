@@ -9,6 +9,7 @@ paths:
       description: |-
         Exports a Google Document; available as an Add-On Module
       summary: Add Google Document Export
+      x-formkiq-required-permission: WRITE_GOOGLE_INTEGRATION
       tags:
         - Google Integration
       parameters:

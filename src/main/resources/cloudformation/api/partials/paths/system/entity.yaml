@@ -6,6 +6,7 @@ paths:
   /entityTypes:
     get:
       operationId: GetEntityTypes
+      x-formkiq-required-permission: READ_ENTITY
       tags:
         - Entity
       description: Returns a list of entity types
@@ -38,6 +39,7 @@ paths:
       description: |-
         Creates a Entity Type
       summary: Add New EntityType
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
         - Entity
       parameters:
@@ -77,6 +79,7 @@ paths:
   /entityTypes/{entityTypeId}:
     get:
       operationId: GetEntityType
+      x-formkiq-required-permission: READ_ENTITY
       tags:
         - Entity
       description: Returns a entity type
@@ -108,6 +111,7 @@ paths:
       description: |-
         Sets a Entity Type
       summary: Set EntityType
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
         - Entity
       parameters:
@@ -148,6 +152,7 @@ paths:
       operationId: DeleteEntityType
       description: Deletes Entity Type
       summary: Deletes Entity Type
+      x-formkiq-required-permission: DELETE_ENTITY
       tags:
         - Entity
       parameters:
@@ -165,6 +170,7 @@ paths:
   /entities/{entityTypeId}:
     get:
       operationId: GetEntities
+      x-formkiq-required-permission: READ_ENTITY
       tags:
         - Entity
       description: Returns a list of entities
@@ -198,6 +204,7 @@ paths:
       description: |-
         Creates a Entity
       summary: Add New Entity
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
         - Entity
       parameters:
@@ -239,6 +246,7 @@ paths:
   /entities/{entityTypeId}/{entityId}:
     get:
       operationId: GetEntity
+      x-formkiq-required-permission: READ_ENTITY
       tags:
         - Entity
       description: Returns a entity
@@ -271,6 +279,7 @@ paths:
       description: |-
         Sets a Entity
       summary: Set Entity
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
         - Entity
       parameters:
@@ -314,6 +323,7 @@ paths:
       description: |-
         Updates a Entity
       summary: Update Entity
+      x-formkiq-required-permission: WRITE_ENTITY
       tags:
         - Entity
       parameters:
@@ -355,6 +365,7 @@ paths:
       operationId: DeleteEntity
       description: Deletes Entity
       summary: Deletes Entity
+      x-formkiq-required-permission: DELETE_ENTITY
       tags:
         - Entity
       parameters:
@@ -375,6 +386,7 @@ paths:
       operationId: DeleteEntityAttribute
       description: Deletes Entity Attribute
       summary: Deletes Entity Attribute
+      x-formkiq-required-permission: DELETE_ENTITY
       tags:
       - Entity
       parameters:

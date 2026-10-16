@@ -24,9 +24,12 @@
 package com.formkiq.stacks.api.handler.attributes;
 
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEventUtil;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestHandler;
@@ -85,6 +88,16 @@ public class AttributeRequestHandler
   @Override
   public String getRequestUrl() {
     return "/attributes/{key}";
+  }
+
+  @Override
+  public Optional<ApiPermission> getRequiredPermission(final String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get" -> Optional.of(ApiPermission.READ_ATTRIBUTES);
+      case "patch" -> Optional.of(ApiPermission.WRITE_ATTRIBUTES);
+      case "delete" -> Optional.of(ApiPermission.DELETE_ATTRIBUTES);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+    };
   }
 
   @Override
