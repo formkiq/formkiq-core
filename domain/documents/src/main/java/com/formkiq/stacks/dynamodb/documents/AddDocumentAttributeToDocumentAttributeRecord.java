@@ -93,7 +93,7 @@ public class AddDocumentAttributeToDocumentAttributeRecord
 
   private void addDocumentAttributeStandard(final AddDocumentAttributeStandard a,
       final Collection<DocumentAttributeRecord> c, final boolean isUsed) {
-    if (a.jsonValue() != null) {
+    if (!notNull(a.jsonValue()).isEmpty()) {
       validateJsonValueExclusive(a);
       DocumentAttributeRecord record = new DocumentAttributeRecord().setDocument(fromDocument)
           .setKey(a.key()).setJsonValue(a.jsonValue()).setValueType(DocumentAttributeValueType.JSON)

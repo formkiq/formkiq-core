@@ -48,7 +48,7 @@ class TemplateSubstitutorTest {
     AtomicInteger sequence = new AtomicInteger();
     // when
     String result =
-        substitutor.substitute("{SEQUENCE}/{SEQUENCE}", _ -> sequence.incrementAndGet());
+        substitutor.substitute("{SEQUENCE}/{SEQUENCE}", s -> sequence.incrementAndGet());
     // then
     assertEquals("1/2", result);
     assertEquals(2, sequence.get());
@@ -154,7 +154,7 @@ class TemplateSubstitutorTest {
   void testLookupIsNotInvokedForNullEmptyOrUnclosedPlaceholders() throws IOException {
     // given
     TemplateSubstitutor substitutor = new TemplateSubstitutor("{{", "}}");
-    TemplateValueResolver<IOException> resolver = _ -> {
+    TemplateValueResolver<IOException> resolver = s -> {
       throw new IOException("Lookup should not be invoked");
     };
     // when
@@ -258,7 +258,8 @@ class TemplateSubstitutorTest {
 
     // when
     Executable nullMap = () -> substitutor.substitute("{name}", (Map<String, String>) null);
-    Executable nullResolver = () -> substitutor.substitute("{name}", (Function<String, String>) null);
+    Executable nullResolver =
+        () -> substitutor.substitute("{name}", (Function<String, String>) null);
 
     // then
     assertThrows(NullPointerException.class, nullMap);
