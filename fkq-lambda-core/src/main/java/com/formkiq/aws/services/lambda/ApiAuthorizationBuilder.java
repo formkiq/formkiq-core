@@ -509,6 +509,10 @@ public class ApiAuthorizationBuilder {
     if (authorizer != null && authorizer.containsKey("apiKeyClaims")) {
       Map<String, Object> claims = getAuthorizerClaims(authorizer);
       Object custom = claims != null ? claims.get("customClaims") : null;
+      if (custom instanceof String json) {
+        return gson.fromJson(json, Map.class);
+      }
+      // Support authorizer responses cached before claims were JSON-encoded.
       if (custom instanceof Map<?, ?> values) {
         return new LinkedHashMap<>((Map<String, Object>) values);
       }

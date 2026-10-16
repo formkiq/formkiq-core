@@ -1096,6 +1096,33 @@ class ApiAuthorizationBuilderTest {
     assertFalse(authorization.getAllPermissions().contains(ApiPermission.ADMIN));
   }
 
+  /** JSON-encoded API-key claims retain numeric values after event deserialization. */
+  @Test
+  void testApiKeyCustomClaimsJson() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = getApiKeyClaimsEvent();
+    Map<String, Object> claims = new HashMap<>(
+        (Map<String, Object>) event.getRequestContext().getAuthorizer().get("apiKeyClaims"));
+    claims.put("customClaims", """
+        {"limit":42.5,"count":7,"adjustment":-3.25,"active":true,
+         "profile":{"region":"north","weights":[0,-2.5]},"department":"Legal"}
+        """);
+    event.getRequestContext().setAuthorizer(Map.of("apiKeyClaims", claims));
+    ApiGatewayRequestEvent decoded =
+        this.gson.fromJson(this.gson.toJson(event), ApiGatewayRequestEvent.class);
+    Map<String, Object> expected =
+        Map.of("limit", 42.5, "count", 7.0, "adjustment", -3.25, "active", true, "profile",
+            Map.of("region", "north", "weights", List.of(0.0, -2.5)), "department", "Legal");
+
+    // when
+    ApiAuthorization authorization = new ApiAuthorizationBuilder().build(decoded);
+
+    // then
+    assertEquals(expected, authorization.getUserClaims());
+    assertEquals("Test Read/Write/Delete Key", authorization.getUsername());
+    assertEquals("apitestsite", authorization.getSiteId());
+  }
+
   /** Compact claims take precedence over groups and legacy grants. */
   @Test
   void testCompactApiKeyClaims() throws Exception {
