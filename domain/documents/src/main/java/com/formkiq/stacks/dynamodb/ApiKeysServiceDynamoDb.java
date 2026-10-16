@@ -77,13 +77,13 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
   @Override
   public String createApiKey(final String siteId, final String name, final ApiPermissionRole role,
-      final Collection<String> groups) {
+      final Collection<String> groups, final Map<String, Object> customClaims) {
 
     String apiKey = Strings.generateRandomString(ApiKey.API_KEY_LENGTH);
     String userId = ApiAuthorization.getAuthorization().getUsername();
 
     ApiKey key = ApiKey.builder().apiKey(apiKey).name(name).userId(userId).insertedDate(new Date())
-        .permissionRole(role).groups(groups).build(siteId);
+        .permissionRole(role).groups(groups).customClaims(customClaims).build(siteId);
 
     Map<String, AttributeValue> attributes = key.getAttributes();
     this.db.putItem(attributes);
@@ -137,7 +137,8 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
 
       if (masked) {
         key = new ApiKey(key.key(), key.siteId(), mask(key.apiKey()), key.name(), key.userId(),
-            key.insertedDate(), key.permissions(), key.roleType(), key.groups());
+            key.insertedDate(), key.permissions(), key.roleType(), key.groups(),
+            key.customClaims());
       }
     }
 
@@ -163,7 +164,7 @@ public final class ApiKeysServiceDynamoDb implements ApiKeysService, DbKeys {
     List<ApiKey> apiKeys =
         this.db.getBatch(batchConfig, attrs).stream().map(ApiKey::fromAttributeMap)
             .map(a -> new ApiKey(a.key(), a.siteId(), mask(a.apiKey()), a.name(), a.userId(),
-                a.insertedDate(), a.permissions(), a.roleType(), a.groups()))
+                a.insertedDate(), a.permissions(), a.roleType(), a.groups(), a.customClaims()))
             .collect(Collectors.toList());
 
     return new Pagination<>(apiKeys, response.lastEvaluatedKey());

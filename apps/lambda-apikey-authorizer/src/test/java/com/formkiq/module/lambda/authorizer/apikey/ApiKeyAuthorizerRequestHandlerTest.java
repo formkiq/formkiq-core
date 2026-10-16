@@ -34,6 +34,10 @@ import java.util.Map;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2CustomAuthorizerEvent;
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiAuthorizationBuilder;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestContext;
 import com.formkiq.aws.dynamodb.SiteApiPermissionRoles;
 import com.formkiq.aws.dynamodb.ApiPermissionRole;
 import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
@@ -66,6 +70,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
   /** {@link ApiKeysService}. */
   private static ApiKeysService apiKeysService;
+
   /** {@link ApiKeyAuthorizerRequestHandler}. */
   private static ApiKeyAuthorizerRequestHandler processor;
 
@@ -100,6 +105,40 @@ class ApiKeyAuthorizerRequestHandlerTest {
         .withIdentitySource(identitySource).build();
   }
 
+  /** Stored custom claims reach authorization without leaking between API keys. */
+  @Test
+  void testCustomClaimsAuthorization() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.READ).build();
+    Map<String, Object> firstClaims = Map.of("department", "Legal", "roles", List.of("reviewer"),
+        "active", true, "limit", 42.5, "profile", Map.of("region", "north"));
+    Map<String, Object> secondClaims = Map.of("department", "Sales");
+    String first = apiKeysService.createApiKey(siteId, "first", role, List.of(), firstClaims);
+    String second = apiKeysService.createApiKey(siteId, "second", role, List.of(), secondClaims);
+
+    // when
+    Map<String, Object> firstResult = processor.handleRequest(getInput(first), this.context);
+    Map<String, Object> secondResult = processor.handleRequest(getInput(second), this.context);
+    ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+    ApiGatewayRequestContext requestContext = new ApiGatewayRequestContext();
+    requestContext.setAuthorizer((Map<String, Object>) firstResult.get("context"));
+    event.setRequestContext(requestContext);
+    ApiAuthorization authorization = new ApiAuthorizationBuilder().build(event);
+    Map<String, Object> secondContext = (Map<String, Object>) secondResult.get("context");
+    final Map<String, Object> secondKeyClaims =
+        (Map<String, Object>) secondContext.get("apiKeyClaims");
+
+    // then
+    assertEquals(Boolean.TRUE, firstResult.get("isAuthorized"));
+    assertEquals(Boolean.TRUE, secondResult.get("isAuthorized"));
+    assertEquals(firstClaims, authorization.getUserClaims());
+    assertEquals(secondClaims, secondKeyClaims.get("customClaims"));
+    assertEquals("first", authorization.getUsername());
+    assertEquals(siteId, authorization.getSiteId());
+    assertEquals(role.getPermissions(), authorization.getAllPermissions());
+  }
+
   /**
    * Test Invalid API Key.
    *
@@ -118,6 +157,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
     assertEquals(Boolean.FALSE, map.get("isAuthorized"));
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals(Map.of(), claims.get("customClaims"));
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
@@ -143,6 +183,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
     assertEquals(Boolean.FALSE, map.get("isAuthorized"));
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals(Map.of(), claims.get("customClaims"));
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
@@ -166,6 +207,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
 
     Map<String, Object> ctx = (Map<String, Object>) map.get("context");
     Map<String, Object> claims = (Map<String, Object>) ctx.get("apiKeyClaims");
+    assertEquals(Map.of(), claims.get("customClaims"));
     assertEquals("[API_KEY]", claims.get("cognito:groups"));
     assertEquals("", claims.get("cognito:username"));
     assertEquals(new SiteApiPermissionRoles(List.of()).exportPermissionsAsString(),
@@ -179,7 +221,8 @@ class ApiKeyAuthorizerRequestHandlerTest {
     String siteId = ID.uuid();
     ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
         .permissions(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build();
-    String key = apiKeysService.createApiKey(siteId, "scoped", role, List.of("other_WRITE"));
+    String key =
+        apiKeysService.createApiKey(siteId, "scoped", role, List.of("other_WRITE"), Map.of());
     // when
     Map<String, Object> response = processor.handleRequest(getInput(key), this.context);
     Map<String, Object> claims =
@@ -207,7 +250,7 @@ class ApiKeyAuthorizerRequestHandlerTest {
       ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
           .permissions(Set.of(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE))
           .build();
-      String apiKey = apiKeysService.createApiKey(siteId, name, role, List.of());
+      String apiKey = apiKeysService.createApiKey(siteId, name, role, List.of(), Map.of());
 
       APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 
@@ -247,7 +290,8 @@ class ApiKeyAuthorizerRequestHandlerTest {
       ApiPermissionRole role = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
           .permissions(Set.of(ApiPermission.READ, ApiPermission.WRITE, ApiPermission.DELETE))
           .build();
-      String apiKey = apiKeysService.createApiKey(siteId, name, role, List.of("test1", "test2"));
+      String apiKey =
+          apiKeysService.createApiKey(siteId, name, role, List.of("test1", "test2"), Map.of());
 
       APIGatewayV2CustomAuthorizerEvent is = getInput(apiKey);
 

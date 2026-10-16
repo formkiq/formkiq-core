@@ -38,6 +38,8 @@ import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +52,7 @@ import java.util.stream.Collectors;
  */
 public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name, String userId,
     Date insertedDate, List<ApiPermission> permissions, ApiPermissionRoleType roleType,
-    Collection<String> groups) {
+    Collection<String> groups, Map<String, Object> customClaims) {
 
   /**
    * Expected full length of generated API keys.
@@ -68,6 +70,7 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
    * @param siteId site identifier
    * @param roleType stored role type
    * @param groups custom group claims
+   * @param customClaims custom application claims
    * @param key DynamoDB key associated with this API key record
    * @param apiKey raw API key string
    * @param name name of the API key
@@ -84,6 +87,8 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
     permissions = permissions == null ? List.of() : List.copyOf(permissions);
     roleType = roleType == null ? ApiPermissionRoleType.CUSTOM : roleType;
     groups = groups == null ? List.of() : List.copyOf(groups);
+    customClaims =
+        customClaims == null ? Map.of() : Collections.unmodifiableMap(new HashMap<>(customClaims));
 
     insertedDate = new Date(insertedDate.getTime());
   }
@@ -116,7 +121,10 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
         ? ApiPermissionRoleType.valueOf(attributes.get("roleType").s())
         : ApiPermissionRoleType.CUSTOM;
     return new ApiKey(key, siteId, apiKey, name, userId, insertedDate, permissions, roleType,
-        groups);
+        groups,
+        attributes.containsKey("customClaims")
+            ? (Map<String, Object>) DynamoDbTypes.toJson(attributes.get("customClaims"))
+            : Map.of());
   }
 
   /**
@@ -125,10 +133,10 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
    * @return map of attribute names to AttributeValue
    */
   public Map<String, AttributeValue> getAttributes() {
-    DynamoDbAttributeMapBuilder map =
-        key.getAttributesBuilder().withString("apiKey", apiKey).withStrings("groups", groups)
-            .withString("name", name).withString("userId", userId).withString("siteId", siteId)
-            .withString("roleType", roleType.name()).withDate("inserteddate", insertedDate);
+    DynamoDbAttributeMapBuilder map = key.getAttributesBuilder().withString("apiKey", apiKey)
+        .withStrings("groups", groups).withString("name", name).withString("userId", userId)
+        .withString("siteId", siteId).withString("roleType", roleType.name())
+        .withDate("inserteddate", insertedDate).withMap("customClaims", customClaims);
 
     if (!permissions.isEmpty()) {
       map.withAttributeValue("permissions",
@@ -192,6 +200,8 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
     private ApiPermissionRoleType roleType = ApiPermissionRoleType.CUSTOM;
     /** Groups associated with this API key. */
     private Collection<String> groups = List.of();
+    /** Custom application claims associated with this API key. */
+    private Map<String, Object> customClaims = Map.of();
 
     /**
      * Sets the raw API key.
@@ -218,7 +228,7 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
       List<String> g = groups == null ? List.of() : List.copyOf(groups);
 
       return new ApiKey(key, getSiteIdName(siteId), apiKey, name, userId, insertedDate, perms,
-          roleType, g);
+          roleType, g, customClaims);
     }
 
 
@@ -243,6 +253,17 @@ public record ApiKey(DynamoDbKey key, String siteId, String apiKey, String name,
 
       return DynamoDbKey.builder().pk(null, pk).sk(sk).gsi1Pk(siteId, gsi1Pk).gsi1Sk(gsi1Sk)
           .gsi2Pk(siteId, gsi2Pk).gsi2Sk(gsi2Sk).build();
+    }
+
+    /**
+     * Sets custom application claims.
+     *
+     * @param claims JSON claims
+     * @return this builder
+     */
+    public Builder customClaims(final Map<String, Object> claims) {
+      this.customClaims = claims;
+      return this;
     }
 
     /**

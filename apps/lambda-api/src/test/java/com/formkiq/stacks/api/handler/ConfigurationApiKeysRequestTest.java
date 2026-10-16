@@ -60,6 +60,38 @@ import com.formkiq.testutils.api.systemmanagement.GetApiKeysRequestBuilder;
 public class ConfigurationApiKeysRequestTest extends AbstractApiClientRequestTest {
 
   /**
+   * Creating an API key preserves custom claims in the management API response.
+   *
+   * @throws ApiException API request fails
+   */
+  @Test
+  public void testAddApiKeyWithCustomClaims() throws ApiException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken("Admins");
+    Map<String, Object> customClaims =
+        Map.of("custom:department", "Legal", "customerId", "acme", "roles", List.of("reviewer"),
+            "internal", true, "approvalLimit", 42.5, "context", Map.of("region", "north"));
+    AddApiKeyRequest request = new AddApiKeyRequest().name("legal integration")
+        .roleType(ApiPermissionRoleType.READ).customClaims(customClaims);
+
+    // when
+    AddApiKeyResponse created = new AddApiKeyRequestBuilder().withAddApiKeyRequest(request)
+        .submitOk(client, siteId).response();
+    final List<ApiKey> keys =
+        new GetApiKeysRequestBuilder().submitOk(client, siteId).response().getApiKeys();
+
+    // then
+    assertNotNull(created.getApiKey());
+    assertNotNull(keys);
+    assertEquals(1, keys.size());
+    ApiKey key = keys.getFirst();
+    assertEquals("legal integration", key.getName());
+    assertEquals(ApiPermissionRoleType.READ, key.getRoleType());
+    assertEquals(customClaims, key.getCustomClaims(), "API key custom claims must be persisted");
+  }
+
+  /**
    * POST /sites/{siteId}/apiKeys with groups.
    *
    */

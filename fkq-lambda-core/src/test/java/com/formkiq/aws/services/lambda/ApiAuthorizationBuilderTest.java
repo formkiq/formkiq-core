@@ -1072,6 +1072,30 @@ class ApiAuthorizationBuilderTest {
     }
   }
 
+  /** API-key claims cannot replace the key's built-in identity and permissions. */
+  @Test
+  void testApiKeyCustomClaims() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = getApiKeyClaimsEvent();
+    Map<String, Object> claims = new HashMap<>(
+        (Map<String, Object>) event.getRequestContext().getAuthorizer().get("apiKeyClaims"));
+    Map<String, Object> custom = Map.of("custom:department", "Legal", "roles", List.of("reviewer"),
+        "cognito:username", "forged", "cognito:groups", "Admins", "sitePermissions", "forged");
+    claims.put("customClaims", custom);
+    event.getRequestContext().setAuthorizer(Map.of("apiKeyClaims", claims));
+    event.addHeader("Authorization", toJwt(Map.of("department", "untrusted")));
+
+    // when
+    ApiAuthorization authorization = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertEquals(custom, authorization.getUserClaims());
+    assertEquals("Test Read/Write/Delete Key", authorization.getUsername());
+    assertEquals("apitestsite", authorization.getSiteId());
+    assertFalse(authorization.getRoles().contains("Admins"));
+    assertFalse(authorization.getAllPermissions().contains(ApiPermission.ADMIN));
+  }
+
   /** Compact claims take precedence over groups and legacy grants. */
   @Test
   void testCompactApiKeyClaims() throws Exception {
@@ -1224,6 +1248,20 @@ class ApiAuthorizationBuilderTest {
         .stream().map(Enum::name).sorted().collect(Collectors.joining(","))));
     assertEquals("DELETE,READ,WRITE", String.join(",", api.getPermissions("default").stream()
         .map(Enum::name).sorted().collect(Collectors.joining(","))));
+  }
+
+  /** Legacy keys never derive claims by decoding the API-key header as a JWT. */
+  @Test
+  void testLegacyApiKeyIgnoresJwtClaims() throws Exception {
+    // given
+    ApiGatewayRequestEvent event = getApiKeyClaimsEvent();
+    event.addHeader("Authorization", toJwt(Map.of("department", "untrusted")));
+
+    // when
+    ApiAuthorization authorization = new ApiAuthorizationBuilder().build(event);
+
+    // then
+    assertTrue(authorization.getUserClaims().isEmpty());
   }
 
   /**
