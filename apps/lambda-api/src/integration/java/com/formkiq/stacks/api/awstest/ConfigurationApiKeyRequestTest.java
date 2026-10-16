@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -138,6 +139,43 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
       assertEquals("GOVERN", String.join(",",
           notNull(sites.getFirst().getPermissions()).stream().map(Enum::name).toList()));
       assertEquals("API_KEY," + siteId, getSortedRoles(sitesResponse));
+    }
+  }
+
+  /**
+   * API-key custom claims are available to an authenticated caller through GET /sites.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT * 2)
+  public void testAddApiKeyWithCustomClaims() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    String name = "custom-claims-" + ID.ulid();
+    Map<String, Object> claims = Map.of("custom:department", "Legal", "customerId", "acme", "roles",
+        List.of("reviewer"), "active", true, "limit", 42.5, "profile", Map.of("region", "north"));
+    this.jwtApiClient.addDefaultHeader("Authorization", getAdminToken().accessToken());
+    AddApiKeyRequest request =
+        new AddApiKeyRequest().name(name).roleType(ApiPermissionRoleType.READ).customClaims(claims);
+
+    // when
+    var apiKey = new AddApiKeyRequestBuilder().withAddApiKeyRequest(request)
+        .getApiKey(this.jwtApiClient, siteId);
+
+    // then
+    assertNotNull(apiKey);
+    try {
+      // when
+      ApiClient apiKeyClient = getApiClientWithToken(apiKey);
+      GetSitesResponse sites = new GetSitesRequestBuilder().getSites(apiKeyClient, null);
+
+      // then
+      assertEquals(claims, sites.getUserClaims());
+      assertEquals(name, sites.getUsername());
+      assertEquals(siteId, notNull(sites.getSites()).getFirst().getSiteId());
+    } finally {
+      new DeleteApiKeyRequestBuilder().withApiKey(apiKey).submitOk(this.jwtApiClient, siteId);
     }
   }
 

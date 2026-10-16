@@ -33,6 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.ApiPermission;
@@ -51,6 +53,7 @@ public class ApiKeysServiceDynamoDbTest {
 
   /** Limit. */
   private static final int LIMIT = 10;
+
   /** {@link ApiKeysService}. */
   private ApiKeysService service;
 
@@ -79,8 +82,8 @@ public class ApiKeysServiceDynamoDbTest {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
       // when
-      String apiKey0 = this.service.createApiKey(siteId, "test1", role, List.of());
-      String apiKey1 = this.service.createApiKey(siteId, "test2", role, List.of());
+      String apiKey0 = this.service.createApiKey(siteId, "test1", role, List.of(), Map.of());
+      String apiKey1 = this.service.createApiKey(siteId, "test2", role, List.of(), Map.of());
 
       // then
       assertNotEquals(apiKey0, apiKey1);
@@ -124,7 +127,7 @@ public class ApiKeysServiceDynamoDbTest {
 
       for (int i = start; i < start + max; i++) {
         // when
-        this.service.createApiKey(siteId, "test_" + i, role, List.of());
+        this.service.createApiKey(siteId, "test_" + i, role, List.of(), Map.of());
       }
 
       // then
@@ -150,12 +153,42 @@ public class ApiKeysServiceDynamoDbTest {
         .permissions(List.of(ApiPermission.WRITE)).build("default");
     var attributes = new java.util.HashMap<>(original.getAttributes());
     attributes.remove("roleType");
+    attributes.remove("customClaims");
     // when
     ApiKey legacy = ApiKey.fromAttributeMap(attributes);
     // then
     assertEquals(ApiPermissionRoleType.CUSTOM, legacy.roleType());
+    assertTrue(legacy.customClaims().isEmpty());
     assertEquals(List.of(ApiPermission.WRITE), legacy.permissions());
     assertFalse(legacy.permissionRole().hasPermission(ApiPermission.READ_DOCUMENTS));
+  }
+
+  /** Stored claims survive masking and remain isolated between keys. */
+  @Test
+  public void testStoredCustomClaims() {
+    // given
+    String siteId = ID.uuid();
+    var role = ApiPermissionRole.builder(ApiPermissionRoleType.READ).build();
+    Map<String, Object> claims =
+        new HashMap<>(Map.of("custom:department", "Legal", "roles", List.of("reviewer"), "active",
+            true, "limit", 42.5, "profile", Map.of("inserteddate", "literal key")));
+    Map<String, Object> expected = new HashMap<>(claims);
+
+    // when
+    String value = service.createApiKey(siteId, "claims", role, List.of(), claims);
+    final String legacy = service.createApiKey(siteId, "legacy", role, List.of(), Map.of());
+    claims.put("custom:department", "changed");
+    ApiKey key = service.get(value, false);
+    ApiKey masked = service.get(value, true);
+    final List<ApiKey> listed = service.list(siteId, null, LIMIT).getResults();
+
+    // then
+    assertEquals(expected, key.customClaims());
+    assertEquals(expected, masked.customClaims());
+    assertEquals(service.mask(value), masked.apiKey());
+    assertEquals(expected, listed.stream().filter(k -> "claims".equals(k.name())).findFirst()
+        .orElseThrow().customClaims());
+    assertTrue(service.get(legacy, false).customClaims().isEmpty());
   }
 
   /** Role metadata survives storage and masked list responses. */
@@ -165,7 +198,7 @@ public class ApiKeysServiceDynamoDbTest {
     String siteId = ID.uuid();
     var role = ApiPermissionRole.builder(ApiPermissionRoleType.SYSTEM_MANAGEMENT).build();
     // when
-    String value = service.createApiKey(siteId, "role", role, List.of());
+    String value = service.createApiKey(siteId, "role", role, List.of(), Map.of());
     ApiKey key = service.get(value, false);
     ApiKey masked = service.list(siteId, null, LIMIT).getResults().get(0);
     // then

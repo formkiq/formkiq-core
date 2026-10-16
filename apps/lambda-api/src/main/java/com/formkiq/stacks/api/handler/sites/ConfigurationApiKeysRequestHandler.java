@@ -101,7 +101,8 @@ public class ConfigurationApiKeysRequestHandler
     AddApiKeyRequest req = JsonToObject.fromJson(awsservice, event, AddApiKeyRequest.class);
     ApiPermissionRole role = validate(req);
 
-    String apiKey = apiKeysService.createApiKey(siteId, req.name(), role, req.groups());
+    String apiKey =
+        apiKeysService.createApiKey(siteId, req.name(), role, req.groups(), req.customClaims());
 
     return ApiRequestHandlerResponse.builder().ok().body("apiKey", apiKey).build();
   }
