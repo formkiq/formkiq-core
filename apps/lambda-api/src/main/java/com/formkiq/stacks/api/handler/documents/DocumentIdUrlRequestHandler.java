@@ -50,6 +50,11 @@ import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.aws.s3.PresignGetUrlConfig;
 import com.formkiq.aws.s3.S3PresignerService;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorizationRecord;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.model.TimeToLiveBuilder;
 import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
@@ -71,6 +76,7 @@ import com.formkiq.validation.ValidationException;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /** {@link ApiGatewayRequestHandler} for "/documents/{documentId}/url". */
 public class DocumentIdUrlRequestHandler
@@ -265,18 +271,15 @@ public class DocumentIdUrlRequestHandler
 
       int hours = getDurationHours(event);
       Duration duration = Duration.ofHours(hours);
+      DynamoDbKey authorizationKey =
+          hasWatermark ? new DynamoDbKey("watermark#" + ID.ulid(), "apiAuthorization") : null;
+      if (authorizationKey != null) {
+        config.queryParameters(Map.of("authKey", authorizationKey.pk()));
+      }
       url = getUrl(awsservice, item, versionId, s3Bucket, s3Key, duration, config);
 
       if (hasWatermark) {
-
-        String base64 = new StringToBase64Encoder().apply(url.toString());
-        String watermarkUrl = awsservice.environment("WATERMARK_FUNCTION_URL");
-        url = URI.create(watermarkUrl + "?url=" + base64).toURL();
-
-        AwsCredentials credentials = awsservice.getExtension(AwsCredentials.class);
-        String signUrl =
-            new SignUrl("lambda", awsservice.region(), credentials).apply(url.toString());
-        url = URI.create(signUrl).toURL();
+        url = getWatermarkUrl(awsservice, authorization, url, duration, authorizationKey);
       }
     }
 
@@ -329,6 +332,23 @@ public class DocumentIdUrlRequestHandler
       versionKey = URLDecoder.decode(versionKey, StandardCharsets.UTF_8);
     }
     return versionKey;
+  }
+
+  private URL getWatermarkUrl(final AwsServiceCache awsservice,
+      final ApiAuthorization authorization, final URL sourceUrl, final Duration duration,
+      final DynamoDbKey key) throws MalformedURLException {
+    long expiration = new TimeToLiveBuilder().withDurationFromNow(duration.toSeconds()).build();
+    ApiAuthorizationRecord record =
+        ApiAuthorizationRecord.fromApiAuthorization(authorization, key, expiration);
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    db.putItem(record.getAttributes());
+
+    String source = new StringToBase64Encoder().apply(sourceUrl.toString());
+    String url =
+        awsservice.environment("WATERMARK_FUNCTION_URL") + "?url=" + SdkHttpUtils.urlEncode(source);
+    AwsCredentials credentials = awsservice.getExtension(AwsCredentials.class);
+    String signedUrl = new SignUrl("lambda", awsservice.region(), credentials).apply(url);
+    return URI.create(signedUrl).toURL();
   }
 
   private boolean hasWatermark(final AwsServiceCache awsservice, final String siteId,

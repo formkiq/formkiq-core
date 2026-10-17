@@ -128,6 +128,26 @@ class S3TransferAccelerationTest {
     }
   }
 
+  /** Additional query parameters are part of the SDK-generated GET signature. */
+  @Test
+  void getPresignsAuthorizationKey() {
+    // given
+    S3PresignerService service = new S3PresignerService(builder());
+    PresignGetUrlConfig config =
+        new PresignGetUrlConfig().queryParameters(Map.of("authKey", "watermark#request"));
+
+    // when
+    URL url = service.presignGetUrl(BUCKET, "document", Duration.ofMinutes(5), null, config);
+    URL regular = service.presignGetUrl(BUCKET, "document", Duration.ofMinutes(5), null,
+        new PresignGetUrlConfig());
+
+    // then
+    String query = URLDecoder.decode(url.getQuery(), StandardCharsets.UTF_8);
+    assertTrue(query.contains("authKey=watermark#request"));
+    assertTrue(query.contains("X-Amz-Signature="));
+    assertFalse(regular.getQuery().contains("authKey"));
+  }
+
   @Test
   void pathStyleFalseIsHonored() {
     // given
