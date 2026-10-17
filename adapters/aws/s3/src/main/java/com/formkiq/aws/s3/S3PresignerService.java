@@ -90,9 +90,13 @@ public class S3PresignerService {
     }
     try (S3Presigner signer = this.builder.build(config.accelerate())) {
 
-      GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucket).key(key)
-          .versionId(versionId).responseContentType(config.contentType())
-          .responseContentDisposition(config.contentDisposition()).build();
+      GetObjectRequest getObjectRequest =
+          GetObjectRequest.builder().bucket(bucket).key(key).versionId(versionId)
+              .responseContentType(config.contentType())
+              .responseContentDisposition(config.contentDisposition())
+              .overrideConfiguration(
+                  override -> config.queryParameters().forEach(override::putRawQueryParameter))
+              .build();
 
       GetObjectPresignRequest getRequest = GetObjectPresignRequest.builder()
           .signatureDuration(duration).getObjectRequest(getObjectRequest).build();

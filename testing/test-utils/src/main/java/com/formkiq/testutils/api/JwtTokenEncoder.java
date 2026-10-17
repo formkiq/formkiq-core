@@ -48,6 +48,20 @@ public class JwtTokenEncoder {
   }
 
   /**
+   * Encode a Cognito token with custom user claims.
+   *
+   * @param groups Cognito groups
+   * @param username caller identity
+   * @param customClaims custom user claims
+   * @return encoded token
+   */
+  public static String encodeCognito(final String[] groups, final String username,
+      final Map<String, Object> customClaims) {
+    return Jwts.builder().claims(customClaims).subject("FormKiQ").claim("cognito:groups", groups)
+        .claim("cognito:username", username).compact();
+  }
+
+  /**
    * Encode Cognito Api Gateway Jwt Token.
    *
    * @param groups {@link List} {@link String}

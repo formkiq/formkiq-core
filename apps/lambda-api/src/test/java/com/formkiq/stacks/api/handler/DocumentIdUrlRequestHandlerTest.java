@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -40,10 +41,19 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.ApiAuthorizationRecord;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.testutils.api.JwtTokenEncoder;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.StringToBase64Decoder;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
@@ -152,6 +162,29 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
 
   private S3Service getS3() {
     return getAwsServices().getExtension(S3Service.class);
+  }
+
+  private ApiAuthorizationRecord requestWatermarkAuthorization(final String siteId,
+      final String documentId, final String username, final Map<String, Object> claims)
+      throws ApiException {
+    client.addDefaultHeader("Authorization",
+        JwtTokenEncoder.encodeCognito(new String[] {siteId}, username, claims));
+    GetDocumentUrlResponse response =
+        new GetDocumentUrlRequestBuilder(DocumentArtifact.of(documentId, null)).duration(3)
+            .submitOk(client, siteId).response();
+    UrlParts parts = new UrlParser().apply(response.getUrl());
+    assertNotNull(parts.queryParameters().get("X-Amz-Signature"));
+    String sourceUrl =
+        new StringToBase64Decoder().apply(parts.queryParameters().get("url").getFirst());
+    var sourceParameters = new UrlParser().apply(sourceUrl).queryParameters();
+    assertFalse(parts.queryParameters().containsKey("authKey"));
+    assertNotNull(sourceParameters.get("X-Amz-Signature"));
+    DynamoDbKey key =
+        new DynamoDbKey(sourceParameters.get("authKey").getFirst(), "apiAuthorization");
+    var services = getAwsServices();
+    services.register(DynamoDbService.class, new DynamoDbServiceExtension());
+    DynamoDbService db = services.getExtension(DynamoDbService.class);
+    return ApiAuthorizationRecord.fromAttributeMap(db.get(key));
   }
 
   /**
@@ -730,6 +763,49 @@ public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTes
         assertEquals(
             "{\"errors\":[{\"key\":\"format\"," + "\"error\":\"format=short is not supported\"}]}",
             e.getResponseBody());
+      }
+    }
+  }
+
+  /** Each watermarked URL carries a signed key for its caller's stored authorization. */
+  @Test
+  public void testWatermarkUrlStoresAuthorizationPerDownload() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String previousUrl = server.getEnvironmentMap().put("WATERMARK_FUNCTION_URL",
+        "https://watermark.lambda-url.us-east-2.on.aws/");
+    try {
+      String documentId = addDocumentWithWatermarks(siteId);
+      getS3().putObject(BUCKET_NAME, createS3Key(siteId, documentId, null),
+          "pdf".getBytes(StandardCharsets.UTF_8), "application/pdf");
+      Map<String, Object> firstClaims = Map.of("custom:department", "Finance", "limit", 42.5);
+      Map<String, Object> secondClaims =
+          Map.of("custom:department", "Legal", "roles", List.of("reviewer"));
+      final long earliestExpiration = Instant.now().plus(Duration.ofHours(3)).getEpochSecond();
+
+      // when
+      ApiAuthorizationRecord first =
+          requestWatermarkAuthorization(siteId, documentId, "first-user", firstClaims);
+      ApiAuthorizationRecord second =
+          requestWatermarkAuthorization(siteId, documentId, "second-user", secondClaims);
+
+      // then
+      assertNotEquals(first.key(), second.key());
+      assertEquals("first-user", first.username());
+      assertEquals("second-user", second.username());
+      assertEquals(firstClaims, first.userClaims());
+      assertEquals(secondClaims, second.userClaims());
+      assertEquals(siteId, first.siteId());
+      assertEquals(List.of(siteId), first.roles());
+      assertFalse(first.sitePermissions().roles().isEmpty());
+      assertTrue(first.timeToLive() >= earliestExpiration);
+      assertTrue(first.timeToLive() <= Instant.now().plus(Duration.ofHours(3)).getEpochSecond());
+    } finally {
+      if (previousUrl == null) {
+        server.getEnvironmentMap().remove("WATERMARK_FUNCTION_URL");
+      } else {
+        server.getEnvironmentMap().put("WATERMARK_FUNCTION_URL", previousUrl);
       }
     }
   }

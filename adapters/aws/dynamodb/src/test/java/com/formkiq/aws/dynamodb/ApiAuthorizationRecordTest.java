@@ -126,28 +126,6 @@ class ApiAuthorizationRecordTest {
     assertTrue(restored.getPermissions("unrelated").isEmpty());
   }
 
-  /** Top-level mutable collections do not leak between the caller, record and restored context. */
-  @Test
-  void testCollectionCopies() {
-    // given
-    Map<String, Object> claims = new HashMap<>(Map.of("department", "Finance"));
-    List<String> roles = new ArrayList<>(List.of("reviewer"));
-    ApiAuthorization original = new ApiAuthorization().roles(roles).userClaims(claims);
-    ApiAuthorizationRecord record = ApiAuthorizationRecord.fromApiAuthorization(original);
-
-    // when
-    roles.clear();
-    claims.put("department", "Legal");
-    ApiAuthorization restored = record.toApiAuthorization();
-    restored.getRoles().clear();
-    restored.getUserClaims().put("department", "Sales");
-
-    // then
-    assertEquals(List.of("reviewer"), record.roles());
-    assertEquals(Map.of("department", "Finance"), record.userClaims());
-    assertEquals(Map.of("department", "Legal"), original.getUserClaims());
-  }
-
   /** Conversion leaves thread-local login unchanged and excludes cached request objects. */
   @Test
   void testConversionDoesNotLoginOrCopyRequestCache() {

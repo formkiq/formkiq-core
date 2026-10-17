@@ -25,6 +25,7 @@ package com.formkiq.aws.s3;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /**
  * 
@@ -32,6 +33,9 @@ import java.nio.charset.StandardCharsets;
  *
  */
 public class PresignGetUrlConfig {
+
+  /** Additional query parameters included in the signature. */
+  private Map<String, String> queryParameters = Map.of();
 
   /** Whether to use S3 Transfer Acceleration. */
   private boolean accelerate;
@@ -148,6 +152,26 @@ public class PresignGetUrlConfig {
     String extension = ".svg";
     return "image/svg+xml".equalsIgnoreCase(mediaType) || filename.regionMatches(true,
         filename.length() - extension.length(), extension, 0, extension.length());
+  }
+
+  /**
+   * Get additional signed query parameters.
+   *
+   * @return query parameters
+   */
+  public Map<String, String> queryParameters() {
+    return this.queryParameters;
+  }
+
+  /**
+   * Set additional query parameters before signing.
+   *
+   * @param parameters query parameters
+   * @return this configuration
+   */
+  public PresignGetUrlConfig queryParameters(final Map<String, String> parameters) {
+    this.queryParameters = Map.copyOf(parameters);
+    return this;
   }
 
 }
