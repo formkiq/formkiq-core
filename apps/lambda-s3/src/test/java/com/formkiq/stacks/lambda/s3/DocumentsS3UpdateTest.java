@@ -47,6 +47,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Set;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -56,13 +58,24 @@ import java.util.Objects;
 import java.util.UUID;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorizationRecord;
+import com.formkiq.aws.dynamodb.ApiPermission;
+import com.formkiq.aws.dynamodb.ApiPermissionRole;
+import com.formkiq.aws.dynamodb.ApiPermissionRoleType;
+import com.formkiq.aws.dynamodb.SiteApiPermissionRole;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.model.TimeToLiveBuilder;
+import com.formkiq.module.events.EventService;
+import com.formkiq.module.events.document.DocumentEvent;
+import com.formkiq.module.events.folder.FolderEvent;
+import com.formkiq.module.events.notification.NotificationTestEvent;
+import com.formkiq.module.lambdaservices.ClassServiceExtension;
+import com.formkiq.module.lambdaservices.logger.Logger;
 import com.formkiq.aws.dynamodb.DbKeys;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.base64.MapToBase64;
-import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
@@ -131,6 +144,29 @@ import software.amazon.awssdk.services.sqs.model.Message;
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsS3UpdateTest implements DbKeys {
 
+  /** Authorization observed while publishing document events. */
+  private static final List<ApiAuthorizationRecord> AUTHORIZATIONS = new ArrayList<>();
+
+  /** Captures authorization at the downstream event boundary. */
+  private record RecordingEventService(EventService delegate) implements EventService {
+    @Override
+    public String publish(final Logger logger, final DocumentEvent event) {
+      AUTHORIZATIONS
+          .add(ApiAuthorizationRecord.fromApiAuthorization(ApiAuthorization.getAuthorization()));
+      return delegate.publish(logger, event);
+    }
+
+    @Override
+    public String publish(final Logger logger, final FolderEvent event) {
+      return delegate.publish(logger, event);
+    }
+
+    @Override
+    public String publish(final Logger logger, final NotificationTestEvent event) {
+      return delegate.publish(logger, event);
+    }
+  }
+
   /**
    * {@link DocumentService}.
    */
@@ -169,8 +205,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
    * {@link S3Service}.
    */
   private static S3Service s3service;
-  /** {@link CacheService}. */
-  private static CacheService cacheService;
   /**
    * {@link DocumentService}.
    */
@@ -285,8 +319,10 @@ public class DocumentsS3UpdateTest implements DbKeys {
     actionsService = awsServices.getExtension(ActionsService.class);
 
     handler = new DocumentsS3Update(awsServices);
+    EventService events = awsServices.getExtension(EventService.class);
+    awsServices.register(EventService.class,
+        new ClassServiceExtension<>(new RecordingEventService(events)));
     awsServices.register(SqsService.class, new SqsServiceExtension());
-    cacheService = awsServices.getExtension(CacheService.class);
 
     SsmService ssmService = awsServices.getExtension(SsmService.class);
     createMockServer();
@@ -396,6 +432,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   @BeforeEach
   public void before() {
 
+    AUTHORIZATIONS.clear();
     login();
 
     s3service.deleteAllFiles("example-bucket");
@@ -1001,7 +1038,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   @Test
-  public void testHandleRequestSetsGovernanceObjectLockFromPresignedUrlCache()
+  public void testHandleRequestSetsGovernanceObjectLockFromPresignedUrlContext()
       throws ValidationException {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
@@ -1010,15 +1047,18 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       String documentId = ID.uuid();
       String key = createDatabaseKey(siteId, documentId);
-      DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", null);
+      final DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", null);
       addS3File(bucket, key, "text/plain", false, "testdata");
 
       String retainUntilDate =
           DateUtil.getIsoDateFormatter().format(Date.from(Instant.now().plus(10, ChronoUnit.DAYS)));
-      cacheService.write("s3PresignedUrl#" + bucket + "#" + key,
-          new MapToBase64().apply(Map.of("username", "joe", "objectLockRetentionMode", "GOVERNANCE",
-              "objectLockRetainUntilDate", retainUntilDate)),
-          7);
+      DynamoDbKey cacheKey = new DynamoDbKey("s3PresignedUrl#" + bucket + "#" + key, "cache");
+      Map<String, AttributeValue> attributes =
+          ApiAuthorizationRecord.fromApiAuthorization(new ApiAuthorization().username("joe"),
+              cacheKey, new TimeToLiveBuilder().withDaysFromNow(7).build()).getAttributes();
+      attributes.put("objectLockRetentionMode", AttributeValue.fromS("GOVERNANCE"));
+      attributes.put("objectLockRetainUntilDate", AttributeValue.fromS(retainUntilDate));
+      db.putItem(request -> request.tableName(CACHE_TABLE).item(attributes));
 
       // when
       handler.handleRequest(createS3Map(siteId, doc, bucket), null);
@@ -1030,6 +1070,63 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(retainUntilDate, DateUtil.getIsoDateFormatter()
           .format(Date.from(retention.retention().retainUntilDate())));
     }
+  }
+
+  /** Stored claims and exact grants are active during S3 event processing. */
+  @Test
+  public void testHandleRequestRestoresApiAuthorizationRecord() throws ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String documentId = ID.uuid();
+    String key = createDatabaseKey(siteId, documentId);
+    final DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", "text/plain");
+    addS3File(key, "text/plain", false, "testdata");
+    Map<String, Object> claims = Map.of("custom:department", "Finance", "limit", 42.5, "profile",
+        Map.of("weights", List.of(0.0, -2.5)));
+    ApiAuthorization authorization = new ApiAuthorization().username("reviewer").siteId(siteId)
+        .roles(List.of("reviewer")).userClaims(claims)
+        .addPermission(new SiteApiPermissionRole(siteId,
+            ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+                .permissions(Set.of(ApiPermission.READ_DOCUMENTS)).build()));
+    DynamoDbKey cacheKey = new DynamoDbKey("s3PresignedUrl#example-bucket#" + key, "cache");
+    Map<String, AttributeValue> attributes =
+        ApiAuthorizationRecord.fromApiAuthorization(authorization, cacheKey,
+            new TimeToLiveBuilder().withDaysFromNow(7).build()).getAttributes();
+    db.putItem(request -> request.tableName(CACHE_TABLE).item(attributes));
+
+    // when
+    handler.handleRequest(createS3Map(siteId, doc), null);
+
+    // then
+    assertEquals(1, AUTHORIZATIONS.size());
+    ApiAuthorization restored = AUTHORIZATIONS.getFirst().toApiAuthorization();
+    assertEquals("reviewer", restored.getUsername());
+    assertEquals(siteId, restored.getSiteId());
+    assertEquals(claims, restored.getUserClaims());
+    assertEquals(Set.of(ApiPermission.READ_DOCUMENTS), restored.getPermissions(siteId));
+    assertEquals("System", ApiAuthorization.getAuthorization().getUsername());
+  }
+
+  /** Direct uploads without an authorization record run as System. */
+  @Test
+  public void testHandleRequestMissingAuthorization() throws ValidationException {
+    // given
+    String siteId = ID.uuid();
+    String documentId = ID.uuid();
+    String key = createDatabaseKey(siteId, documentId);
+    DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", "text/plain");
+    addS3File(key, "text/plain", false, "testdata");
+
+    // when
+    handler.handleRequest(createS3Map(siteId, doc), null);
+
+    // then
+    assertEquals(1, AUTHORIZATIONS.size());
+    ApiAuthorization restored = AUTHORIZATIONS.getFirst().toApiAuthorization();
+    assertEquals("System", restored.getUsername());
+    assertNull(restored.getUserClaims());
+    assertTrue(restored.getAllPermissions().isEmpty());
+    assertEquals("System", ApiAuthorization.getAuthorization().getUsername());
   }
 
   /**
