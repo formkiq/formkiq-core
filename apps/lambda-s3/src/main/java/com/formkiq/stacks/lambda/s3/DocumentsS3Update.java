@@ -48,12 +48,15 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorizationRecord;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
 import com.formkiq.aws.dynamodb.AttributeValueToMap;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
-import com.formkiq.aws.dynamodb.base64.Base64ToMap;
-import com.formkiq.aws.dynamodb.cache.CacheService;
-import com.formkiq.aws.dynamodb.cache.CacheServiceExtension;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.model.DocumentTagRecord;
@@ -133,8 +136,8 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   private static AwsServiceCache serviceCache;
   /** {@link S3ServiceInterceptor}. */
   private static S3ServiceInterceptor s3ServiceInterceptor;
-  /** {@link CacheService}. */
-  private static CacheService cacheService;
+  /** Authorization contexts and upload metadata from the cache table. */
+  private static DynamoDbService cacheDbService;
   /** {@link Logger}. */
   private static Logger logger;
 
@@ -208,7 +211,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }
     awsServiceCache.register(S3ServiceInterceptor.class, new S3ServiceInterceptorExtension());
     awsServiceCache.register(S3PresignerService.class, new S3PresignerServiceExtension());
-    awsServiceCache.register(CacheService.class, new CacheServiceExtension());
 
     AwsCredentials awsCredentials = awsServiceCache.getExtension(AwsCredentials.class);
     awsServiceCache.register(HttpService.class, new ClassServiceExtension<>(
@@ -218,7 +220,9 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     s3service = awsServiceCache.getExtension(S3Service.class);
     notificationService = awsServiceCache.getExtension(ActionsNotificationService.class);
     s3ServiceInterceptor = awsServiceCache.getExtension(S3ServiceInterceptor.class);
-    cacheService = awsServiceCache.getExtension(CacheService.class);
+    cacheDbService =
+        new DynamoDbServiceImpl(awsServiceCache.getExtension(DynamoDbConnectionBuilder.class),
+            awsServiceCache.environment("CACHE_TABLE"));
 
     if (isEmpty(awsServiceCache.environment("DOCUMENTS_IAM_URL"))) {
       SsmService ssm = awsServiceCache.getExtension(SsmService.class);
@@ -341,12 +345,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     }));
   }
 
-  private Map<String, String> createMetadata(final Map<String, Object> map) {
+  private Map<String, String> createMetadata(final Map<String, AttributeValue> map) {
     Map<String, String> metadata = null;
 
     if (map != null && map.containsKey("path")) {
       metadata = new HashMap<>(1);
-      metadata.put("path", (String) map.get("path"));
+      metadata.put("path", DynamoDbTypes.toString(map.get("path")));
     }
 
     return metadata;
@@ -431,8 +435,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String key = (String) e.getOrDefault("s3key", null);
       String s3VersionId = (String) e.getOrDefault("s3VersionId", null);
 
-      Map<String, Object> s3PresignedUrlAttributes = login(bucket, key);
-
       if (bucket != null && key != null) {
 
         boolean create = eventName != null && eventName.toLowerCase().contains("objectcreated");
@@ -440,6 +442,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         boolean remove = eventName != null && eventName.toLowerCase().contains("objectremove");
 
         try {
+          Map<String, AttributeValue> s3PresignedUrlAttributes = login(bucket, key);
 
           if (remove) {
 
@@ -462,24 +465,15 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
     return null;
   }
 
-  private Map<String, Object> login(final String s3Bucket, final String s3Key) {
+  private Map<String, AttributeValue> login(final String s3Bucket, final String s3Key) {
 
-    String cacheKey = "s3PresignedUrl#" + s3Bucket + "#" + s3Key;
-    String s = cacheService.read(cacheKey);
-    Map<String, Object> s3PresignedUrlAttributes = new Base64ToMap().apply(s);
-    s3PresignedUrlAttributes =
-        s3PresignedUrlAttributes != null ? s3PresignedUrlAttributes : Map.of();
-
-    String username = (String) s3PresignedUrlAttributes.get("username");
-
-    if (isEmpty(username)) {
-      username = "System";
-    }
-
-    ApiAuthorization authorization = new ApiAuthorization().username(username);
+    String cacheKey = "s3PresignedUrl#" + s3Bucket + "#" + urlDecode(s3Key);
+    Map<String, AttributeValue> attributes = cacheDbService.get(new DynamoDbKey(cacheKey, "cache"));
+    ApiAuthorization authorization = !attributes.isEmpty()
+        ? ApiAuthorizationRecord.fromAttributeMap(attributes).toApiAuthorization()
+        : new ApiAuthorization();
     ApiAuthorization.login(authorization);
-
-    return s3PresignedUrlAttributes;
+    return attributes;
   }
 
   /**
@@ -639,7 +633,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
    */
   private void processS3File(final String eventName, final boolean create, final String s3bucket,
       final String s3key, final String s3VersionId,
-      final Map<String, Object> s3PresignedUrlAttributes) throws FileNotFoundException {
+      final Map<String, AttributeValue> s3PresignedUrlAttributes) throws FileNotFoundException {
 
     String s = String.format("{\"eventName\": \"%s\",\"bucket\": \"%s\",\"key\": \"%s\"}",
         eventName, s3bucket, s3key);
@@ -703,7 +697,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   private void putObjectEvent(final String s3bucket, final String s3key,
-      final Map<String, Object> s3PresignedUrlAttributes,
+      final Map<String, AttributeValue> s3PresignedUrlAttributes,
       final Map<String, AttributeValue> attributes, final Map<String, Object> prevAttributes) {
 
     Map<String, Object> currentMap = new AttributeValueToMap().apply(attributes);
@@ -759,10 +753,12 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
   }
 
   private void setObjectLockRetention(final String bucket, final String key,
-      final Map<String, Object> s3PresignedUrlAttributes) {
+      final Map<String, AttributeValue> s3PresignedUrlAttributes) {
 
-    String retentionMode = (String) s3PresignedUrlAttributes.get(OBJECT_LOCK_RETENTION_MODE);
-    String retainUntilDate = (String) s3PresignedUrlAttributes.get(OBJECT_LOCK_RETAIN_UNTIL_DATE);
+    String retentionMode =
+        DynamoDbTypes.toString(s3PresignedUrlAttributes.get(OBJECT_LOCK_RETENTION_MODE));
+    String retainUntilDate =
+        DynamoDbTypes.toString(s3PresignedUrlAttributes.get(OBJECT_LOCK_RETAIN_UNTIL_DATE));
 
     if (ObjectLockRetentionMode.GOVERNANCE.toString().equals(retentionMode)
         && !isEmpty(retainUntilDate)) {

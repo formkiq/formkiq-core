@@ -30,6 +30,11 @@ import com.formkiq.testutils.api.documents.GetDocumentIdUploadRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
 
 import com.formkiq.aws.dynamodb.ID;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorizationRecord;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
+import com.formkiq.aws.dynamodb.DynamoDbServiceImpl;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.services.lambda.ApiResponseStatus;
@@ -66,12 +71,16 @@ import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.time.Instant;
+import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createS3Key;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_BAD_REQUEST;
 import static com.formkiq.aws.services.lambda.ApiResponseStatus.SC_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -950,5 +959,35 @@ public class DocumentsUploadRequestTest extends AbstractApiClientRequestTest {
       new GetDocumentRequestBuilder(DocumentArtifact.of(documentId, artifactId))
           .submit(client, siteId).throwIfError();
     }
+  }
+
+  /** Upload URL generation stores identity in the record and upload details in metadata. */
+  @Test
+  public void testUploadUrlStoresApiAuthorizationRecord() throws Exception {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    AwsServiceCache services = getAwsServices();
+    var connection = services.getExtension(DynamoDbConnectionBuilder.class);
+    String cacheTable = services.environment("CACHE_TABLE");
+    var cacheDb = new DynamoDbServiceImpl(connection, cacheTable);
+
+    // when
+    GetDocumentUrlResponse response = new GetDocumentUploadRequestBuilder().path("test.txt")
+        .contentLength(1).submitOk(this.client, siteId).response();
+    String cacheKey = "s3PresignedUrl#" + services.environment("DOCUMENTS_S3_BUCKET") + "#"
+        + createS3Key(siteId, DocumentArtifact.of(response.getDocumentId(), null));
+    final var attributes = cacheDb.get(new DynamoDbKey(cacheKey, "cache"));
+    ApiAuthorizationRecord record = ApiAuthorizationRecord.fromAttributeMap(attributes);
+    ApiAuthorization authorization = record.toApiAuthorization();
+
+    // then
+    assertEquals("joesmith", authorization.getUsername());
+    assertEquals(siteId, authorization.getSiteId());
+    assertEquals(List.of(siteId), authorization.getRoles());
+    assertEquals(List.of(siteId), authorization.getSiteIds());
+    assertEquals(Map.of(), authorization.getUserClaims());
+    assertTrue(record.timeToLive() > Instant.now().getEpochSecond());
+    assertFalse(attributes.containsKey("Data"));
   }
 }

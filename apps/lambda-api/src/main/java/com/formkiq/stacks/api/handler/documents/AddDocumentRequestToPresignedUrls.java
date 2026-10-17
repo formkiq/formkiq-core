@@ -24,15 +24,16 @@
 package com.formkiq.stacks.api.handler.documents;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.ApiAuthorizationRecord;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.DynamoDbService;
-import com.formkiq.aws.dynamodb.base64.MapToBase64;
 import com.formkiq.aws.dynamodb.builder.DynamoDbTypes;
-import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeEntityKeyValue;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentResourceType;
+import com.formkiq.aws.dynamodb.model.TimeToLiveBuilder;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.FindEntityById;
 import com.formkiq.aws.dynamodb.entity.RetentionEffectiveEndDateAttribute;
@@ -47,6 +48,7 @@ import com.formkiq.plugins.useractivity.UserActivityContextData;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.documents.AddDocumentRequest;
 import software.amazon.awssdk.services.s3.model.ChecksumAlgorithm;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -85,14 +87,14 @@ public class AddDocumentRequestToPresignedUrls
   private final Optional<Long> contentLength;
   /** Site Id. */
   private final String siteId;
-  /** {@link CacheService}. */
-  private final CacheService cacheService;
+  /** Cache table name. */
+  private final String cacheTableName;
   /** {@link DocumentService}. */
   private final DocumentService documentService;
   /** {@link DynamoDbService}. */
   private final DynamoDbService dynamoDbService;
-  /** Username. */
-  private final String username;
+  /** Authorization captured for the upload. */
+  private final ApiAuthorization requestAuthorization;
 
   /**
    * constructor.
@@ -125,13 +127,13 @@ public class AddDocumentRequestToPresignedUrls
     this.accelerate = accelerateTransfers;
     this.siteId = documentSiteId;
     this.s3PresignerService = awsservice.getExtension(S3PresignerService.class);
-    this.cacheService = awsservice.getExtension(CacheService.class);
+    this.cacheTableName = awsservice.environment("CACHE_TABLE");
     this.documentService = awsservice.getExtension(DocumentService.class);
     this.dynamoDbService = awsservice.getExtension(DynamoDbService.class);
     this.s3Bucket = awsservice.environment("DOCUMENTS_S3_BUCKET");
     this.duration = urlDuration != null ? urlDuration : Duration.ofHours(1);
     this.contentLength = documentContentLength;
-    this.username = authorization.getUsername();
+    this.requestAuthorization = authorization;
   }
 
   private void addHeaders(final Map<String, Object> map, final AddDocumentRequest item) {
@@ -236,12 +238,19 @@ public class AddDocumentRequestToPresignedUrls
     final int cacheInDays = 7;
 
     Map<String, String> map = new HashMap<>();
-    map.put("username", this.username);
     map.put("path", getOldPath());
     addObjectLockRetention(map, document);
 
-    String s = new MapToBase64().apply(map);
-    this.cacheService.write(cacheKey, s, cacheInDays);
+    long expiration = new TimeToLiveBuilder().withDaysFromNow(cacheInDays).build();
+    Map<String, AttributeValue> attributes =
+        ApiAuthorizationRecord.fromApiAuthorization(this.requestAuthorization,
+            new DynamoDbKey(cacheKey, "cache"), expiration).getAttributes();
+    map.forEach((name, value) -> {
+      if (value != null) {
+        attributes.put(name, AttributeValue.fromS(value));
+      }
+    });
+    this.dynamoDbService.putItem(this.cacheTableName, attributes);
 
     ChecksumAlgorithm checksumAlgorithm =
         this.s3PresignerService.getChecksumAlgorithm(o.getChecksumType());

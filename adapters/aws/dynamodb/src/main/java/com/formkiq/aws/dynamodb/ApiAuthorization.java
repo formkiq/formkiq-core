@@ -291,6 +291,16 @@ public class ApiAuthorization {
   }
 
   /**
+   * Get explicit site permission roles without expanding administrator fallback grants.
+   *
+   * @return site permission roles
+   */
+  public SiteApiPermissionRoles getSitePermissions() {
+    return new SiteApiPermissionRoles(permissionRoleMap.entrySet().stream()
+        .map(entry -> new SiteApiPermissionRole(entry.getKey(), entry.getValue())).toList());
+  }
+
+  /**
    * Get custom user claims.
    *
    * @return {@link Map}
