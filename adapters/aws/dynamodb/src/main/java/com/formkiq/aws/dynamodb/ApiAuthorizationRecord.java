@@ -36,7 +36,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Persistable authorization context. Request caches and handler-specific attribute approvals remain
- * transient. Top-level collections are copied when capturing and restoring the context.
+ * transient.
  *
  * @param key DynamoDB key, optional until persistence
  * @param siteId selected site
@@ -53,17 +53,6 @@ public record ApiAuthorizationRecord(DynamoDbKey key, String siteId, String user
     String customEmail, Collection<String> roles, Collection<String> samlGroups,
     Map<String, String> roleSiteMap, Map<String, Object> userClaims,
     SiteApiPermissionRoles sitePermissions, Long timeToLive) {
-
-  /** Copy the top-level authorization collections. */
-  public ApiAuthorizationRecord {
-    roles = roles != null ? List.copyOf(roles) : null;
-    samlGroups = samlGroups != null ? List.copyOf(samlGroups) : null;
-    roleSiteMap =
-        roleSiteMap != null ? Map.copyOf(roleSiteMap) : null;
-    userClaims = userClaims != null ? Map.copyOf(userClaims) : null;
-    sitePermissions =
-        sitePermissions != null ? sitePermissions : new SiteApiPermissionRoles(List.of());
-  }
 
   /**
    * Capture authorization without persistence metadata.
