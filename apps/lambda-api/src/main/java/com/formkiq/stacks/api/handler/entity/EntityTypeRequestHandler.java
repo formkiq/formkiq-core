@@ -34,6 +34,7 @@ import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
+import com.formkiq.aws.dynamodb.entity.EntityTypeName;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
@@ -151,12 +152,13 @@ public class EntityTypeRequestHandler
   }
 
   @Override
-  public Optional<ApiPermission> getRequiredPermission(final String method) {
+  public Optional<ApiPermission> getRequiredPermission(final String method,
+      final AwsServiceCache awsServiceCache) {
     return switch (method.toLowerCase(Locale.ROOT)) {
-      case "get" -> Optional.of(ApiPermission.READ_ENTITY);
-      case "put" -> Optional.of(ApiPermission.WRITE_ENTITY);
-      case "delete" -> Optional.of(ApiPermission.DELETE_ENTITY);
-      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+      case "get" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      case "put" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      case "delete" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method, awsServiceCache);
     };
   }
 
@@ -248,7 +250,7 @@ public class EntityTypeRequestHandler
     String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
 
     QueryRequest req = new FindEntityTypeByName().build(documentsTable, siteId,
-        new FindEntityTypeByName.EntityTypeName(namespace, name));
+        new EntityTypeName(namespace, name));
     Map<String, AttributeValue> attributes = db.getByQuery(req);
     String existingEntityTypeId =
         attributes.containsKey("documentId") ? attributes.get("documentId").s() : null;

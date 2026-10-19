@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.FindEntityByName;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
+import com.formkiq.aws.dynamodb.entity.EntityTypeName;
 import com.formkiq.aws.dynamodb.model.MappingRecord;
 import com.formkiq.aws.dynamodb.objects.Strings;
 import com.formkiq.graalvm.annotations.Reflectable;
@@ -371,7 +372,7 @@ public enum ActionType {
       } else {
 
         String entityTypeId = new FindEntityTypeByName().find(db, siteId,
-            new FindEntityTypeByName.EntityTypeName(EntityTypeNamespace.PRESET, "LlmPrompt"));
+            new EntityTypeName(EntityTypeNamespace.PRESET, "LlmPrompt"));
 
         String name = (String) parameters.get("llmPromptEntityName");
         EntityRecord entityRecord = new FindEntityByName().find(db, siteId,

@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.attributes.AttributeType;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
+import com.formkiq.aws.dynamodb.entity.EntityTypeName;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntities;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
@@ -169,7 +170,7 @@ public class SetEntityTypeRecordFunction
     String documentsTable = awsservice.environment("DOCUMENTS_TABLE");
 
     QueryRequest req = new FindEntityTypeByName().build(documentsTable, siteId,
-        new FindEntityTypeByName.EntityTypeName(namespace, name));
+        new EntityTypeName(namespace, name));
     vb.isRequired("name", !db.exists(req), "'name' already exists");
 
     vb.check();

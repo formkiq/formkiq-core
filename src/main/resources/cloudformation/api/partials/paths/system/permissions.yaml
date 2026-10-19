@@ -184,6 +184,8 @@ components:
         - GOOGLE_INTEGRATION
         - INTELLIGENT_DOCUMENT_PROCESSING
         - MAPPINGS
+        - REMINDER_POLICY
+        - RETENTION_POLICY
         - RULESETS
         - SCHEMAS
         - SHORTLINKS
@@ -195,7 +197,14 @@ components:
     #@overlay/match missing_ok=True
     ApiPermission:
       type: string
-      description: Scoped API permission identifier
+      description: |-
+        Scoped API permission identifier. READ_ENTITY, WRITE_ENTITY and DELETE_ENTITY
+        apply to custom entities and presets without dedicated permissions. The PRESET
+        entity types RetentionPolicy and ReminderPolicy instead require their matching
+        READ_RETENTION_POLICY, WRITE_RETENTION_POLICY, DELETE_RETENTION_POLICY or
+        READ_REMINDER_POLICY, WRITE_REMINDER_POLICY, DELETE_REMINDER_POLICY grants.
+        These dedicated grants cover both entities and their entity type definitions.
+        Generic entity grants do not grant access to these two preset types.
       enum:
         - GOVERN_ACCESS_CONTROL
         - READ_ATTRIBUTES
@@ -235,6 +244,12 @@ components:
         - READ_MAPPINGS
         - WRITE_MAPPINGS
         - DELETE_MAPPINGS
+        - READ_REMINDER_POLICY
+        - WRITE_REMINDER_POLICY
+        - DELETE_REMINDER_POLICY
+        - READ_RETENTION_POLICY
+        - WRITE_RETENTION_POLICY
+        - DELETE_RETENTION_POLICY
         - READ_RULESETS
         - WRITE_RULESETS
         - DELETE_RULESETS
@@ -263,6 +278,8 @@ components:
         catalog. The legacy ADMIN, DELETE, READ, WRITE and GOVERN umbrella names are also
         accepted for compatibility. These names are explicit grants, not selections of a
         predefined role type; for example, WRITE alone does not imply READ or DELETE.
+        RetentionPolicy and ReminderPolicy in the PRESET namespace require their dedicated
+        policy grants in place of READ_ENTITY, WRITE_ENTITY and DELETE_ENTITY.
         Use roleType to select a predefined role. Administrator grants require an
         administrator caller.
       enum:
@@ -309,6 +326,12 @@ components:
         - READ_MAPPINGS
         - WRITE_MAPPINGS
         - DELETE_MAPPINGS
+        - READ_REMINDER_POLICY
+        - WRITE_REMINDER_POLICY
+        - DELETE_REMINDER_POLICY
+        - READ_RETENTION_POLICY
+        - WRITE_RETENTION_POLICY
+        - DELETE_RETENTION_POLICY
         - READ_RULESETS
         - WRITE_RULESETS
         - DELETE_RULESETS
