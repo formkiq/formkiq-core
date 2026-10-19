@@ -368,6 +368,37 @@ class ApiPermissionRoleTest {
     assertThrows(IllegalStateException.class, override);
   }
 
+  /**
+   * Dedicated policy grants remain independent of generic entities and the other preset.
+   *
+   * @param permission preset policy permission
+   */
+  @ParameterizedTest
+  @EnumSource(value = ApiPermission.class,
+      names = {"READ_REMINDER_POLICY", "WRITE_REMINDER_POLICY", "DELETE_REMINDER_POLICY",
+          "READ_RETENTION_POLICY", "WRITE_RETENTION_POLICY", "DELETE_RETENTION_POLICY"})
+  void testPresetPolicyPermissionBoundaries(final ApiPermission permission) {
+    // given
+    ApiPermission generic = ApiPermission.valueOf(permission.getType().name() + "_ENTITY");
+    ApiPermissionRole entityRole = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+        .permissions(Set.of(generic)).build();
+
+    // when
+    ApiPermissionRole policyRole =
+        ApiPermissionRole.fromRequest("CUSTOM", List.of(permission.name()));
+    boolean genericAccess = entityRole.hasPermission(permission);
+    boolean operationAccess =
+        ApiPermissionRole.builder(permission.getType()).build().hasPermission(permission);
+
+    // then
+    assertEquals(Set.of(permission), policyRole.getPermissions());
+    assertFalse(genericAccess);
+    assertTrue(operationAccess);
+    for (ApiPermission candidate : ApiPermission.values()) {
+      assertEquals(candidate == permission, policyRole.hasPermission(candidate));
+    }
+  }
+
   /** Legacy arrays retain exact grants; CUSTOM deduplicates scoped names. */
   @Test
   void testRequestExplicitGrants() {

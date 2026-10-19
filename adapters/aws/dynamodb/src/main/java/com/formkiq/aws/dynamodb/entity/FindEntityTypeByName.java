@@ -42,8 +42,7 @@ import static com.formkiq.aws.dynamodb.DbKeys.GSI1;
 /**
  * {@link DynamoDbQuery} for Converting an EntityTypeName to EntityTypeId.
  */
-public class FindEntityTypeByName
-    implements DynamoDbFind<String, FindEntityTypeByName.EntityTypeName> {
+public class FindEntityTypeByName implements DynamoDbFind<String, EntityTypeName> {
 
   /** {@link ValidationBuilder}. */
   private final ValidationBuilder vb;
@@ -55,19 +54,16 @@ public class FindEntityTypeByName
     vb = new ValidationBuilder();
   }
 
-  public record EntityTypeName(EntityTypeNamespace namespace, String name) {
-  }
-
   /**
    * Build {@link QueryRequest} for finding Entity.
    * 
    * @param tableName {@link String}
    * @param siteId {@link String}
-   * @param record {@link FindEntityTypeByName.EntityTypeName}
+   * @param record {@link EntityTypeName}
    * @return {@link QueryRequest}
    */
   public QueryRequest build(final String tableName, final String siteId,
-      final FindEntityTypeByName.EntityTypeName record) {
+      final EntityTypeName record) {
 
     DynamoDbKey key = EntityTypeRecord.builder(null).documentId("").name(record.name())
         .namespace(record.namespace()).buildKey(siteId);
@@ -77,7 +73,7 @@ public class FindEntityTypeByName
 
   @Override
   public String find(final DynamoDbService db, final String tableName, final String siteId,
-      final FindEntityTypeByName.EntityTypeName record) {
+      final EntityTypeName record) {
 
     String entityTypeId = record.name();
     String name = record.name();

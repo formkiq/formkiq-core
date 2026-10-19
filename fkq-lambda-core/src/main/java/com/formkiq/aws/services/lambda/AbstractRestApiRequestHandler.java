@@ -403,7 +403,8 @@ public abstract class AbstractRestApiRequestHandler implements RequestStreamHand
     hasAccess = isAuthorizedHandler(event, authorization, hasAccess);
 
     String siteId = authorization.getSiteId();
-    Optional<ApiPermission> requiredPermission = handler.getRequiredPermission(method);
+    Optional<ApiPermission> requiredPermission =
+        handler.getRequiredPermission(method, getAwsServices());
     if (requiredPermission.isPresent()) {
       Collection<ApiPermission> permissions = switch (handler.getPermissionScope()) {
         case ANY_SITE -> authorization.getAllPermissions();

@@ -98,11 +98,12 @@ public class EntitiesRequestHandler
   }
 
   @Override
-  public Optional<ApiPermission> getRequiredPermission(final String method) {
+  public Optional<ApiPermission> getRequiredPermission(final String method,
+      final AwsServiceCache awsServiceCache) {
     return switch (method.toLowerCase(Locale.ROOT)) {
-      case "get" -> Optional.of(ApiPermission.READ_ENTITY);
-      case "post" -> Optional.of(ApiPermission.WRITE_ENTITY);
-      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+      case "get" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      case "post" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method, awsServiceCache);
     };
   }
 

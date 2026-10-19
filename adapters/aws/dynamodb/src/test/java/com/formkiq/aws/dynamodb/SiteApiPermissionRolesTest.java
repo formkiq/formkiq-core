@@ -129,7 +129,7 @@ class SiteApiPermissionRolesTest {
     assertEquals(
         Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES, ApiPermission.WRITE_DOCUMENT_ATTRIBUTES),
         imported.roles().iterator().next().role().getPermissions());
-    assertEquals("v1:ABgAAAAAAAA", source.exportPermissions().get("default"));
+    assertEquals("v1:ABgAAAAAAAAA", source.exportPermissions().get("default"));
   }
 
   /** Missing collections and entries are rejected on construction. */

@@ -87,9 +87,9 @@ class SiteApiPermissionRolesJsonTest {
   void testExportImportJson() {
     // given
     final Map<String, String> bitmaps =
-        Map.of("site-b", "v1:AQAAAAAAAAA", "default", "v1:AAgAAAAAAAA");
+        Map.of("site-b", "v1:AQAAAAAAAAAA", "default", "v1:AAgAAAAAAAAA");
     SiteApiPermissionRoles roles = SiteApiPermissionRoles.importPermissions(bitmaps);
-    final String expected = "{\"default\":\"v1:AAgAAAAAAAA\"," + "\"site-b\":\"v1:AQAAAAAAAAA\"}";
+    final String expected = "{\"default\":\"v1:AAgAAAAAAAAA\"," + "\"site-b\":\"v1:AQAAAAAAAAAA\"}";
 
     // when
     String exported = roles.exportPermissionsAsString();
@@ -114,11 +114,11 @@ class SiteApiPermissionRolesJsonTest {
   @ParameterizedTest
   @ValueSource(strings = {"", " ", "null", "[]", "\"value\"", "true", "123", "{",
       "{\"site-a\":null}", "{\"site-a\":123}", "{\"site-a\":true}", "{\"site-a\":[]}",
-      "{\"site-a\":{}}", "{site-a:\"v1:AQAAAAAAAAA\"}", "{'site-a':'v1:AQAAAAAAAAA'}",
-      "{\"site-a\":\"v1:AQAAAAAAAAA\",}", "{/*comment*/\"site-a\":\"v1:AQAAAAAAAAA\"}", "{} {}",
+      "{\"site-a\":{}}", "{site-a:\"v1:AQAAAAAAAAAA\"}", "{'site-a':'v1:AQAAAAAAAAAA'}",
+      "{\"site-a\":\"v1:AQAAAAAAAAAA\",}", "{/*comment*/\"site-a\":\"v1:AQAAAAAAAAAA\"}", "{} {}",
       "{} trailing", "{\"site-a\":\"v2:AQAAAAAAAAA\"}", "{\"site-a\":\"v1:%%%\"}",
-      "{\"site-a\":\"v1:AQAAAAAAAAA\",\"site-a\":\"v1:AAgAAAAAAAA\"}",
-      "{\"site-a\":\"v1:AQAAAAAAAAA\",\"site-a\":\"v1:AQAAAAAAAAA\"}"})
+      "{\"site-a\":\"v1:AQAAAAAAAAAA\",\"site-a\":\"v1:AAgAAAAAAAAA\"}",
+      "{\"site-a\":\"v1:AQAAAAAAAAAA\",\"site-a\":\"v1:AQAAAAAAAAAA\"}"})
   void testInvalidJson(final String json) {
     // given
     String encoded = json;
@@ -170,13 +170,13 @@ class SiteApiPermissionRolesJsonTest {
   @Test
   void testWhitespaceJson() {
     // given
-    String json = " \n { \"default\" : \"v1:AAgAAAAAAAA\" } \t ";
+    String json = " \n { \"default\" : \"v1:AAgAAAAAAAAA\" } \t ";
 
     // when
     SiteApiPermissionRoles imported = SiteApiPermissionRoles.importPermissions(json);
 
     // then
-    assertEquals(Map.of("default", "v1:AAgAAAAAAAA"), imported.exportPermissions());
+    assertEquals(Map.of("default", "v1:AAgAAAAAAAAA"), imported.exportPermissions());
     assertTrue(imported.hasPermission(null, ApiPermission.READ_DOCUMENT_ATTRIBUTES));
   }
 }

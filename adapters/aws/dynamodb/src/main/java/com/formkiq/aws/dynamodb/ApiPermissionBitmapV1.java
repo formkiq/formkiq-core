@@ -40,7 +40,7 @@ final class ApiPermissionBitmapV1 {
   /** Bits per encoded byte. */
   private static final int BITS_PER_BYTE = Byte.SIZE;
   /** Highest permission index supported by version 1. Never increase for this version. */
-  private static final int VERSION_ONE_MAX_INDEX = 60;
+  private static final int VERSION_ONE_MAX_INDEX = 66;
   /** Version 1 permissions keyed by their permanent bitmap indices. */
   private static final Map<Integer, ApiPermission> VERSION_ONE_PERMISSIONS =
       Arrays.stream(ApiPermission.values())

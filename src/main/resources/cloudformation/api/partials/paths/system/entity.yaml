@@ -9,7 +9,10 @@ paths:
       x-formkiq-required-permission: READ_ENTITY
       tags:
         - Entity
-      description: Returns a list of entity types
+      description: |-
+        Returns a list of entity types.
+
+        Requires READ_ENTITY for both CUSTOM and PRESET namespaces.
       summary: Get EntityTypes
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
@@ -37,9 +40,18 @@ paths:
     post:
       operationId: AddEntityType
       description: |-
-        Creates a Entity Type
+        Creates an entity type.
+
+        Requires WRITE_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        WRITE_REMINDER_POLICY for the PRESET ReminderPolicy type, or WRITE_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; WRITE_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by the namespace and name in the request body.
       summary: Add New EntityType
       x-formkiq-required-permission: WRITE_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: WRITE_RETENTION_POLICY
+        ReminderPolicy: WRITE_REMINDER_POLICY
       tags:
         - Entity
       parameters:
@@ -80,9 +92,21 @@ paths:
     get:
       operationId: GetEntityType
       x-formkiq-required-permission: READ_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: READ_RETENTION_POLICY
+        ReminderPolicy: READ_REMINDER_POLICY
       tags:
         - Entity
-      description: Returns a entity type
+      description: |-
+        Returns an entity type.
+
+        Requires READ_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        READ_REMINDER_POLICY for the PRESET ReminderPolicy type, or READ_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; READ_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Get EntityType
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
@@ -109,9 +133,20 @@ paths:
     put:
       operationId: SetEntityType
       description: |-
-        Sets a Entity Type
+        Sets an entity type.
+
+        Requires WRITE_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        WRITE_REMINDER_POLICY for the PRESET ReminderPolicy type, or WRITE_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; WRITE_ENTITY alone does not authorize either dedicated preset.
+        Existing types use their stored namespace and name. When creating a missing
+        type, the namespace and name in the request body determine the permission.
+        Updating an existing type must not bypass its current permission requirement.
       summary: Set EntityType
       x-formkiq-required-permission: WRITE_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: WRITE_RETENTION_POLICY
+        ReminderPolicy: WRITE_REMINDER_POLICY
       tags:
         - Entity
       parameters:
@@ -150,9 +185,21 @@ paths:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
     delete:
       operationId: DeleteEntityType
-      description: Deletes Entity Type
+      description: |-
+        Deletes an entity type.
+
+        Requires DELETE_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        DELETE_REMINDER_POLICY for the PRESET ReminderPolicy type, or DELETE_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; DELETE_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Deletes Entity Type
       x-formkiq-required-permission: DELETE_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: DELETE_RETENTION_POLICY
+        ReminderPolicy: DELETE_REMINDER_POLICY
       tags:
         - Entity
       parameters:
@@ -171,9 +218,21 @@ paths:
     get:
       operationId: GetEntities
       x-formkiq-required-permission: READ_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: READ_RETENTION_POLICY
+        ReminderPolicy: READ_REMINDER_POLICY
       tags:
         - Entity
-      description: Returns a list of entities
+      description: |-
+        Returns a list of entities.
+
+        Requires READ_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        READ_REMINDER_POLICY for the PRESET ReminderPolicy type, or READ_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; READ_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Get Entities
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
@@ -202,9 +261,20 @@ paths:
     post:
       operationId: AddEntity
       description: |-
-        Creates a Entity
+        Creates an entity.
+
+        Requires WRITE_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        WRITE_REMINDER_POLICY for the PRESET ReminderPolicy type, or WRITE_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; WRITE_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Add New Entity
       x-formkiq-required-permission: WRITE_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: WRITE_RETENTION_POLICY
+        ReminderPolicy: WRITE_REMINDER_POLICY
       tags:
         - Entity
       parameters:
@@ -247,9 +317,21 @@ paths:
     get:
       operationId: GetEntity
       x-formkiq-required-permission: READ_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: READ_RETENTION_POLICY
+        ReminderPolicy: READ_REMINDER_POLICY
       tags:
         - Entity
-      description: Returns a entity
+      description: |-
+        Returns an entity.
+
+        Requires READ_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        READ_REMINDER_POLICY for the PRESET ReminderPolicy type, or READ_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; READ_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Get Entity
       parameters:
         - $ref: '#/components/parameters/siteIdParam'
@@ -277,9 +359,20 @@ paths:
     put:
       operationId: SetEntity
       description: |-
-        Sets a Entity
+        Sets an entity.
+
+        Requires WRITE_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        WRITE_REMINDER_POLICY for the PRESET ReminderPolicy type, or WRITE_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; WRITE_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Set Entity
       x-formkiq-required-permission: WRITE_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: WRITE_RETENTION_POLICY
+        ReminderPolicy: WRITE_REMINDER_POLICY
       tags:
         - Entity
       parameters:
@@ -321,9 +414,20 @@ paths:
     patch:
       operationId: UpdateEntity
       description: |-
-        Updates a Entity
+        Updates an entity.
+
+        Requires WRITE_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        WRITE_REMINDER_POLICY for the PRESET ReminderPolicy type, or WRITE_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; WRITE_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Update Entity
       x-formkiq-required-permission: WRITE_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: WRITE_RETENTION_POLICY
+        ReminderPolicy: WRITE_REMINDER_POLICY
       tags:
         - Entity
       parameters:
@@ -363,9 +467,21 @@ paths:
         $ref: "#/components/x-amazon-apigateway-integrations/lambdaApi200"
     delete:
       operationId: DeleteEntity
-      description: Deletes Entity
+      description: |-
+        Deletes an entity.
+
+        Requires DELETE_RETENTION_POLICY for the PRESET RetentionPolicy type,
+        DELETE_REMINDER_POLICY for the PRESET ReminderPolicy type, or DELETE_ENTITY
+        for other types. The dedicated preset permission replaces the generic entity
+        permission; DELETE_ENTITY alone does not authorize either dedicated preset.
+        The preset is identified by its stored namespace and name, whether the request
+        identifies the entity type by name or UUID. A CUSTOM type with the same name
+        continues to use the generic entity permission.
       summary: Deletes Entity
       x-formkiq-required-permission: DELETE_ENTITY
+      x-formkiq-required-permission-by-preset:
+        RetentionPolicy: DELETE_RETENTION_POLICY
+        ReminderPolicy: DELETE_REMINDER_POLICY
       tags:
         - Entity
       parameters:
@@ -384,7 +500,9 @@ paths:
   /entities/{entityTypeId}/{entityId}/attributes/{attributeKey}:
     delete:
       operationId: DeleteEntityAttribute
-      description: Deletes Entity Attribute
+      description: |-
+        Deletes an entity attribute. Requires DELETE_ENTITY. Attributes cannot be
+        removed from PRESET entities, including RetentionPolicy and ReminderPolicy.
       summary: Deletes Entity Attribute
       x-formkiq-required-permission: DELETE_ENTITY
       tags:
