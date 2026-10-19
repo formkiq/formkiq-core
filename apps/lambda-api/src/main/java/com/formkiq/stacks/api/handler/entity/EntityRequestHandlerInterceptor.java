@@ -24,16 +24,25 @@
 package com.formkiq.stacks.api.handler.entity;
 
 import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.dynamodb.DynamoDbKey;
+import com.formkiq.aws.dynamodb.DynamoDbService;
+import com.formkiq.aws.dynamodb.entity.EntityTypeName;
 import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
+import com.formkiq.aws.dynamodb.entity.EntityTypeRecord;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerInterceptor;
 import com.formkiq.aws.services.lambda.ApiRequestHandlerResponse;
+import com.formkiq.aws.services.lambda.JsonToObject;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.objects.Strings.isUuid;
 
 /**
- * {@link ApiRequestHandlerInterceptor} for /entities request handler.
+ * Resolves entity type identifiers and identity before entity request authorization.
  */
 public class EntityRequestHandlerInterceptor implements ApiRequestHandlerInterceptor {
 
@@ -41,9 +50,9 @@ public class EntityRequestHandlerInterceptor implements ApiRequestHandlerInterce
   private final AwsServiceCache awsservice;
 
   /**
-   * constructor.
-   * 
-   * @param awsServiceCache {@link AwsServiceCache}
+   * Constructor.
+   *
+   * @param awsServiceCache service cache
    */
   public EntityRequestHandlerInterceptor(final AwsServiceCache awsServiceCache) {
     this.awsservice = awsServiceCache;
@@ -58,19 +67,63 @@ public class EntityRequestHandlerInterceptor implements ApiRequestHandlerInterce
   @Override
   public void beforeProcessRequest(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization) {
+    if (event == null) {
+      return;
+    }
 
-    String entityTypeId = event != null ? event.getPathParameter("entityTypeId") : null;
-
+    authorization.addCacheObject(EntityTypeName.class.getName(), null);
+    String entityTypeId = event.getPathParameter("entityTypeId");
     if (entityTypeId != null) {
+      resolveExistingEntityType(event, authorization, entityTypeId);
+    } else if ("/entityTypes".equals(event.getResource())
+        && "post".equalsIgnoreCase(event.getHttpMethod())) {
+      authorization.addCacheObject(EntityTypeName.class.getName(), getRequestedEntityType(event));
+    }
+  }
 
-      EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
-      if (namespace == null && isUuid(entityTypeId)) {
-        event.addQueryParameter("namespace", EntityTypeNamespace.CUSTOM.name());
-      }
+  private EntityTypeName getRequestedEntityType(final ApiGatewayRequestEvent event) {
+    AddEntityTypeRequest request =
+        JsonToObject.fromJson(awsservice, event, AddEntityTypeRequest.class);
+    if (request == null || request.entityType() == null) {
+      throw new BadException("Missing required parameter 'entityType'");
+    }
+    AddEntityType entityType = request.entityType();
+    return new EntityTypeName(entityType.namespace(), entityType.name());
+  }
 
-      String siteId = authorization.getSiteId();
-      entityTypeId = new EntityTypeIdTransformer(awsservice).apply(siteId, event);
-      event.getPathParameters().put("entityTypeId", entityTypeId);
+  private void resolveExistingEntityType(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization, final String requestedId) {
+    EntityTypeNamespace namespace = new QueryParameterNamespace().apply(event);
+    if (namespace == null && isUuid(requestedId)) {
+      namespace = EntityTypeNamespace.CUSTOM;
+      event.addQueryParameter("namespace", namespace.name());
+    }
+
+    String siteId = authorization.getSiteId();
+    String entityTypeId = new EntityTypeIdTransformer(awsservice).apply(siteId, event);
+    event.getPathParameters().put("entityTypeId", entityTypeId);
+
+    DynamoDbKey key = EntityTypeRecord.builder().documentId(entityTypeId)
+        .namespace(namespace, EntityTypeNamespace.CUSTOM).nameEmpty().buildKey(siteId);
+    DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
+    Map<String, AttributeValue> attributes = db.get(key);
+    if (attributes.isEmpty()) {
+      resolveMissingEntityType(event, authorization);
+      return;
+    }
+
+    EntityTypeRecord entityType = EntityTypeRecord.fromAttributeMap(attributes);
+    authorization.addCacheObject(EntityTypeName.class.getName(),
+        new EntityTypeName(entityType.namespace(), entityType.name()));
+    event.addQueryParameter("namespace", entityType.namespace().name());
+  }
+
+  private void resolveMissingEntityType(final ApiGatewayRequestEvent event,
+      final ApiAuthorization authorization) {
+    if ("/entityTypes/{entityTypeId}".equals(event.getResource())
+        && "put".equalsIgnoreCase(event.getHttpMethod())
+        && "true".equalsIgnoreCase(event.getQueryStringParameter("createIfMissing"))) {
+      authorization.addCacheObject(EntityTypeName.class.getName(), getRequestedEntityType(event));
     }
   }
 }

@@ -49,7 +49,8 @@ class ApiPermissionTest {
   @ParameterizedTest
   @CsvSource({"USER_ACTIVITIES, User Activities", "ATTRIBUTES, Attributes", "DOCUMENTS, Documents",
       "DOCUMENT_ATTRIBUTES, Document Attributes", "DOCUMENT_ACTIONS, Document Actions",
-      "E_SIGNATURE, E-Signature", "RULESETS, Rulesets", "EXAMINE_OBJECTS, Examine Objects"})
+      "E_SIGNATURE, E-Signature", "RULESETS, Rulesets", "EXAMINE_OBJECTS, Examine Objects",
+      "REMINDER_POLICY, Reminder Policy", "RETENTION_POLICY, Retention Policy"})
   void testClientTagLabels(final ApiPermissionGroup permissionGroup, final String expectedTag) {
     // given
     ApiPermissionGroup group = permissionGroup;

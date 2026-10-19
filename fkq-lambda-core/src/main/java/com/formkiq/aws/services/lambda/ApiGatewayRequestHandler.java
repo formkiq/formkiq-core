@@ -196,6 +196,19 @@ public interface ApiGatewayRequestHandler {
   }
 
   /**
+   * Get the mandatory permission using registered services. By default this delegates to the
+   * method-only policy so existing handler overrides remain effective.
+   *
+   * @param method HTTP method
+   * @param awsServiceCache registered services for this request
+   * @return required permission, or empty when authorization is decided solely by custom policies
+   */
+  default Optional<ApiPermission> getRequiredPermission(String method,
+      AwsServiceCache awsServiceCache) {
+    return getRequiredPermission(method);
+  }
+
+  /**
    * Head Request Handler.
    *
    * @param event {@link ApiGatewayRequestEvent}
@@ -214,8 +227,9 @@ public interface ApiGatewayRequestHandler {
 
   /**
    * Additional authorization policy for {@link ApiGatewayRequestHandler}. A true decision does not
-   * bypass {@link #getRequiredPermission(String)}. An empty decision adds no restriction to a
-   * declared permission; handlers without a required permission must explicitly allow access.
+   * bypass {@link #getRequiredPermission(String, AwsServiceCache)}. An empty decision adds no
+   * restriction to a declared permission; handlers without a required permission must explicitly
+   * allow access.
    * 
    * @param awsServiceCache {@link AwsServiceCache}
    * @param method {@link String}

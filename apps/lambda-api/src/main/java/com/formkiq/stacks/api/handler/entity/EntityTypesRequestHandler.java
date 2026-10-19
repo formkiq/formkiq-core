@@ -60,7 +60,6 @@ public class EntityTypesRequestHandler
    */
   public EntityTypesRequestHandler() {}
 
-
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
       final ApiAuthorization authorization, final AwsServiceCache awsservice) throws Exception {
@@ -94,11 +93,12 @@ public class EntityTypesRequestHandler
   }
 
   @Override
-  public Optional<ApiPermission> getRequiredPermission(final String method) {
+  public Optional<ApiPermission> getRequiredPermission(final String method,
+      final AwsServiceCache awsServiceCache) {
     return switch (method.toLowerCase(Locale.ROOT)) {
       case "get" -> Optional.of(ApiPermission.READ_ENTITY);
-      case "post" -> Optional.of(ApiPermission.WRITE_ENTITY);
-      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+      case "post" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method, awsServiceCache);
     };
   }
 

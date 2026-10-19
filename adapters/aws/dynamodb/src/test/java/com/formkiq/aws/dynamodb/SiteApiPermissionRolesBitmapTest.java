@@ -48,7 +48,7 @@ class SiteApiPermissionRolesBitmapTest {
   void testEmptyPermissions() {
     // given
     SiteApiPermissionRoles empty = new SiteApiPermissionRoles(List.of());
-    final Map<String, String> zeroGrants = Map.of("default", "v1:AAAAAAAAAAA");
+    final Map<String, String> zeroGrants = Map.of("default", "v1:AAAAAAAAAAAA");
 
     // when
     Map<String, String> exported = empty.exportPermissions();
@@ -69,17 +69,17 @@ class SiteApiPermissionRolesBitmapTest {
   @Test
   void testImmutableImportExport() {
     // given
-    Map<String, String> source = new HashMap<>(Map.of("site-a", "v1:AAgAAAAAAAA"));
+    Map<String, String> source = new HashMap<>(Map.of("site-a", "v1:AAgAAAAAAAAA"));
 
     // when
     SiteApiPermissionRoles imported = SiteApiPermissionRoles.importPermissions(source);
     source.clear();
     final Map<String, String> exported = imported.exportPermissions();
-    Executable mutation = () -> exported.put("site-b", "v1:AQAAAAAAAAA");
+    Executable mutation = () -> exported.put("site-b", "v1:AQAAAAAAAAAA");
 
     // then
     assertTrue(imported.hasPermission("site-a", ApiPermission.READ_DOCUMENT_ATTRIBUTES));
-    assertEquals(Map.of("site-a", "v1:AAgAAAAAAAA"), exported);
+    assertEquals(Map.of("site-a", "v1:AAgAAAAAAAAA"), exported);
     assertThrows(UnsupportedOperationException.class, mutation);
     assertFalse(imported.hasPermission("site-b", ApiPermission.ADMIN));
   }
@@ -90,12 +90,12 @@ class SiteApiPermissionRolesBitmapTest {
    * @param bitmap invalid bitmap
    */
   @ParameterizedTest
-  @ValueSource(strings = {"", "v0:AAAAAAAAAAA", "v2:AAAAAAAAAAA", "AAAAAAAAAAA", "v1:", "v1:%%%",
-      "v1:AQ", "v1:AAAAAAAAAAAA", "v1:AAAAAAAAAAA=", "v1://////////8", "v1:AAAAAAAAAAB",
-      "v1:AAAAAAAAACA", "v1:AAAAAAAAAIA"})
+  @ValueSource(strings = {"", "v0:AAAAAAAAAAAA", "v2:AAAAAAAAAAAA", "AAAAAAAAAAAA", "v1:", "v1:%%%",
+      "v1:AQ", "v1:AAAAAAAAAAA", "v1:AAAAAAAAAAAAAA", "v1:AAAAAAAAAAAA=", "v1:////////////",
+      "v1:AAAAAAAAAAAI", "v1:AAAAAAAAAACA"})
   void testInvalidBitmap(final String bitmap) {
     // given
-    Map<String, String> encoded = Map.of("site-a", "v1:AQAAAAAAAAA", "site-b", bitmap);
+    Map<String, String> encoded = Map.of("site-a", "v1:AQAAAAAAAAAA", "site-b", bitmap);
 
     // when
     Executable importing = () -> SiteApiPermissionRoles.importPermissions(encoded);
@@ -140,7 +140,7 @@ class SiteApiPermissionRolesBitmapTest {
   void testNullImport() {
     // given
     Map<String, String> nullKey = new HashMap<>();
-    nullKey.put(null, "v1:AAAAAAAAAAA");
+    nullKey.put(null, "v1:AAAAAAAAAAAA");
     Map<String, String> nullValue = new HashMap<>();
     nullValue.put("site-a", null);
 
@@ -168,6 +168,40 @@ class SiteApiPermissionRolesBitmapTest {
 
     // then
     assertThrows(NullPointerException.class, exporting);
+  }
+
+  /** Policy grants and other site permissions round trip using the version 1 catalog. */
+  @Test
+  void testPresetPolicyBitmap() {
+    // given
+    final Set<ApiPermission> grants = Set.of(ApiPermission.ADMIN, ApiPermission.DELETE_WEBHOOKS,
+        ApiPermission.READ_REMINDER_POLICY, ApiPermission.WRITE_REMINDER_POLICY,
+        ApiPermission.DELETE_REMINDER_POLICY, ApiPermission.READ_RETENTION_POLICY,
+        ApiPermission.WRITE_RETENTION_POLICY, ApiPermission.DELETE_RETENTION_POLICY);
+    ApiPermissionRole policies =
+        ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM).permissions(grants).build();
+    ApiPermissionRole documents = ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM)
+        .permissions(Set.of(ApiPermission.READ_DOCUMENT_ATTRIBUTES)).build();
+    SiteApiPermissionRoles original =
+        new SiteApiPermissionRoles(List.of(new SiteApiPermissionRole("policies", policies),
+            new SiteApiPermissionRole("documents", documents)));
+    final Map<String, String> expected =
+        Map.of("policies", "v1:AQAAAAAAAPAH", "documents", "v1:AAgAAAAAAAAA");
+
+    // when
+    Map<String, String> exported = original.exportPermissions();
+    SiteApiPermissionRoles imported = SiteApiPermissionRoles.importPermissions(expected);
+    final SiteApiPermissionRoles jsonImported =
+        SiteApiPermissionRoles.importPermissions(original.exportPermissionsAsString());
+
+    // then
+    assertEquals(expected, exported);
+    assertEquals(grants, imported.roles().stream().filter(role -> "policies".equals(role.siteId()))
+        .findFirst().orElseThrow().role().getPermissions());
+    assertEquals(expected, imported.exportPermissions());
+    assertEquals(expected, jsonImported.exportPermissions());
+    assertFalse(imported.hasPermission("documents", ApiPermission.READ_RETENTION_POLICY));
+    assertFalse(imported.hasPermission("documents", ApiPermission.READ_REMINDER_POLICY));
   }
 
   /**
@@ -230,7 +264,7 @@ class SiteApiPermissionRolesBitmapTest {
         ApiPermissionRole.builder(ApiPermissionRoleType.CUSTOM).permissions(grants).build();
     SiteApiPermissionRoles original =
         new SiteApiPermissionRoles(List.of(new SiteApiPermissionRole("site-a", role)));
-    final Map<String, String> expected = Map.of("site-a", "v1:IRgAAAAAABA");
+    final Map<String, String> expected = Map.of("site-a", "v1:IRgAAAAAABAA");
 
     // when
     Map<String, String> exported = original.exportPermissions();

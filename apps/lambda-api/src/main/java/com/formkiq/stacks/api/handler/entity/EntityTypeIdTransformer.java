@@ -28,6 +28,7 @@ import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
+import com.formkiq.aws.dynamodb.entity.EntityTypeName;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -59,6 +60,6 @@ public class EntityTypeIdTransformer implements BiFunction<String, ApiGatewayReq
     String entityTypeId = event.getPathParameter("entityTypeId");
 
     return new FindEntityTypeByName().find(db, tableName, siteId,
-        new FindEntityTypeByName.EntityTypeName(namespace, entityTypeId));
+        new EntityTypeName(namespace, entityTypeId));
   }
 }

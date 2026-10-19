@@ -23,6 +23,7 @@
  */
 package com.formkiq.aws.dynamodb.entity;
 
+import com.formkiq.aws.dynamodb.ApiPermission;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.documents.DerivedDocumentAttribute;
 import com.formkiq.validation.ValidationBuilder;
@@ -30,6 +31,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -94,6 +96,22 @@ public interface PresetEntity {
    */
   default List<String> getRequiredAttributeKeys() {
     return getAttributeKeys();
+  }
+
+  /**
+   * Get the permission required to access this preset's entities or type definition. Presets
+   * without dedicated permissions use the generic entity grants.
+   *
+   * @param method HTTP method
+   * @return required permission, or empty for methods without a permission requirement
+   */
+  default Optional<ApiPermission> getRequiredPermission(String method) {
+    return switch (method.toLowerCase(Locale.ROOT)) {
+      case "get", "head" -> Optional.of(ApiPermission.READ_ENTITY);
+      case "post", "put", "patch" -> Optional.of(ApiPermission.WRITE_ENTITY);
+      case "delete" -> Optional.of(ApiPermission.DELETE_ENTITY);
+      default -> Optional.empty();
+    };
   }
 
   /**

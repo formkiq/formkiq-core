@@ -121,12 +121,13 @@ public class EntityRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
   }
 
   @Override
-  public Optional<ApiPermission> getRequiredPermission(final String method) {
+  public Optional<ApiPermission> getRequiredPermission(final String method,
+      final AwsServiceCache awsServiceCache) {
     return switch (method.toLowerCase(Locale.ROOT)) {
-      case "get" -> Optional.of(ApiPermission.READ_ENTITY);
-      case "put", "patch" -> Optional.of(ApiPermission.WRITE_ENTITY);
-      case "delete" -> Optional.of(ApiPermission.DELETE_ENTITY);
-      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method);
+      case "get" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      case "put", "patch" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      case "delete" -> new EntityPermissionResolver(awsServiceCache).apply(method);
+      default -> ApiGatewayRequestHandler.super.getRequiredPermission(method, awsServiceCache);
     };
   }
 

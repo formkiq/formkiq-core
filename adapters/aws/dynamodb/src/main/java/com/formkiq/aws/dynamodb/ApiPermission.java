@@ -229,7 +229,25 @@ public enum ApiPermission {
       "Create and update webhooks and their configuration."),
   /** Delete permission for Webhooks. */
   DELETE_WEBHOOKS(60, ApiPermissionRoleType.DELETE, ApiPermissionGroup.WEBHOOKS,
-      "Delete webhooks.");
+      "Delete webhooks."),
+  /** Read permission for Reminder Policy. */
+  READ_REMINDER_POLICY(61, ApiPermissionRoleType.READ, ApiPermissionGroup.REMINDER_POLICY,
+      "Read reminder policy preset entities and their entity type definitions."),
+  /** Write permission for Reminder Policy. */
+  WRITE_REMINDER_POLICY(62, ApiPermissionRoleType.WRITE, ApiPermissionGroup.REMINDER_POLICY,
+      "Create and update reminder policy preset entities and their entity type definitions."),
+  /** Delete permission for Reminder Policy. */
+  DELETE_REMINDER_POLICY(63, ApiPermissionRoleType.DELETE, ApiPermissionGroup.REMINDER_POLICY,
+      "Delete reminder policy preset entities and their entity type definitions."),
+  /** Read permission for Retention Policy. */
+  READ_RETENTION_POLICY(64, ApiPermissionRoleType.READ, ApiPermissionGroup.RETENTION_POLICY,
+      "Read retention policy preset entities and their entity type definitions."),
+  /** Write permission for Retention Policy. */
+  WRITE_RETENTION_POLICY(65, ApiPermissionRoleType.WRITE, ApiPermissionGroup.RETENTION_POLICY,
+      "Create and update retention policy preset entities and their entity type definitions."),
+  /** Delete permission for Retention Policy. */
+  DELETE_RETENTION_POLICY(66, ApiPermissionRoleType.DELETE, ApiPermissionGroup.RETENTION_POLICY,
+      "Delete retention policy preset entities and their entity type definitions.");
 
   /** Permanent bitmap index, independent of enum declaration order. */
   private final int bitmapIndex;

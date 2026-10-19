@@ -62,6 +62,10 @@ public enum ApiPermissionGroup {
   INTELLIGENT_DOCUMENT_PROCESSING("Intelligent Document Processing"),
   /** Mappings client tag. */
   MAPPINGS("Mappings"),
+  /** Reminder Policy permission group. */
+  REMINDER_POLICY("Reminder Policy"),
+  /** Retention Policy permission group. */
+  RETENTION_POLICY("Retention Policy"),
   /** Rulesets client tag. */
   RULESETS("Rulesets"),
   /** Schemas client tag. */

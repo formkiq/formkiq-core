@@ -31,6 +31,7 @@ import com.formkiq.aws.dynamodb.entity.EntityTypeNamespace;
 import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.aws.dynamodb.entity.FindEntityTypeByName;
+import com.formkiq.aws.dynamodb.entity.EntityTypeName;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
@@ -185,7 +186,7 @@ public class AddDocumentAttributeToDocumentAttributeRecord
     vb.check();
 
     String entityTypeId = new FindEntityTypeByName().find(db, tableName, site,
-        new FindEntityTypeByName.EntityTypeName(namespace, entityTypeIdValue));
+        new EntityTypeName(namespace, entityTypeIdValue));
 
     DocumentAttributeEntityKeyValue val =
         new DocumentAttributeEntityKeyValue(entityTypeId, entityId);
