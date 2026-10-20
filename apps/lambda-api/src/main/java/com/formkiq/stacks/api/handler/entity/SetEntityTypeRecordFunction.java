@@ -112,12 +112,19 @@ public class SetEntityTypeRecordFunction
 
     Collection<PresetEntity> presetEntities = new GetPresetEntities(awsservice).apply(null);
 
-    EntityTypeRecord entityType =
-        EntityTypeRecord.builderWithPresets(presetEntities).documentId(entityTypeId)
-            .name(addEntityType.name()).namespace(addEntityType.namespace()).build(siteId);
+    EntityTypeRecord.Builder builder = EntityTypeRecord.builderWithPresets(presetEntities)
+        .documentId(entityTypeId).name(addEntityType.name()).namespace(addEntityType.namespace());
+    EntityTypeRecord entityType = builder.build(siteId);
 
     DynamoDbService db = awsservice.getExtension(DynamoDbService.class);
     validateExist(db, siteId, addEntityType.name(), addEntityType.namespace());
+
+    Map<String, AttributeValue> oldAttributes = update ? db.get(entityType.key()) : Map.of();
+    if (!oldAttributes.isEmpty()) {
+      entityType =
+          builder.insertedDate(EntityTypeRecord.fromAttributeMap(oldAttributes).insertedDate())
+              .build(siteId);
+    }
 
     List<Map<String, AttributeValue>> attributeList = new ArrayList<>();
 
@@ -125,22 +132,21 @@ public class SetEntityTypeRecordFunction
     attributeList.add(attributes);
     attributeList.addAll(addPresetAttributes(siteId, addEntityType));
 
-    setUserActivity(event, db, entityType, entityTypeId, attributes);
+    setUserActivity(event, oldAttributes, entityType, entityTypeId, attributes);
 
     db.putItems(attributeList);
     return entityType;
   }
 
-  private void setUserActivity(final ApiGatewayRequestEvent event, final DynamoDbService db,
-      final EntityTypeRecord entityType, final String entityTypeId,
-      final Map<String, AttributeValue> attributes) {
+  private void setUserActivity(final ApiGatewayRequestEvent event,
+      final Map<String, AttributeValue> oldAttributes, final EntityTypeRecord entityType,
+      final String entityTypeId, final Map<String, AttributeValue> attributes) {
 
     if (!update) {
       UserActivityContext.setCreate(ActivityResourceType.ENTITY_TYPE, attributes);
       return;
     }
 
-    Map<String, AttributeValue> oldAttributes = db.get(entityType.key());
     boolean createIfMissing =
         "true".equalsIgnoreCase(event.getQueryStringParameter("createIfMissing"));
 
