@@ -43,12 +43,15 @@ import com.formkiq.testutils.api.entity.GetEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.entity.GetEntityTypesRequestBuilder;
 import com.formkiq.testutils.api.entity.SetEntityTypeRequestBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.testutils.TestWait.untilNextSecond;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -422,6 +425,46 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
           + "\"error\":\"'namespace' unexpected value 'ADSAF' must be one of "
           + "PRESET, CUSTOM\"}]}", e.getResponseBody());
     }
+  }
+
+  /**
+   * Issue #571: updating an existing type must retain its original creation timestamp.
+   *
+   * @param createIfMissing whether to allow creating a missing type
+   * @throws ApiException if an API request fails
+   * @throws InterruptedException if waiting for the next second is interrupted
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  public void testSetEntityTypePreservesInsertedDate(final boolean createIfMissing)
+      throws ApiException, InterruptedException {
+    // given
+    String siteId = ID.uuid();
+    setBearerToken(siteId);
+    String entityTypeId =
+        new AddEntityTypeRequestBuilder().setEntityType("OriginalType", EntityTypeNamespace.CUSTOM)
+            .submitOk(this.client, siteId).response().getEntityTypeId();
+    EntityType original = new GetEntityTypeRequestBuilder(entityTypeId, EntityTypeNamespace.CUSTOM)
+        .submitOk(this.client, siteId).response().getEntityType();
+    assertNotNull(original);
+    assertNotNull(original.getInsertedDate());
+    SetEntityTypeRequest request = new SetEntityTypeRequest()
+        .entityType(new AddEntityType().name("RenamedType").namespace(EntityTypeNamespace.CUSTOM));
+    untilNextSecond();
+
+    // when
+    new SetEntityTypeRequestBuilder().withEntityTypeId(entityTypeId)
+        .withSetEntityTypeRequest(request).withCreateIfMissing(createIfMissing)
+        .submitOk(this.client, siteId);
+    EntityType updated = new GetEntityTypeRequestBuilder(entityTypeId, EntityTypeNamespace.CUSTOM)
+        .submitOk(this.client, siteId).response().getEntityType();
+
+    // then
+    assertNotNull(updated);
+    assertEntityTypeEquals(updated, "RenamedType");
+    assertEquals(entityTypeId, updated.getEntityTypeId());
+    assertEquals(original.getInsertedDate(), updated.getInsertedDate(),
+        "Updating an existing entity type must preserve insertedDate");
   }
 
   /**
