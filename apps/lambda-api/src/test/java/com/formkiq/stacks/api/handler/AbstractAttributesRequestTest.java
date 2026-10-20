@@ -227,8 +227,8 @@ public abstract class AbstractAttributesRequestTest extends AbstractApiClientReq
 
   protected DocumentAttribute getDocumentAttribute(final String siteId,
       final DocumentArtifact document, final String key) throws ApiException {
-    DocumentAttribute response = new GetDocumentAttributeRequestBuilder(document, key)
-        .submitOk(this.client, siteId).response().getAttribute();
+    DocumentAttribute response =
+        new GetDocumentAttributeRequestBuilder(document, key).getAttribute(this.client, siteId);
     assertNotNull(response);
     return response;
   }
@@ -240,8 +240,7 @@ public abstract class AbstractAttributesRequestTest extends AbstractApiClientReq
 
   protected List<DocumentAttribute> getDocumentAttributes(final String siteId,
       final DocumentArtifact document) throws ApiException {
-    return notNull(new GetDocumentAttributesRequestBuilder(document).submitOk(this.client, siteId)
-        .response().getAttributes());
+    return new GetDocumentAttributesRequestBuilder(document).getAttributes(this.client, siteId);
   }
 
   protected DocumentArtifact saveArtifactDocument(final String siteId, final String documentId)

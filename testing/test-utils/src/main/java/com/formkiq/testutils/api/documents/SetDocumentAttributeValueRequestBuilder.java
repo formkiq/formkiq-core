@@ -127,6 +127,17 @@ public class SetDocumentAttributeValueRequestBuilder implements HttpRequestBuild
   }
 
   /**
+   * Set string attribute values.
+   *
+   * @param stringValues attribute values
+   * @return this builder
+   */
+  public SetDocumentAttributeValueRequestBuilder stringValues(final List<String> stringValues) {
+    this.request.setAttribute(new AddDocumentAttributeValue().stringValues(stringValues));
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient
