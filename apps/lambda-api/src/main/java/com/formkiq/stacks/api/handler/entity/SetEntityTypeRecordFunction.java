@@ -148,6 +148,16 @@ public class SetEntityTypeRecordFunction
       throw new NotFoundException("Entity Type '" + entityTypeId + "' not found");
     }
 
+    if (!oldAttributes.isEmpty()) {
+      EntityTypeRecord existing = EntityTypeRecord.fromAttributeMap(oldAttributes);
+      if (EntityTypeNamespace.PRESET.equals(existing.namespace())) {
+        ValidationBuilder vb = new ValidationBuilder();
+        vb.isRequired("name", existing.name().equals(entityType.name()),
+            "'name' cannot be changed for PRESET entity types");
+        vb.check();
+      }
+    }
+
     if (createIfMissing) {
       UserActivityContext.setCreate(ActivityResourceType.ENTITY_TYPE, attributes);
     } else {

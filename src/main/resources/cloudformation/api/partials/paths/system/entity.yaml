@@ -135,6 +135,9 @@ paths:
       description: |-
         Sets an entity type.
 
+        Existing PRESET entity type names cannot be changed, including when
+        createIfMissing=true. CUSTOM entity types can be renamed.
+
         Requires WRITE_RETENTION_POLICY for the PRESET RetentionPolicy type,
         WRITE_REMINDER_POLICY for the PRESET ReminderPolicy type, or WRITE_ENTITY
         for other types. The dedicated preset permission replaces the generic entity

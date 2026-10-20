@@ -425,7 +425,7 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * PUT /entityTypes/{entityTypeId} createIfMissing.
+   * PUT /entityTypes/{entityTypeId} createIfMissing and CUSTOM rename.
    *
    * @throws ApiException an error has occurred
    */
@@ -466,6 +466,22 @@ public class EntityTypesRequestTest extends AbstractApiClientRequestTest {
       assertNotNull(getResponse.getEntityType());
       assertEntityTypeEquals(getResponse.getEntityType(), name);
       assertEquals(entityTypeId, getResponse.getEntityType().getEntityTypeId());
+
+      // given
+      String renamed = name + "Renamed";
+      req.getEntityType().setName(renamed);
+
+      // when
+      new SetEntityTypeRequestBuilder().withEntityTypeId(entityTypeId).withSetEntityTypeRequest(req)
+          .withCreateIfMissing(false).submitOk(this.client, siteId);
+      GetEntityTypeResponse renamedResponse =
+          new GetEntityTypeRequestBuilder(entityTypeId, EntityTypeNamespace.CUSTOM.name())
+              .submitOk(this.client, siteId).response();
+
+      // then
+      assertNotNull(renamedResponse.getEntityType());
+      assertEntityTypeEquals(renamedResponse.getEntityType(), renamed);
+      assertEquals(entityTypeId, renamedResponse.getEntityType().getEntityTypeId());
     }
   }
 }
