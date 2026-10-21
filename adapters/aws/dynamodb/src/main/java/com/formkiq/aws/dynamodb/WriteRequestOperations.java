@@ -52,32 +52,6 @@ public class WriteRequestOperations {
   }
 
   /**
-   * Append transaction write request.
-   *
-   * @param tableName {@link String}
-   * @param values {@link Map} {@link AttributeValue}
-   * @return {@link WriteRequestOperations}
-   */
-  public WriteRequestOperations appendTransaction(final String tableName,
-      final Map<String, AttributeValue> values) {
-    this.transactionWriter.append(tableName, values);
-    return this;
-  }
-
-  /**
-   * Append transaction delete request.
-   *
-   * @param tableName {@link String}
-   * @param key {@link DynamoDbKey}
-   * @return {@link WriteRequestOperations}
-   */
-  public WriteRequestOperations appendTransactionDelete(final String tableName,
-      final DynamoDbKey key) {
-    this.transactionWriter.appendDelete(tableName, key);
-    return this;
-  }
-
-  /**
    * Append batch write requests.
    *
    * @param tableName {@link String}
@@ -100,6 +74,32 @@ public class WriteRequestOperations {
   public WriteRequestOperations appendsTransaction(final String tableName,
       final Collection<Map<String, AttributeValue>> values) {
     this.transactionWriter.appends(tableName, values);
+    return this;
+  }
+
+  /**
+   * Append transaction write request.
+   *
+   * @param tableName {@link String}
+   * @param values {@link Map} {@link AttributeValue}
+   * @return {@link WriteRequestOperations}
+   */
+  public WriteRequestOperations appendTransaction(final String tableName,
+      final Map<String, AttributeValue> values) {
+    this.transactionWriter.append(tableName, values);
+    return this;
+  }
+
+  /**
+   * Append transaction delete request.
+   *
+   * @param tableName {@link String}
+   * @param key {@link DynamoDbKey}
+   * @return {@link WriteRequestOperations}
+   */
+  public WriteRequestOperations appendTransactionDelete(final String tableName,
+      final DynamoDbKey key) {
+    this.transactionWriter.appendDelete(tableName, key);
     return this;
   }
 

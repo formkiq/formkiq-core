@@ -44,15 +44,6 @@ public class DocumentSyncRecordBuilder {
   /** Sync Message for Updated Metadata. */
   public static final String MESSAGE_UPDATED_METADATA = "updated Document Metadata";
 
-  private String getMessage(final DocumentSyncType syncType, final boolean documentExists) {
-    return switch (syncType) {
-      case CONTENT -> documentExists ? MESSAGE_UPDATED_CONTENT : MESSAGE_ADDED_CONTENT;
-      case DELETE -> "deleted Document";
-      case SOFT_DELETE -> "soft deleted Document";
-      default -> documentExists ? MESSAGE_UPDATED_METADATA : MESSAGE_ADDED_METADATA;
-    };
-  }
-
   /**
    * Build {@link DocumentSyncRecord}.
    * 
@@ -73,5 +64,14 @@ public class DocumentSyncRecordBuilder {
     return new DocumentSyncRecord().setDocumentId(documentId).setService(serviceType)
         .setStatus(syncStatus).setType(syncType).setUserId(username).setMessage(message)
         .setInsertedDate(new Date()).setSyncDate(syncDate);
+  }
+
+  private String getMessage(final DocumentSyncType syncType, final boolean documentExists) {
+    return switch (syncType) {
+      case CONTENT -> documentExists ? MESSAGE_UPDATED_CONTENT : MESSAGE_ADDED_CONTENT;
+      case DELETE -> "deleted Document";
+      case SOFT_DELETE -> "soft deleted Document";
+      default -> documentExists ? MESSAGE_UPDATED_METADATA : MESSAGE_ADDED_METADATA;
+    };
   }
 }

@@ -118,13 +118,57 @@ public class HttpServiceSigv4Builder {
   }
 
   /**
-   * Set the target URL.
+   * Provide a String body (e.g., JSON).
    * 
-   * @param httpUrl {@link String}
+   * @param body {@link String}
    * @return {@link HttpServiceSigv4Builder}
    */
-  public HttpServiceSigv4Builder url(final String httpUrl) {
-    this.url = Objects.requireNonNull(httpUrl, "httpUrl is required");
+  public HttpServiceSigv4Builder body(final String body) {
+    this.bodyString = Optional.ofNullable(body);
+    return this;
+  }
+
+  /**
+   * Use HTTP DELETE.
+   * 
+   * @return {@link HttpServiceSigv4Builder}
+   */
+  public HttpServiceSigv4Builder delete() {
+    this.method = HttpMethod.DELETE;
+    return this;
+  }
+
+  private void ensureUrl() {
+    if (this.url == null || this.url.isBlank()) {
+      throw new IllegalStateException("url must be set");
+    }
+  }
+
+  /**
+   * Execute the configured request through the backing {@link HttpService} and return the
+   * {@link HttpResponse}. If multiple body setters were called, the most recent one wins.
+   * 
+   * @return {@link HttpResponse}
+   */
+  public HttpResponse<String> execute() throws IOException {
+    ensureUrl();
+
+    return switch (this.method) {
+      case GET -> service.get(url, headers, queryParams);
+      case DELETE -> service.delete(url, headers, queryParams);
+      case PATCH -> service.patch(url, headers, queryParams, bodyString.orElse(""));
+      case POST -> service.post(url, headers, queryParams, bodyString.orElse(""));
+      case PUT -> service.put(url, headers, queryParams, bodyString.orElse(""));
+    };
+  }
+
+  /**
+   * Use HTTP GET.
+   * 
+   * @return {@link HttpServiceSigv4Builder}
+   */
+  public HttpServiceSigv4Builder get() {
+    this.method = HttpMethod.GET;
     return this;
   }
 
@@ -140,23 +184,12 @@ public class HttpServiceSigv4Builder {
   }
 
   /**
-   * Set query parameters appended to the URL when the call is executed.
-   * 
-   * @param params {@link Map}
-   * @return {@link HttpServiceSigv4Builder}
-   */
-  public HttpServiceSigv4Builder queryParams(final Map<String, String> params) {
-    this.queryParams = Optional.ofNullable(params);
-    return this;
-  }
-
-  /**
-   * Use HTTP GET.
+   * Use HTTP PATCH.
    * 
    * @return {@link HttpServiceSigv4Builder}
    */
-  public HttpServiceSigv4Builder get() {
-    this.method = HttpMethod.GET;
+  public HttpServiceSigv4Builder patch() {
+    this.method = HttpMethod.PATCH;
     return this;
   }
 
@@ -181,58 +214,25 @@ public class HttpServiceSigv4Builder {
   }
 
   /**
-   * Use HTTP DELETE.
+   * Set query parameters appended to the URL when the call is executed.
    * 
+   * @param params {@link Map}
    * @return {@link HttpServiceSigv4Builder}
    */
-  public HttpServiceSigv4Builder delete() {
-    this.method = HttpMethod.DELETE;
+  public HttpServiceSigv4Builder queryParams(final Map<String, String> params) {
+    this.queryParams = Optional.ofNullable(params);
     return this;
   }
 
   /**
-   * Use HTTP PATCH.
+   * Set the target URL.
    * 
+   * @param httpUrl {@link String}
    * @return {@link HttpServiceSigv4Builder}
    */
-  public HttpServiceSigv4Builder patch() {
-    this.method = HttpMethod.PATCH;
+  public HttpServiceSigv4Builder url(final String httpUrl) {
+    this.url = Objects.requireNonNull(httpUrl, "httpUrl is required");
     return this;
-  }
-
-  /**
-   * Provide a String body (e.g., JSON).
-   * 
-   * @param body {@link String}
-   * @return {@link HttpServiceSigv4Builder}
-   */
-  public HttpServiceSigv4Builder body(final String body) {
-    this.bodyString = Optional.ofNullable(body);
-    return this;
-  }
-
-  /**
-   * Execute the configured request through the backing {@link HttpService} and return the
-   * {@link HttpResponse}. If multiple body setters were called, the most recent one wins.
-   * 
-   * @return {@link HttpResponse}
-   */
-  public HttpResponse<String> execute() throws IOException {
-    ensureUrl();
-
-    return switch (this.method) {
-      case GET -> service.get(url, headers, queryParams);
-      case DELETE -> service.delete(url, headers, queryParams);
-      case PATCH -> service.patch(url, headers, queryParams, bodyString.orElse(""));
-      case POST -> service.post(url, headers, queryParams, bodyString.orElse(""));
-      case PUT -> service.put(url, headers, queryParams, bodyString.orElse(""));
-    };
-  }
-
-  private void ensureUrl() {
-    if (this.url == null || this.url.isBlank()) {
-      throw new IllegalStateException("url must be set");
-    }
   }
 }
 

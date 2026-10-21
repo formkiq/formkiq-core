@@ -94,17 +94,6 @@ public class SetMappingRequestBuilder implements HttpRequestBuilder<SetResponse>
     return this;
   }
 
-  /**
-   * Set the complete mapping request.
-   *
-   * @param mappingRequest {@link SetMappingRequest}
-   * @return this builder
-   */
-  public SetMappingRequestBuilder request(final SetMappingRequest mappingRequest) {
-    this.request.setMapping(mappingRequest.getMapping());
-    return this;
-  }
-
   private MappingAttribute createMappingAttribute(final String attributeKey,
       final MappingAttributeSourceType sourceType,
       final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
@@ -117,6 +106,17 @@ public class SetMappingRequestBuilder implements HttpRequestBuilder<SetResponse>
           .labelMatchingType(labelMatchingType).addLabelTextsItem(labelText));
       default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
     };
+  }
+
+  /**
+   * Set the complete mapping request.
+   *
+   * @param mappingRequest {@link SetMappingRequest}
+   * @return this builder
+   */
+  public SetMappingRequestBuilder request(final SetMappingRequest mappingRequest) {
+    this.request.setMapping(mappingRequest.getMapping());
+    return this;
   }
 
   /**

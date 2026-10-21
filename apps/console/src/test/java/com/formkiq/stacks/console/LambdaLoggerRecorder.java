@@ -68,12 +68,12 @@ public class LambdaLoggerRecorder implements LambdaLogger {
   }
 
   @Override
-  public void log(final String message) {
-    this.recordedMessages.add(message);
+  public void log(final byte[] message) {
+    this.recordedByteMessages.add(message);
   }
 
   @Override
-  public void log(final byte[] message) {
-    this.recordedByteMessages.add(message);
+  public void log(final String message) {
+    this.recordedMessages.add(message);
   }
 }

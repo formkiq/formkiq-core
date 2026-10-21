@@ -64,12 +64,34 @@ public class S3PresignerService {
   }
 
   /**
-   * Validate a target bucket for accelerated signing.
+   * Calculate AWS Checksum.
    * 
-   * @param bucket Target bucket
+   * @param algorithm {@link ChecksumAlgorithm}
+   * @param bytes byte[]
+   * @return String
    */
-  public void validateAcceleration(final String bucket) {
-    this.builder.validateAcceleration(bucket);
+  public String calculateChecksumAsHex(final ChecksumAlgorithm algorithm, final byte[] bytes) {
+    try {
+      return switch (algorithm) {
+        case SHA1 -> this.calculator.bytesToHex(this.calculator.calculateSha1(bytes));
+        case SHA256 -> this.calculator.bytesToHex(this.calculator.calculateSha256(bytes));
+        case SHA512 -> this.calculator.bytesToHex(this.calculator.calculateSha512(bytes));
+        default ->
+          throw new IllegalArgumentException("Supported Checksum Algorithm '" + algorithm + "'");
+      };
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalArgumentException(e.getMessage());
+    }
+  }
+
+  /**
+   * Convert {@link String} to {@link ChecksumAlgorithm}.
+   * 
+   * @param algorithm {@link String}
+   * @return {@link ChecksumAlgorithm}
+   */
+  public ChecksumAlgorithm getChecksumAlgorithm(final String algorithm) {
+    return !isEmpty(algorithm) ? ChecksumAlgorithm.valueOf(algorithm.toUpperCase()) : null;
   }
 
   /**
@@ -218,33 +240,11 @@ public class S3PresignerService {
   }
 
   /**
-   * Convert {@link String} to {@link ChecksumAlgorithm}.
+   * Validate a target bucket for accelerated signing.
    * 
-   * @param algorithm {@link String}
-   * @return {@link ChecksumAlgorithm}
+   * @param bucket Target bucket
    */
-  public ChecksumAlgorithm getChecksumAlgorithm(final String algorithm) {
-    return !isEmpty(algorithm) ? ChecksumAlgorithm.valueOf(algorithm.toUpperCase()) : null;
-  }
-
-  /**
-   * Calculate AWS Checksum.
-   * 
-   * @param algorithm {@link ChecksumAlgorithm}
-   * @param bytes byte[]
-   * @return String
-   */
-  public String calculateChecksumAsHex(final ChecksumAlgorithm algorithm, final byte[] bytes) {
-    try {
-      return switch (algorithm) {
-        case SHA1 -> this.calculator.bytesToHex(this.calculator.calculateSha1(bytes));
-        case SHA256 -> this.calculator.bytesToHex(this.calculator.calculateSha256(bytes));
-        case SHA512 -> this.calculator.bytesToHex(this.calculator.calculateSha512(bytes));
-        default ->
-          throw new IllegalArgumentException("Supported Checksum Algorithm '" + algorithm + "'");
-      };
-    } catch (NoSuchAlgorithmException e) {
-      throw new IllegalArgumentException(e.getMessage());
-    }
+  public void validateAcceleration(final String bucket) {
+    this.builder.validateAcceleration(bucket);
   }
 }

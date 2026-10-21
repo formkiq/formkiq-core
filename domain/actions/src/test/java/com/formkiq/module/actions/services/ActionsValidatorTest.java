@@ -136,14 +136,6 @@ class ActionsValidatorTest {
   }
 
   @Test
-  void testValidImageFormats() {
-    for (String format : VALID_IMAGE_FORMATS) {
-      testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", format), null,
-          null);
-    }
-  }
-
-  @Test
   void testValidation01() {
     testTemplate(null, null, "action is required");
   }
@@ -341,6 +333,14 @@ class ActionsValidatorTest {
         .parameters(Map.of("path", "approved/")).document(document).indexUlid()
         .build((String) null);
     testTemplate(action, null, null);
+  }
+
+  @Test
+  void testValidImageFormats() {
+    for (String format : VALID_IMAGE_FORMATS) {
+      testDimensionTemplate(Map.of("height", "100", "width", "100", "outputType", format), null,
+          null);
+    }
   }
 
   @Test

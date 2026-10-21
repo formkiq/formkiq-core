@@ -78,36 +78,6 @@ public interface AttributeValidator {
   }
 
   /**
-   * Validates deleting an attribute value using per-key access approval.
-   *
-   * @param schema {@link Schema}
-   * @param siteId {@link String}
-   * @param attributeKey {@link String}
-   * @param attributeValue {@link String}
-   * @param accessApproval {@link AttributeAccessApproval}
-   * @return {@link Collection} {@link ValidationError}
-   */
-  Collection<ValidationError> validateDeleteAttributeValue(Schema schema, String siteId,
-      String attributeKey, String attributeValue, AttributeAccessApproval accessApproval);
-
-  /**
-   * Validate Delete Attribute and Value.
-   *
-   * @param schema {@link Schema}
-   * @param siteId {@link String}
-   * @param attributeKey {@link String}
-   * @param attributeValue {@link String}
-   * @param validationAccess {@link AttributeValidationAccess}
-   * @return {@link Collection} {@link ValidationError}
-   */
-  default Collection<ValidationError> validateDeleteAttributeValue(final Schema schema,
-      final String siteId, final String attributeKey, final String attributeValue,
-      final AttributeValidationAccess validationAccess) {
-    return validateDeleteAttributeValue(schema, siteId, attributeKey, attributeValue,
-        new AttributeAccessApproval(validationAccess));
-  }
-
-  /**
    * Validates deleting attributes using per-key access approval.
    *
    * @param schemaAttributes {@link List} {@link SchemaAttributes}
@@ -134,6 +104,36 @@ public interface AttributeValidator {
       final Map<String, AttributeRecord> attributeRecordMap,
       final AttributeValidationAccess validationAccess) {
     return validateDeleteAttributes(schemaAttributes, attributeKeys, attributeRecordMap,
+        new AttributeAccessApproval(validationAccess));
+  }
+
+  /**
+   * Validates deleting an attribute value using per-key access approval.
+   *
+   * @param schema {@link Schema}
+   * @param siteId {@link String}
+   * @param attributeKey {@link String}
+   * @param attributeValue {@link String}
+   * @param accessApproval {@link AttributeAccessApproval}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  Collection<ValidationError> validateDeleteAttributeValue(Schema schema, String siteId,
+      String attributeKey, String attributeValue, AttributeAccessApproval accessApproval);
+
+  /**
+   * Validate Delete Attribute and Value.
+   *
+   * @param schema {@link Schema}
+   * @param siteId {@link String}
+   * @param attributeKey {@link String}
+   * @param attributeValue {@link String}
+   * @param validationAccess {@link AttributeValidationAccess}
+   * @return {@link Collection} {@link ValidationError}
+   */
+  default Collection<ValidationError> validateDeleteAttributeValue(final Schema schema,
+      final String siteId, final String attributeKey, final String attributeValue,
+      final AttributeValidationAccess validationAccess) {
+    return validateDeleteAttributeValue(schema, siteId, attributeKey, attributeValue,
         new AttributeAccessApproval(validationAccess));
   }
 

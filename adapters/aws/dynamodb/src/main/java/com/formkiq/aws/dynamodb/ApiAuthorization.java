@@ -246,21 +246,21 @@ public class ApiAuthorization {
   }
 
   /**
-   * Get roleSiteMap.
-   *
-   * @return {@link Map}
-   */
-  public Map<String, String> getRoleSiteMap() {
-    return this.roleSiteMap;
-  }
-
-  /**
    * Get Roles.
    * 
    * @return {@link Collection} {@link String}
    */
   public Collection<String> getRoles() {
     return this.roles;
+  }
+
+  /**
+   * Get roleSiteMap.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getRoleSiteMap() {
+    return this.roleSiteMap;
   }
 
   /**
@@ -358,17 +358,6 @@ public class ApiAuthorization {
   }
 
   /**
-   * Set roleSiteMap.
-   *
-   * @param map {@link Map}
-   * @return {@link ApiAuthorization}
-   */
-  public ApiAuthorization roleSiteMap(final Map<String, String> map) {
-    this.roleSiteMap = map;
-    return this;
-  }
-
-  /**
    * Set Roles.
    * 
    * @param apiRoles {@link Collection} {@link String}
@@ -376,6 +365,17 @@ public class ApiAuthorization {
    */
   public ApiAuthorization roles(final Collection<String> apiRoles) {
     this.roles = apiRoles;
+    return this;
+  }
+
+  /**
+   * Set roleSiteMap.
+   *
+   * @param map {@link Map}
+   * @return {@link ApiAuthorization}
+   */
+  public ApiAuthorization roleSiteMap(final Map<String, String> map) {
+    this.roleSiteMap = map;
     return this;
   }
 

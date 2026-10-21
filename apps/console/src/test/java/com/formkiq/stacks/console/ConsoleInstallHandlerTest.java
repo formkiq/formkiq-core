@@ -207,46 +207,6 @@ public class ConsoleInstallHandlerTest {
   }
 
   /**
-   * Test Handle Request 'CREATE' with Sso Login Redirect enabled.
-   *
-   */
-  @Test
-  public void testCreateWithSsoLoginRedirect() {
-    // given
-    var configService = serviceCache.getExtension(ConfigService.class);
-    var config =
-        SiteConfiguration.builder().webui(new SiteConfigurationWebUi(true)).build("global");
-    configService.save("global", config);
-
-    String cognitoSingleSignOnUrl =
-        "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
-    serviceCache.environment().put("COGNITO_SINGLE_SIGN_ON_URL", cognitoSingleSignOnUrl);
-    createHandler();
-
-    final int contentlength = 105;
-    Map<String, Object> input = createInput("Create");
-    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
-
-    // when
-    this.logger.log(
-        "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
-    this.logger.log(
-        "unpacking https://artifacts.formkiq.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
-    this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
-    this.logger.log("Request Create was successful!");
-
-    this.handler.handleRequest(input, this.context);
-
-    // then
-    verifySendResponse(contentlength);
-    verifyConfigWritten(cognitoSingleSignOnUrl, true);
-    verifyCognitoConfig();
-
-    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
-    assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
-  }
-
-  /**
    * Test Handle Request 'CREATE'.
    *
    */
@@ -320,6 +280,46 @@ public class ConsoleInstallHandlerTest {
 
     // then
     assertTrue(s3.listObjects(CONSOLE_BUCKET, null).contents().isEmpty());
+  }
+
+  /**
+   * Test Handle Request 'CREATE' with Sso Login Redirect enabled.
+   *
+   */
+  @Test
+  public void testCreateWithSsoLoginRedirect() {
+    // given
+    var configService = serviceCache.getExtension(ConfigService.class);
+    var config =
+        SiteConfiguration.builder().webui(new SiteConfigurationWebUi(true)).build("global");
+    configService.save("global", config);
+
+    String cognitoSingleSignOnUrl =
+        "https://something.auth.us-east-2.amazoncognito.com/oauth2/authorize";
+    serviceCache.environment().put("COGNITO_SINGLE_SIGN_ON_URL", cognitoSingleSignOnUrl);
+    createHandler();
+
+    final int contentlength = 105;
+    Map<String, Object> input = createInput("Create");
+    input.put("CONSOLE_BUCKET", CONSOLE_BUCKET);
+
+    // when
+    this.logger.log(
+        "received input: {ResponseURL=https://cloudformation-custom-resource, RequestType=Create}");
+    this.logger.log(
+        "unpacking https://artifacts.formkiq.com/formkiq-console/0.1/formkiq-console.zip to bucket destbucket");
+    this.logger.log("sending SUCCESS to https://cloudformation-custom-resource");
+    this.logger.log("Request Create was successful!");
+
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    verifySendResponse(contentlength);
+    verifyConfigWritten(cognitoSingleSignOnUrl, true);
+    verifyCognitoConfig();
+
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+    assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
   }
 
   /**

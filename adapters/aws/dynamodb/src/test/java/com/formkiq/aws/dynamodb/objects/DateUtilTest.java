@@ -49,15 +49,6 @@ public class DateUtilTest {
   }
 
   @Test
-  void testDateOnlyUtc() {
-    String input = "2025-11-30";
-    ZoneId tz = ZoneOffset.UTC;
-
-    Instant expected = LocalDate.parse(input).atStartOfDay(tz).toInstant();
-    assertEquals(expected, DateUtil.toDateFromString(input, tz).toInstant());
-  }
-
-  @Test
   void testDateOnly_MidnightBoundary() {
     String input = "2025-12-31";
     ZoneId tz = ZoneId.of("UTC");
@@ -76,14 +67,23 @@ public class DateUtilTest {
     assertEquals(expected, DateUtil.toDateFromString(input, tz).toInstant());
   }
 
+  @Test
+  void testDateOnly_WinnipegWinter() {
+    String input = "2025-01-01"; // no DST
+    ZoneId tz = ZoneId.of("America/Winnipeg");
+
+    Instant expected = LocalDate.parse(input).atStartOfDay(tz).toInstant();
+    assertEquals(expected, DateUtil.toDateFromString(input, tz).toInstant());
+  }
+
   // ------------------------------
   // Offset DateTime Tests
   // ------------------------------
 
   @Test
-  void testDateOnly_WinnipegWinter() {
-    String input = "2025-01-01"; // no DST
-    ZoneId tz = ZoneId.of("America/Winnipeg");
+  void testDateOnlyUtc() {
+    String input = "2025-11-30";
+    ZoneId tz = ZoneOffset.UTC;
 
     Instant expected = LocalDate.parse(input).atStartOfDay(tz).toInstant();
     assertEquals(expected, DateUtil.toDateFromString(input, tz).toInstant());
@@ -120,15 +120,6 @@ public class DateUtilTest {
   }
 
   @Test
-  void testLocalDateTimeUtc() {
-    String input = "2025-11-30T10:20:30";
-    ZoneId tz = ZoneOffset.UTC;
-
-    Instant expected = Instant.parse("2025-11-30T10:20:30Z");
-    assertEquals(expected, DateUtil.toDateFromString(input, tz).toInstant());
-  }
-
-  @Test
   void testLocalDateTime_AssumeProvidedZone() {
     String input = "2025-11-30T10:20:30";
     ZoneId tz = ZoneId.of("America/Winnipeg");
@@ -136,10 +127,6 @@ public class DateUtilTest {
     Instant expected = LocalDateTime.parse(input).atZone(tz).toInstant();
     assertEquals(expected, DateUtil.toDateFromString(input, tz).toInstant());
   }
-
-  // ------------------------------
-  // DST Boundary Test
-  // ------------------------------
 
   @Test
   void testLocalDateTime_DstTransition() {
@@ -149,6 +136,19 @@ public class DateUtilTest {
 
     // Ensure method does not throw but resolves using the zone rules
     assertDoesNotThrow(() -> DateUtil.toDateFromString(input, tz));
+  }
+
+  // ------------------------------
+  // DST Boundary Test
+  // ------------------------------
+
+  @Test
+  void testLocalDateTimeUtc() {
+    String input = "2025-11-30T10:20:30";
+    ZoneId tz = ZoneOffset.UTC;
+
+    Instant expected = Instant.parse("2025-11-30T10:20:30Z");
+    assertEquals(expected, DateUtil.toDateFromString(input, tz).toInstant());
   }
 
   // ------------------------------
@@ -281,14 +281,14 @@ public class DateUtilTest {
   }
 
   @Test
-  void testUtcAliasUtc() {
-    ZoneId zone = DateUtil.toZoneId("UTC");
+  void testUtcAlias_Z() {
+    ZoneId zone = DateUtil.toZoneId("Z");
     assertEquals(ZoneOffset.UTC, zone);
   }
 
   @Test
-  void testUtcAlias_Z() {
-    ZoneId zone = DateUtil.toZoneId("Z");
+  void testUtcAliasUtc() {
+    ZoneId zone = DateUtil.toZoneId("UTC");
     assertEquals(ZoneOffset.UTC, zone);
   }
 }

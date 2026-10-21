@@ -146,16 +146,6 @@ public abstract class AbstractAwsIntegrationTest {
   }
 
   /**
-   * Get {@link ApiClient} with Token.
-   * 
-   * @param token {@link String}
-   * @return ApiClient
-   */
-  public static ApiClient getApiClientWithToken(final String token) {
-    return new ApiClientBuilder().basePath(cognito.getRootKeyUrl()).bearerToken(token).build();
-  }
-
-  /**
    * Get {@link ApiClient}.
    * 
    * @param siteId {@link String}
@@ -179,6 +169,16 @@ public abstract class AbstractAwsIntegrationTest {
 
       return Arrays.asList(jwtClient, iamClient, keyClient);
     }
+  }
+
+  /**
+   * Get {@link ApiClient} with Token.
+   * 
+   * @param token {@link String}
+   * @return ApiClient
+   */
+  public static ApiClient getApiClientWithToken(final String token) {
+    return new ApiClientBuilder().basePath(cognito.getRootKeyUrl()).bearerToken(token).build();
   }
 
   /**

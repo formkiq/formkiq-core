@@ -74,6 +74,25 @@ public final class DocumentTemplateValueResolver
 
   /** Number of attribute records requested per database page. */
   private static final int PAGE_SIZE = 100;
+
+  /**
+   * Format a scalar using locale-independent text. Dates use ISO 8601; structured values require a
+   * custom formatter or a path that selects a scalar.
+   *
+   * @param value the selected value
+   * @return scalar text, or null for a missing value
+   * @throws IllegalArgumentException if the selected value is not a supported scalar
+   */
+  public static String formatScalar(final Object value) {
+    if (value instanceof Date date) {
+      return date.toInstant().toString();
+    }
+    if (value instanceof Map<?, ?> || value instanceof List<?>) {
+      throw new IllegalArgumentException("Template expression must select a scalar value");
+    }
+    return Objects.toString(value, null);
+  }
+
   /** Document database. */
   private final DynamoDbService database;
   /** Site for all document and attribute lookups. */
@@ -92,6 +111,7 @@ public final class DocumentTemplateValueResolver
   private Map<String, Object> documentFields = Map.of();
   /** Loaded custom metadata. */
   private Map<String, Object> metadata = Map.of();
+
   /** Whether the document lookup completed, including a missing result. */
   private boolean documentLoaded;
 
@@ -136,17 +156,6 @@ public final class DocumentTemplateValueResolver
     this.auth = values;
   }
 
-  private List<Object> attributeValues(final String key) {
-
-    if (!this.attributes.containsKey(key)) {
-      List<DocumentAttributeRecord> records = loadAttributes(key);
-      List<Object> values = records.stream().map(this::attributeValue).toList();
-      this.attributes.put(key, values);
-    }
-
-    return this.attributes.get(key);
-  }
-
   private Object attributeValue(final DocumentAttributeRecord record) {
     return switch (record.getValueType()) {
       case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS, ENTITY ->
@@ -157,6 +166,17 @@ public final class DocumentTemplateValueResolver
       case JSON -> record.getJsonValue();
       case KEY_ONLY, PUBLICATION, WATERMARK -> null;
     };
+  }
+
+  private List<Object> attributeValues(final String key) {
+
+    if (!this.attributes.containsKey(key)) {
+      List<DocumentAttributeRecord> records = loadAttributes(key);
+      List<Object> values = records.stream().map(this::attributeValue).toList();
+      this.attributes.put(key, values);
+    }
+
+    return this.attributes.get(key);
   }
 
   private Map<String, Object> fields(final DocumentRecord record) {
@@ -184,24 +204,6 @@ public final class DocumentTemplateValueResolver
     values.put("promotedArtifactId", record.promotedArtifactId());
     values.put("deletedDate", record.deletedDate());
     return values;
-  }
-
-  /**
-   * Format a scalar using locale-independent text. Dates use ISO 8601; structured values require a
-   * custom formatter or a path that selects a scalar.
-   *
-   * @param value the selected value
-   * @return scalar text, or null for a missing value
-   * @throws IllegalArgumentException if the selected value is not a supported scalar
-   */
-  public static String formatScalar(final Object value) {
-    if (value instanceof Date date) {
-      return date.toInstant().toString();
-    }
-    if (value instanceof Map<?, ?> || value instanceof List<?>) {
-      throw new IllegalArgumentException("Template expression must select a scalar value");
-    }
-    return Objects.toString(value, null);
   }
 
   private List<DocumentAttributeRecord> loadAttributes(final String key) {

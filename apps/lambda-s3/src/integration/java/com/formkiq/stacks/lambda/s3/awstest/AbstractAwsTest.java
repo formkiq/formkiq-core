@@ -178,21 +178,21 @@ public abstract class AbstractAwsTest {
   }
 
   /**
-   * Get {@link DocumentService}.
-   * 
-   * @return {@link DocumentService}
-   */
-  protected static DocumentService getDocumentService() {
-    return documentService;
-  }
-
-  /**
    * Get Documents Bucket.
    * 
    * @return {@link String}
    */
   public static String getDocumentsbucketname() {
     return documentsbucketname;
+  }
+
+  /**
+   * Get {@link DocumentService}.
+   * 
+   * @return {@link DocumentService}
+   */
+  protected static DocumentService getDocumentService() {
+    return documentService;
   }
 
   /**

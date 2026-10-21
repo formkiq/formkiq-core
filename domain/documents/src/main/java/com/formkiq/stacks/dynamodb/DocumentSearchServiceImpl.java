@@ -124,62 +124,19 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
         dbClient, this.docService, attributeService, schemaService);
   }
 
-  private SearchCountResult countExistingDocuments(final String siteId,
-      final Collection<String> documentIds, final int maxResults) {
-
-    List<Map<String, AttributeValue>> keys = documentIds.stream().limit(maxResults)
-        .map(id -> new DocumentRecordBuilder().documentId(id).buildKey(siteId).toMap()).toList();
-
-    BatchGetConfig config = new BatchGetConfig().projectionExpression("PK,SK,documentId");
-    int count = keys.isEmpty() ? 0 : this.db.getBatch(config, keys).size();
-    return new SearchCountResult(count, documentIds.size() > maxResults);
-  }
-
-  private Map<String, Object> toAttributeFields(final Map<String, Object> attribute) {
-    Object valueType = attribute.get("valueType");
-    return switch (DocumentAttributeValueType.valueOf((String) valueType)) {
-      case JSON -> Map.of("valueType", valueType, "jsonValue", attribute.get("jsonValue"));
-      case BOOLEAN -> Map.of("valueType", valueType, "booleanValue", attribute.get("booleanValue"));
-      case NUMBER -> Map.of("valueType", valueType, "numberValues", attribute.get("numberValues"));
-      case DATE -> Map.of("valueType", valueType, "dateValues", attribute.get("dateValues"));
-      case STRING, COMPOSITE_STRING, RELATIONSHIPS, CLASSIFICATION, PUBLICATION ->
-        Map.of("valueType", valueType, "stringValues", attribute.get("stringValues"));
-      default -> Map.of("valueType", valueType);
-    };
-  }
-
-  @Override
-  public SearchCountResult count(final String siteId, final SearchQuery query, final int maxResults)
-      throws ValidationException {
-
-    DocumentSearchQuery documentSearchQuery = getDocumentSearchQuery(query);
-    return documentSearchQuery != null ? documentSearchQuery.count(siteId, query, maxResults)
-        : countExistingDocuments(siteId, query.documentIds(), maxResults);
-  }
-
-  private DocumentSearchQuery getDocumentSearchQuery(final SearchQuery query) {
-    DocumentSearchQuery documentSearchQuery = null;
-
-    if (query.meta() != null) {
-      documentSearchQuery = this.documentSearchMetaQuery;
-    } else if (query.filename() != null) {
-      documentSearchQuery = this.documentSearchFilenameQuery;
-    } else if (query.folder() != null) {
-      documentSearchQuery = this.documentSearchFolderQuery;
-    } else if (notNull(query.attributes()).size() > 1 || hasJsonCriteria(query)) {
-      documentSearchQuery = this.documentSearchMultiAttributeQuery;
-    } else if (query.attribute() != null || !notNull(query.attributes()).isEmpty()) {
-      documentSearchQuery = this.documentSearchAttributeQuery;
-    } else if (query.tag() != null) {
-      documentSearchQuery = this.documentSearchTagQuery;
+  private DocumentSearchResult addJsonPath(final SearchQuery query,
+      final DocumentSearchResult result) {
+    DocumentAttributeRecord matched = result.matchedAttribute();
+    if (matched == null || matched.getJsonValue() == null) {
+      return result;
     }
-
-    return documentSearchQuery;
-  }
-
-  private boolean hasJsonCriteria(final SearchQuery query) {
-    return query.attribute() != null && query.attribute().json() != null
-        || notNull(query.attributes()).stream().anyMatch(attribute -> attribute.json() != null);
+    List<SearchAttributeCriteria> criteria =
+        !notNull(query.attributes()).isEmpty() ? query.attributes()
+            : query.attribute() != null ? List.of(query.attribute()) : List.of();
+    SearchAttributeCriteria driver = criteria.stream()
+        .filter(attribute -> matched.getKey().equals(attribute.key())).findFirst().orElse(null);
+    return driver != null && driver.json() != null ? result.withJsonPath(driver.json().path())
+        : result;
   }
 
   /**
@@ -248,6 +205,26 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   }
 
   @Override
+  public SearchCountResult count(final String siteId, final SearchQuery query, final int maxResults)
+      throws ValidationException {
+
+    DocumentSearchQuery documentSearchQuery = getDocumentSearchQuery(query);
+    return documentSearchQuery != null ? documentSearchQuery.count(siteId, query, maxResults)
+        : countExistingDocuments(siteId, query.documentIds(), maxResults);
+  }
+
+  private SearchCountResult countExistingDocuments(final String siteId,
+      final Collection<String> documentIds, final int maxResults) {
+
+    List<Map<String, AttributeValue>> keys = documentIds.stream().limit(maxResults)
+        .map(id -> new DocumentRecordBuilder().documentId(id).buildKey(siteId).toMap()).toList();
+
+    BatchGetConfig config = new BatchGetConfig().projectionExpression("PK,SK,documentId");
+    int count = keys.isEmpty() ? 0 : this.db.getBatch(config, keys).size();
+    return new SearchCountResult(count, documentIds.size() > maxResults);
+  }
+
+  @Override
   public Pagination<DocumentSearchResult> findInFolder(final String siteId, final String indexKey,
       final String nextToken, final int maxresults) {
 
@@ -261,6 +238,31 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
 
     return this.documentSearchMetaQuery.queryByMetadataKey(siteId, value, null, nextToken,
         maxresults, path);
+  }
+
+  private DocumentSearchQuery getDocumentSearchQuery(final SearchQuery query) {
+    DocumentSearchQuery documentSearchQuery = null;
+
+    if (query.meta() != null) {
+      documentSearchQuery = this.documentSearchMetaQuery;
+    } else if (query.filename() != null) {
+      documentSearchQuery = this.documentSearchFilenameQuery;
+    } else if (query.folder() != null) {
+      documentSearchQuery = this.documentSearchFolderQuery;
+    } else if (notNull(query.attributes()).size() > 1 || hasJsonCriteria(query)) {
+      documentSearchQuery = this.documentSearchMultiAttributeQuery;
+    } else if (query.attribute() != null || !notNull(query.attributes()).isEmpty()) {
+      documentSearchQuery = this.documentSearchAttributeQuery;
+    } else if (query.tag() != null) {
+      documentSearchQuery = this.documentSearchTagQuery;
+    }
+
+    return documentSearchQuery;
+  }
+
+  private boolean hasJsonCriteria(final SearchQuery query) {
+    return query.attribute() != null && query.attribute().json() != null
+        || notNull(query.attributes()).stream().anyMatch(attribute -> attribute.json() != null);
   }
 
   @Override
@@ -279,21 +281,6 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
     return new Pagination<>(searchResultsWithFields, results.getNextToken(), results.isTruncated());
   }
 
-  private DocumentSearchResult addJsonPath(final SearchQuery query,
-      final DocumentSearchResult result) {
-    DocumentAttributeRecord matched = result.matchedAttribute();
-    if (matched == null || matched.getJsonValue() == null) {
-      return result;
-    }
-    List<SearchAttributeCriteria> criteria =
-        !notNull(query.attributes()).isEmpty() ? query.attributes()
-            : query.attribute() != null ? List.of(query.attribute()) : List.of();
-    SearchAttributeCriteria driver = criteria.stream()
-        .filter(attribute -> matched.getKey().equals(attribute.key())).findFirst().orElse(null);
-    return driver != null && driver.json() != null ? result.withJsonPath(driver.json().path())
-        : result;
-  }
-
   private Pagination<DocumentSearchResult> searchByDocumentIds(final String siteId,
       final Collection<String> documentIds) {
 
@@ -308,6 +295,19 @@ public final class DocumentSearchServiceImpl implements DocumentSearchService {
   public Pagination<String> searchForDocumentIds(final String siteId,
       final SearchTagCriteria criteria, final String nextToken, final int maxresults) {
     return this.documentSearchTagQuery.queryDocumentIds(siteId, criteria, nextToken, maxresults);
+  }
+
+  private Map<String, Object> toAttributeFields(final Map<String, Object> attribute) {
+    Object valueType = attribute.get("valueType");
+    return switch (DocumentAttributeValueType.valueOf((String) valueType)) {
+      case JSON -> Map.of("valueType", valueType, "jsonValue", attribute.get("jsonValue"));
+      case BOOLEAN -> Map.of("valueType", valueType, "booleanValue", attribute.get("booleanValue"));
+      case NUMBER -> Map.of("valueType", valueType, "numberValues", attribute.get("numberValues"));
+      case DATE -> Map.of("valueType", valueType, "dateValues", attribute.get("dateValues"));
+      case STRING, COMPOSITE_STRING, RELATIONSHIPS, CLASSIFICATION, PUBLICATION ->
+        Map.of("valueType", valueType, "stringValues", attribute.get("stringValues"));
+      default -> Map.of("valueType", valueType);
+    };
   }
 
 }

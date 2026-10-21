@@ -51,16 +51,16 @@ public class SecretsManagerServiceImpl implements SecretsManagerService {
   }
 
   @Override
-  public String createSecret(final String name, final String value) {
-    CreateSecretResponse resp =
-        client.createSecret(CreateSecretRequest.builder().name(name).secretString(value).build());
+  public String createSecret(final String name, final byte[] value) {
+    CreateSecretResponse resp = client.createSecret(CreateSecretRequest.builder().name(name)
+        .secretBinary(SdkBytes.fromByteArray(value)).build());
     return resp.arn();
   }
 
   @Override
-  public String createSecret(final String name, final byte[] value) {
-    CreateSecretResponse resp = client.createSecret(CreateSecretRequest.builder().name(name)
-        .secretBinary(SdkBytes.fromByteArray(value)).build());
+  public String createSecret(final String name, final String value) {
+    CreateSecretResponse resp =
+        client.createSecret(CreateSecretRequest.builder().name(name).secretString(value).build());
     return resp.arn();
   }
 

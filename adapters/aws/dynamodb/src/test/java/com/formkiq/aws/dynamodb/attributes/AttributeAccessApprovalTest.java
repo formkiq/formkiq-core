@@ -64,6 +64,77 @@ public class AttributeAccessApprovalTest {
         Map.of(key, AttributeValidationAccess.ADMIN_CREATE));
   }
 
+  /** IN permits multiple effective values when every value belongs to the permitted set. */
+  @Test
+  public void testConditionalRuleInPermitsMultipleEffectiveValues() {
+    // given
+    DocumentAttributeRecord student = attribute("MyRole", "student");
+    DocumentAttributeRecord teacher = attribute("MyRole", "teacher");
+    AttributeAccessRule rule =
+        new AttributeAccessRule(
+            List.of(new AttributeAccessCriterion("MyRole", List.of("student", "teacher"),
+                AttributeAccessOperator.IN)),
+            Map.of("MyRole", AttributeValidationAccess.ADMIN_CREATE));
+    var approval = new AttributeAccessApproval(AttributeValidationAccess.UPDATE, Map.of(),
+        List.of(rule), "denied");
+
+    // when
+    var resolved = approval.resolve(List.of(student, teacher));
+
+    // then
+    assertTrue(resolved.isPresent());
+  }
+
+  /** A matching conditional rule grants its key access. */
+  @Test
+  public void testConditionalRuleMatch() {
+    // given
+    DocumentAttributeRecord attribute = attribute("MyRole", "student");
+    var approval = new AttributeAccessApproval(AttributeValidationAccess.CREATE, Map.of(),
+        List.of(rule("MyRole", "student")), "denied");
+
+    // when
+    var resolved = approval.resolve(List.of(attribute));
+
+    // then
+    assertTrue(resolved.isPresent());
+    assertEquals(AttributeValidationAccess.ADMIN_CREATE,
+        resolved.orElseThrow().accessFor("MyRole"));
+    assertEquals(AttributeValidationAccess.CREATE,
+        resolved.orElseThrow().accessFor("regularAttribute"));
+  }
+
+  /** A conditional rule may match an attribute generated after request interception. */
+  @Test
+  public void testConditionalRuleMatchesGeneratedAttribute() {
+    // given
+    DocumentAttributeRecord generatedDefault = attribute("MyRole", "student");
+    var approval = new AttributeAccessApproval(AttributeValidationAccess.CREATE, Map.of(),
+        List.of(rule("MyRole", "student")), "denied");
+
+    // when
+    var resolved = approval.resolve(List.of(generatedDefault));
+
+    // then
+    assertTrue(resolved.isPresent());
+  }
+
+  /** A conditional rule denies a forbidden attribute value. */
+  @Test
+  public void testConditionalRuleNoMatch() {
+    // given
+    DocumentAttributeRecord attribute = attribute("MyRole", "teacher");
+    var approval = new AttributeAccessApproval(AttributeValidationAccess.CREATE, Map.of(),
+        List.of(rule("MyRole", "student")), "opa: denied");
+
+    // when
+    var resolved = approval.resolve(List.of(attribute));
+
+    // then
+    assertFalse(resolved.isPresent());
+    assertEquals("opa: denied", approval.deniedMessage());
+  }
+
   /**
    * Every conditional attribute access operator matches its permitted example.
    *
@@ -157,77 +228,6 @@ public class AttributeAccessApprovalTest {
     var resolved = approval.resolve(List.of(permitted, forbidden));
     // then
     assertFalse(resolved.isPresent(), () -> operator + " should reject a forbidden value");
-  }
-
-  /** IN permits multiple effective values when every value belongs to the permitted set. */
-  @Test
-  public void testConditionalRuleInPermitsMultipleEffectiveValues() {
-    // given
-    DocumentAttributeRecord student = attribute("MyRole", "student");
-    DocumentAttributeRecord teacher = attribute("MyRole", "teacher");
-    AttributeAccessRule rule =
-        new AttributeAccessRule(
-            List.of(new AttributeAccessCriterion("MyRole", List.of("student", "teacher"),
-                AttributeAccessOperator.IN)),
-            Map.of("MyRole", AttributeValidationAccess.ADMIN_CREATE));
-    var approval = new AttributeAccessApproval(AttributeValidationAccess.UPDATE, Map.of(),
-        List.of(rule), "denied");
-
-    // when
-    var resolved = approval.resolve(List.of(student, teacher));
-
-    // then
-    assertTrue(resolved.isPresent());
-  }
-
-  /** A matching conditional rule grants its key access. */
-  @Test
-  public void testConditionalRuleMatch() {
-    // given
-    DocumentAttributeRecord attribute = attribute("MyRole", "student");
-    var approval = new AttributeAccessApproval(AttributeValidationAccess.CREATE, Map.of(),
-        List.of(rule("MyRole", "student")), "denied");
-
-    // when
-    var resolved = approval.resolve(List.of(attribute));
-
-    // then
-    assertTrue(resolved.isPresent());
-    assertEquals(AttributeValidationAccess.ADMIN_CREATE,
-        resolved.orElseThrow().accessFor("MyRole"));
-    assertEquals(AttributeValidationAccess.CREATE,
-        resolved.orElseThrow().accessFor("regularAttribute"));
-  }
-
-  /** A conditional rule may match an attribute generated after request interception. */
-  @Test
-  public void testConditionalRuleMatchesGeneratedAttribute() {
-    // given
-    DocumentAttributeRecord generatedDefault = attribute("MyRole", "student");
-    var approval = new AttributeAccessApproval(AttributeValidationAccess.CREATE, Map.of(),
-        List.of(rule("MyRole", "student")), "denied");
-
-    // when
-    var resolved = approval.resolve(List.of(generatedDefault));
-
-    // then
-    assertTrue(resolved.isPresent());
-  }
-
-  /** A conditional rule denies a forbidden attribute value. */
-  @Test
-  public void testConditionalRuleNoMatch() {
-    // given
-    DocumentAttributeRecord attribute = attribute("MyRole", "teacher");
-    var approval = new AttributeAccessApproval(AttributeValidationAccess.CREATE, Map.of(),
-        List.of(rule("MyRole", "student")), "opa: denied");
-
-    // when
-    var resolved = approval.resolve(List.of(attribute));
-
-    // then
-    assertFalse(resolved.isPresent());
-    assertEquals("opa: denied", approval.deniedMessage());
   }
 
   /** Conditional rules use OR semantics. */

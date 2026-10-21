@@ -109,6 +109,22 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     this.attributeService = new AttributeServiceDynamodb(dbService);
   }
 
+  private boolean canUseCompositeKey(final List<String> keys,
+      final Map<String, SearchAttributeCriteria> attributes) {
+    if (keys.size() < 2 || !attributes.keySet().containsAll(keys)) {
+      return false;
+    }
+    for (String key : keys.subList(0, keys.size() - 1)) {
+      SearchAttributeCriteria search = attributes.get(key);
+      if (!isEqualityCriteria(search)) {
+        return false;
+      }
+    }
+    SearchAttributeCriteria last = attributes.get(keys.getLast());
+    return !isEmpty(last.eq()) || !isEmpty(last.beginsWith()) || last.range() != null
+        || !notNull(last.eqOr()).isEmpty();
+  }
+
   private List<SchemaAttributeAllowedValueRecord> createAllowedValues(final String documentId,
       final SchemaAttributes attributes) {
 
@@ -310,27 +326,6 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   @Override
-  public SchemaCompositeKeyRecord getCompositeKeyExactMatch(final String siteId,
-      final List<String> attributeKeys) {
-
-    SchemaCompositeKeyRecord r = new SchemaCompositeKeyRecord().keys(attributeKeys);
-    QueryRequest request = DynamoDbQueryBuilder.builder().indexName(GSI1).pk(r.pkGsi1(siteId))
-        .beginsWith(r.skGsi1()).scanIndexForward(true).limit(1).build(this.db.getTableName());
-    QueryResponse response = this.db.query(request, false);
-    List<Map<String, AttributeValue>> items = response.items();
-
-    if (!items.isEmpty()) {
-      Map<String, AttributeValue> attrs = items.getFirst();
-      attrs = this.db.get(attrs.get(PK), attrs.get(SK));
-      r = r.getFromAttributes(siteId, attrs);
-    } else {
-      r = null;
-    }
-
-    return r;
-  }
-
-  @Override
   public SchemaCompositeKeyRecord getCompositeKeyBestMatch(final String siteId,
       final List<SearchAttributeCriteria> attributes) {
 
@@ -363,25 +358,25 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
         .orElse(null);
   }
 
-  private boolean canUseCompositeKey(final List<String> keys,
-      final Map<String, SearchAttributeCriteria> attributes) {
-    if (keys.size() < 2 || !attributes.keySet().containsAll(keys)) {
-      return false;
-    }
-    for (String key : keys.subList(0, keys.size() - 1)) {
-      SearchAttributeCriteria search = attributes.get(key);
-      if (!isEqualityCriteria(search)) {
-        return false;
-      }
-    }
-    SearchAttributeCriteria last = attributes.get(keys.getLast());
-    return !isEmpty(last.eq()) || !isEmpty(last.beginsWith()) || last.range() != null
-        || !notNull(last.eqOr()).isEmpty();
-  }
+  @Override
+  public SchemaCompositeKeyRecord getCompositeKeyExactMatch(final String siteId,
+      final List<String> attributeKeys) {
 
-  private boolean isEqualityCriteria(final SearchAttributeCriteria search) {
-    return !isEmpty(search.eq()) && isEmpty(search.beginsWith()) && search.range() == null
-        && notNull(search.eqOr()).isEmpty();
+    SchemaCompositeKeyRecord r = new SchemaCompositeKeyRecord().keys(attributeKeys);
+    QueryRequest request = DynamoDbQueryBuilder.builder().indexName(GSI1).pk(r.pkGsi1(siteId))
+        .beginsWith(r.skGsi1()).scanIndexForward(true).limit(1).build(this.db.getTableName());
+    QueryResponse response = this.db.query(request, false);
+    List<Map<String, AttributeValue>> items = response.items();
+
+    if (!items.isEmpty()) {
+      Map<String, AttributeValue> attrs = items.getFirst();
+      attrs = this.db.get(attrs.get(PK), attrs.get(SK));
+      r = r.getFromAttributes(siteId, attrs);
+    } else {
+      r = null;
+    }
+
+    return r;
   }
 
   private Map<String, SchemaAttributesOptional> getOptionalAttributeMap(
@@ -435,6 +430,16 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     }
 
     return r;
+  }
+
+  private boolean isDefaultEntity(final String defaultEntityTypeId, final String defaultEntityId,
+      final String entityTypeId, final String entityId) {
+    return entityTypeId.equals(defaultEntityTypeId) && entityId.equals(defaultEntityId);
+  }
+
+  private boolean isEqualityCriteria(final SearchAttributeCriteria search) {
+    return !isEmpty(search.eq()) && isEmpty(search.beginsWith()) && search.range() == null
+        && notNull(search.eqOr()).isEmpty();
   }
 
   private List<SchemaAttributesRequired> merge(final Map<String, SchemaAttributesRequired> from,
@@ -629,61 +634,6 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
   }
 
   @Override
-  public ValidationBuilder validateDeleteEntity(final String siteId, final String entityTypeId,
-      final String entityId) {
-
-    ValidationBuilder vb = new ValidationBuilder();
-
-    validateDeleteEntity(getSitesSchema(siteId), entityTypeId, entityId, vb);
-    if (!vb.isEmpty()) {
-      return vb;
-    }
-
-    final int limit = 100;
-    final int loopCount = 10;
-    String nextToken = null;
-    for (int i = 0; i < loopCount; i++) {
-
-      Pagination<ClassificationRecord> classifications =
-          findAllClassifications(siteId, nextToken, limit);
-
-      for (ClassificationRecord classification : classifications.getResults()) {
-        validateDeleteEntity(getSchema(classification), entityTypeId, entityId, vb);
-        if (!vb.isEmpty()) {
-          break;
-        }
-      }
-
-      nextToken = classifications.getNextToken();
-      if (isEmpty(nextToken)) {
-        break;
-      }
-    }
-
-    return vb;
-  }
-
-  private void validateDeleteEntity(final Schema schema, final String entityTypeId,
-      final String entityId, final ValidationBuilder vb) {
-
-    if (schema != null && schema.getAttributes() != null) {
-
-      boolean isReferenced = notNull(schema.getAttributes().getRequired()).stream()
-          .anyMatch(a -> isDefaultEntity(a.getDefaultEntityTypeId(), a.getDefaultEntityId(),
-              entityTypeId, entityId))
-          || notNull(schema.getAttributes().getOptional()).stream()
-              .anyMatch(a -> isDefaultEntity(a.getDefaultEntityTypeId(), a.getDefaultEntityId(),
-                  entityTypeId, entityId));
-
-      if (isReferenced) {
-        vb.addError("entityId",
-            "entity '" + entityId + "' is used in a Schema / Classification, cannot be deleted");
-      }
-    }
-  }
-
-
-  @Override
   public void updateLocalization(final String siteId, final String classificationId,
       final SchemaAttributes schemaAttributes, final String locale) {
 
@@ -740,6 +690,7 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
       });
     }
   }
+
 
   private Collection<ValidationError> validate(final String siteId, final Schema sitesSchema,
       final String name, final Schema schema) {
@@ -951,9 +902,128 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
     }
   }
 
-  private boolean isDefaultEntity(final String defaultEntityTypeId, final String defaultEntityId,
-      final String entityTypeId, final String entityId) {
-    return entityTypeId.equals(defaultEntityTypeId) && entityId.equals(defaultEntityId);
+  private void validateDeleteEntity(final Schema schema, final String entityTypeId,
+      final String entityId, final ValidationBuilder vb) {
+
+    if (schema != null && schema.getAttributes() != null) {
+
+      boolean isReferenced = notNull(schema.getAttributes().getRequired()).stream()
+          .anyMatch(a -> isDefaultEntity(a.getDefaultEntityTypeId(), a.getDefaultEntityId(),
+              entityTypeId, entityId))
+          || notNull(schema.getAttributes().getOptional()).stream()
+              .anyMatch(a -> isDefaultEntity(a.getDefaultEntityTypeId(), a.getDefaultEntityId(),
+                  entityTypeId, entityId));
+
+      if (isReferenced) {
+        vb.addError("entityId",
+            "entity '" + entityId + "' is used in a Schema / Classification, cannot be deleted");
+      }
+    }
+  }
+
+  @Override
+  public ValidationBuilder validateDeleteEntity(final String siteId, final String entityTypeId,
+      final String entityId) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+
+    validateDeleteEntity(getSitesSchema(siteId), entityTypeId, entityId, vb);
+    if (!vb.isEmpty()) {
+      return vb;
+    }
+
+    final int limit = 100;
+    final int loopCount = 10;
+    String nextToken = null;
+    for (int i = 0; i < loopCount; i++) {
+
+      Pagination<ClassificationRecord> classifications =
+          findAllClassifications(siteId, nextToken, limit);
+
+      for (ClassificationRecord classification : classifications.getResults()) {
+        validateDeleteEntity(getSchema(classification), entityTypeId, entityId, vb);
+        if (!vb.isEmpty()) {
+          break;
+        }
+      }
+
+      nextToken = classifications.getNextToken();
+      if (isEmpty(nextToken)) {
+        break;
+      }
+    }
+
+    return vb;
+  }
+
+  private void validateEntity(final String siteId, final String entityTypeId, final String entityId,
+      final Collection<ValidationError> errors) {
+
+    DynamoDbKey entityType = EntityTypeRecord.builder(null).nameEmpty()
+        .namespace(EntityTypeNamespace.CUSTOM).documentId(entityTypeId).buildKey(siteId);
+    boolean entityTypeExists = this.db.exists(entityType);
+
+    if (!entityTypeExists) {
+      errors
+          .add(new ValidationErrorImpl().key("entityTypeId").error("EntityTypeId does not exist"));
+    }
+
+    if (!isEmpty(entityId)) {
+      DynamoDbKey entity = EntityRecord.builder().name("").entityTypeId(entityTypeId)
+          .documentId(entityId).buildKey(siteId);
+      if (!this.db.exists(entity)) {
+        errors.add(new ValidationErrorImpl().key("entityId").error("EntityId does not exist"));
+      }
+    }
+  }
+
+  private void validateEntitySchemaAttribute(final String siteId, final SchemaAttributesRequired a,
+      final Collection<ValidationError> errors) {
+
+    if (isEmpty(a.getDefaultEntityTypeId())) {
+      errors.add(new ValidationErrorImpl().key("entityTypeId").error("'entityTypeId' is required"));
+    }
+
+    if (errors.isEmpty()) {
+      validateEntity(siteId, a.getDefaultEntityTypeId(), a.getDefaultEntityId(), errors);
+    }
+  }
+
+  private void validateKeyOnlySchemaAttribute(final SchemaAttributesRequired a,
+      final String attributeKey, final Collection<ValidationError> errors) {
+
+    if (!notNull(a.getAllowedValues()).isEmpty()) {
+      String errorMsg = "attribute '" + attributeKey + "' does not allow allowed values";
+      errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+    }
+
+    if (!notNull(a.getDefaultValues()).isEmpty() || a.getDefaultValue() != null) {
+      String errorMsg = "attribute '" + attributeKey + "' does not allow default values";
+      errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
+    }
+  }
+
+  private void validateNumberOfValues(final Double minNumberOfValues,
+      final Double maxNumberOfValues, final Collection<ValidationError> errors) {
+    if (minNumberOfValues != null && maxNumberOfValues == null) {
+      errors.add(new ValidationErrorImpl().key("maxNumberOfValues")
+          .error("both 'minNumberOfValues' and 'maxNumberOfValues' is required"));
+    } else if (minNumberOfValues == null && maxNumberOfValues != null) {
+      errors.add(new ValidationErrorImpl().key("minNumberOfValues")
+          .error("both 'minNumberOfValues' and 'maxNumberOfValues' is required"));
+    } else if (minNumberOfValues != null && maxNumberOfValues > -1
+        && minNumberOfValues > maxNumberOfValues) {
+      errors.add(new ValidationErrorImpl().key("minNumberOfValues")
+          .error("minNumberOfValues cannot be more than maxNumberOfValues"));
+    }
+  }
+
+  private void validateNumberOfValues(final SchemaAttributes attributes,
+      final Collection<ValidationError> errors) {
+    notNull(attributes.getRequired())
+        .forEach(r -> validateNumberOfValues(r.minNumberOfValues(), r.maxNumberOfValues(), errors));
+    notNull(attributes.getOptional())
+        .forEach(r -> validateNumberOfValues(r.minNumberOfValues(), r.maxNumberOfValues(), errors));
   }
 
   private void validateOptionalSchemaAttributes(final String siteId, final Schema schema,
@@ -973,6 +1043,18 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
         }
       }
     });
+  }
+
+  private void validateOverlap(final List<String> requiredAttributes,
+      final List<String> optionalAttributes, final Collection<ValidationError> errors) {
+
+    List<String> overlap =
+        requiredAttributes.stream().filter(optionalAttributes::contains).toList();
+
+    for (String attribyteKey : overlap) {
+      errors.add(new ValidationErrorImpl().key(attribyteKey)
+          .error("attribute '" + attribyteKey + "' is in both required & optional lists"));
+    }
   }
 
   private void validateRequiredSchemaAttributes(final String siteId, final Schema schema,
@@ -1004,88 +1086,6 @@ public class SchemaServiceDynamodb implements SchemaService, DbKeys {
         }
       }
     });
-  }
-
-  private void validateEntitySchemaAttribute(final String siteId, final SchemaAttributesRequired a,
-      final Collection<ValidationError> errors) {
-
-    if (isEmpty(a.getDefaultEntityTypeId())) {
-      errors.add(new ValidationErrorImpl().key("entityTypeId").error("'entityTypeId' is required"));
-    }
-
-    if (errors.isEmpty()) {
-      validateEntity(siteId, a.getDefaultEntityTypeId(), a.getDefaultEntityId(), errors);
-    }
-  }
-
-  private void validateKeyOnlySchemaAttribute(final SchemaAttributesRequired a,
-      final String attributeKey, final Collection<ValidationError> errors) {
-
-    if (!notNull(a.getAllowedValues()).isEmpty()) {
-      String errorMsg = "attribute '" + attributeKey + "' does not allow allowed values";
-      errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
-    }
-
-    if (!notNull(a.getDefaultValues()).isEmpty() || a.getDefaultValue() != null) {
-      String errorMsg = "attribute '" + attributeKey + "' does not allow default values";
-      errors.add(new ValidationErrorImpl().key(attributeKey).error(errorMsg));
-    }
-  }
-
-  private void validateEntity(final String siteId, final String entityTypeId, final String entityId,
-      final Collection<ValidationError> errors) {
-
-    DynamoDbKey entityType = EntityTypeRecord.builder(null).nameEmpty()
-        .namespace(EntityTypeNamespace.CUSTOM).documentId(entityTypeId).buildKey(siteId);
-    boolean entityTypeExists = this.db.exists(entityType);
-
-    if (!entityTypeExists) {
-      errors
-          .add(new ValidationErrorImpl().key("entityTypeId").error("EntityTypeId does not exist"));
-    }
-
-    if (!isEmpty(entityId)) {
-      DynamoDbKey entity = EntityRecord.builder().name("").entityTypeId(entityTypeId)
-          .documentId(entityId).buildKey(siteId);
-      if (!this.db.exists(entity)) {
-        errors.add(new ValidationErrorImpl().key("entityId").error("EntityId does not exist"));
-      }
-    }
-  }
-
-  private void validateNumberOfValues(final Double minNumberOfValues,
-      final Double maxNumberOfValues, final Collection<ValidationError> errors) {
-    if (minNumberOfValues != null && maxNumberOfValues == null) {
-      errors.add(new ValidationErrorImpl().key("maxNumberOfValues")
-          .error("both 'minNumberOfValues' and 'maxNumberOfValues' is required"));
-    } else if (minNumberOfValues == null && maxNumberOfValues != null) {
-      errors.add(new ValidationErrorImpl().key("minNumberOfValues")
-          .error("both 'minNumberOfValues' and 'maxNumberOfValues' is required"));
-    } else if (minNumberOfValues != null && maxNumberOfValues > -1
-        && minNumberOfValues > maxNumberOfValues) {
-      errors.add(new ValidationErrorImpl().key("minNumberOfValues")
-          .error("minNumberOfValues cannot be more than maxNumberOfValues"));
-    }
-  }
-
-  private void validateNumberOfValues(final SchemaAttributes attributes,
-      final Collection<ValidationError> errors) {
-    notNull(attributes.getRequired())
-        .forEach(r -> validateNumberOfValues(r.minNumberOfValues(), r.maxNumberOfValues(), errors));
-    notNull(attributes.getOptional())
-        .forEach(r -> validateNumberOfValues(r.minNumberOfValues(), r.maxNumberOfValues(), errors));
-  }
-
-  private void validateOverlap(final List<String> requiredAttributes,
-      final List<String> optionalAttributes, final Collection<ValidationError> errors) {
-
-    List<String> overlap =
-        requiredAttributes.stream().filter(optionalAttributes::contains).toList();
-
-    for (String attribyteKey : overlap) {
-      errors.add(new ValidationErrorImpl().key(attribyteKey)
-          .error("attribute '" + attribyteKey + "' is in both required & optional lists"));
-    }
   }
 
   private Collection<ValidationError> validateSchema(final Schema schema, final String name) {
