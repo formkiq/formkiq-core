@@ -213,7 +213,8 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
-   * A WRITE_DOCUMENTS-only API key can create a document but cannot read it.
+   * A WRITE_DOCUMENTS-only API key lists its exact grant and can create a document but cannot read
+   * it.
    *
    * @throws Exception Exception
    */
@@ -242,6 +243,17 @@ public class ConfigurationApiKeyRequestTest extends AbstractAwsIntegrationTest {
     try {
       // given
       ApiClient writer = getApiClientWithToken(created.getApiKey());
+
+      // when
+      GetSitesResponse sitesResponse =
+          new GetSitesRequestBuilder().submitOk(writer, null).response();
+
+      // then
+      List<Site> sites = notNull(sitesResponse.getSites());
+      assertEquals(1, sites.size());
+      assertEquals(siteId, sites.getFirst().getSiteId());
+      assertEquals(List.of("WRITE_DOCUMENTS"),
+          notNull(sites.getFirst().getPermissions()).stream().map(Enum::name).toList());
 
       // when
       AddDocumentResponse document = new AddDocumentRequestBuilder().content("write-only content")
