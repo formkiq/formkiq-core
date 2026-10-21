@@ -42,10 +42,14 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 /** Implementation of the {@link ConfigService}. */
 public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
 
+  private record CachedSiteConfiguration(SiteConfiguration config, long expiresAtMs) {
+  }
+
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
   /** Config cache TTL in milliseconds. */
   private final long cacheTtl;
+
   /** Site configuration cache. */
   private final Map<String, CachedSiteConfiguration> configCache = new ConcurrentHashMap<>();
 
@@ -64,9 +68,6 @@ public final class ConfigServiceDynamoDb implements ConfigService, DbKeys {
 
     this.db = new DynamoDbServiceImpl(connection, documentsTable);
     this.cacheTtl = cacheTtlMs;
-  }
-
-  private record CachedSiteConfiguration(SiteConfiguration config, long expiresAtMs) {
   }
 
   private String cacheKey(final String siteId) {

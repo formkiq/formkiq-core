@@ -95,77 +95,45 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
         "ProvisionedThroughputExceededException", "RequestLimitExceeded",
         "RequestLimitExceededException", "ThrottlingException", "TransactionInProgressException",
         "TransactionConflictException", "LimitExceededException");
+
+    private static void debug(final Logger logger, final ForbiddenException e) {
+      if (!isEmpty(e.getDebug())) {
+        logger.trace(e.getDebug());
+      }
+    }
+
+    /**
+     * Is Bad Request Exception (Http Status 400).
+     * 
+     * @param exception {@link Exception}
+     * @return boolean
+     */
+    private static boolean isBadRequestException(final Exception exception) {
+      return exception instanceof BadException || exception instanceof IllegalArgumentException
+          || exception instanceof DateTimeException;
+    }
+
+    private static boolean isRetryableDynamoDbException(final Exception exception) {
+      if (exception instanceof AwsServiceException e && exception.getClass().getName()
+          .startsWith("software.amazon.awssdk.services.dynamodb.")) {
+        String errorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null;
+        return DYNAMODB_RETRYABLE_ERROR_CODES.contains(errorCode);
+      }
+
+      return false;
+    }
+
     /** Status Code. */
     private int statusCode = -1;
+
     /** Http Headers. */
     private final Map<String, String> headers = new HashMap<>();
+
     /** Http Body. */
     private final Map<String, Object> body = new HashMap<>();
+
     /** {@link Object}. */
     private Object object;
-
-    /**
-     * Set Status.
-     * 
-     * @param status {@link ApiResponseStatus}
-     * @return Builder
-     */
-    public Builder status(final ApiResponseStatus status) {
-      this.statusCode = status.getStatusCode();
-      return this;
-    }
-
-    /**
-     * Set Status.
-     * 
-     * @param status int
-     * @return Builder
-     */
-    public Builder status(final int status) {
-      this.statusCode = status;
-      return this;
-    }
-
-    /**
-     * Add Header.
-     * 
-     * @param name {@link String}
-     * @param value {@link String}
-     * @return Builder
-     */
-    public Builder header(final String name, final String value) {
-      headers.put(name, value);
-      return this;
-    }
-
-    /**
-     * Add Headers.
-     *
-     * @param map {@link Map}
-     * @return Builder
-     */
-    public Builder header(final Map<String, String> map) {
-      headers.putAll(map);
-      return this;
-    }
-
-    /**
-     * HTTP 200 OK.
-     * 
-     * @return Builder
-     */
-    public Builder ok() {
-      return status(SC_OK.getStatusCode());
-    }
-
-    /**
-     * HTTP 201 Created.
-     * 
-     * @return Builder
-     */
-    public Builder created() {
-      return status(SC_CREATED.getStatusCode());
-    }
 
     /**
      * HTTP 400 Bad Request.
@@ -174,18 +142,6 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
      */
     public Builder badRequest() {
       return status(SC_BAD_REQUEST.getStatusCode());
-    }
-
-    /**
-     * Http Body.
-     * 
-     * @param key {@link String}
-     * @param value {@link Object}
-     * @return Builder
-     */
-    public Builder body(final String key, final Object value) {
-      this.body.put(key, value);
-      return this;
     }
 
     /**
@@ -211,25 +167,77 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
     }
 
     /**
-     * Previous Token.
-     *
-     * @param previousToken {@link String}
+     * Http Body.
+     * 
+     * @param key {@link String}
+     * @param value {@link Object}
      * @return Builder
      */
-    public Builder previous(final String previousToken) {
-      this.body.put("previous", previousToken);
+    public Builder body(final String key, final Object value) {
+      this.body.put(key, value);
       return this;
     }
 
     /**
-     * Next Token.
+     * Builder {@link ApiRequestHandlerResponse}.
      * 
-     * @param nextToken {@link String}
+     * @return ApiRequestHandlerResponse
+     */
+    public ApiRequestHandlerResponse build() {
+      Map<String, String> allHeaders = new HashMap<>(headers);
+
+      if (statusCode != MOVED_PERMANENTLY.getStatusCode()
+          && statusCode != SC_TEMPORARY_REDIRECT.getStatusCode()) {
+        allHeaders.putAll(createJsonHeaders());
+      }
+
+      return new ApiRequestHandlerResponse(statusCode, allHeaders,
+          this.object != null ? this.object : this.body);
+    }
+
+    private String buildErrorMessage(final Exception e) {
+
+      return switch (e.getClass().getName()) {
+        case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> {
+          if (e instanceof DynamoDbQueryException ee) {
+            yield switch (ee.getError()) {
+              case INVALID_START_KEY -> "Invalid Next token";
+              default -> "Invalid query";
+            };
+          }
+          yield "Unknown error";
+        }
+        case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
+            "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
+          e.getMessage();
+        default -> "Internal Server Error";
+      };
+    }
+
+    private ApiResponseStatus buildStatus(final Exception e) {
+      return switch (e.getClass().getName()) {
+        case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> SC_BAD_REQUEST;
+        case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
+            "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
+          SC_NOT_FOUND;
+        default -> SC_ERROR;
+      };
+    }
+
+    /**
+     * HTTP 201 Created.
+     * 
      * @return Builder
      */
-    public Builder next(final String nextToken) {
-      this.body.put("next", nextToken);
-      return this;
+    public Builder created() {
+      return status(SC_CREATED.getStatusCode());
+    }
+
+    private Map<String, String> createJsonHeaders() {
+      return Map.of("Access-Control-Allow-Headers",
+          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token",
+          "Access-Control-Allow-Methods", "*", "Access-Control-Allow-Origin", "*", "Content-Type",
+          "application/json");
     }
 
     /**
@@ -270,12 +278,6 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
       return this;
     }
 
-    private static void debug(final Logger logger, final ForbiddenException e) {
-      if (!isEmpty(e.getDebug())) {
-        logger.trace(e.getDebug());
-      }
-    }
-
     private void handleValidationException(final ValidationException e) {
       if (e.errors().stream().anyMatch(ee -> ee instanceof UnAuthorizedValidationError)) {
         this.statusCode = SC_UNAUTHORIZED.getStatusCode();
@@ -295,78 +297,80 @@ public record ApiRequestHandlerResponse(int statusCode, Map<String, String> head
       }
     }
 
-    private String buildErrorMessage(final Exception e) {
-
-      return switch (e.getClass().getName()) {
-        case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> {
-          if (e instanceof DynamoDbQueryException ee) {
-            yield switch (ee.getError()) {
-              case INVALID_START_KEY -> "Invalid Next token";
-              default -> "Invalid query";
-            };
-          }
-          yield "Unknown error";
-        }
-        case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
-            "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
-          e.getMessage();
-        default -> "Internal Server Error";
-      };
-    }
-
-    private ApiResponseStatus buildStatus(final Exception e) {
-      return switch (e.getClass().getName()) {
-        case "com.formkiq.aws.dynamodb.DynamoDbQueryException" -> SC_BAD_REQUEST;
-        case "com.formkiq.aws.services.lambda.exceptions.NotFoundException",
-            "com.formkiq.aws.services.lambda.exceptions.DocumentNotFoundException" ->
-          SC_NOT_FOUND;
-        default -> SC_ERROR;
-      };
+    /**
+     * Add Headers.
+     *
+     * @param map {@link Map}
+     * @return Builder
+     */
+    public Builder header(final Map<String, String> map) {
+      headers.putAll(map);
+      return this;
     }
 
     /**
-     * Is Bad Request Exception (Http Status 400).
+     * Add Header.
      * 
-     * @param exception {@link Exception}
-     * @return boolean
+     * @param name {@link String}
+     * @param value {@link String}
+     * @return Builder
      */
-    private static boolean isBadRequestException(final Exception exception) {
-      return exception instanceof BadException || exception instanceof IllegalArgumentException
-          || exception instanceof DateTimeException;
-    }
-
-    private static boolean isRetryableDynamoDbException(final Exception exception) {
-      if (exception instanceof AwsServiceException e && exception.getClass().getName()
-          .startsWith("software.amazon.awssdk.services.dynamodb.")) {
-        String errorCode = e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null;
-        return DYNAMODB_RETRYABLE_ERROR_CODES.contains(errorCode);
-      }
-
-      return false;
-    }
-
-    private Map<String, String> createJsonHeaders() {
-      return Map.of("Access-Control-Allow-Headers",
-          "Content-Type,X-Amz-Date,Authorization,X-Api-Key,x-formkiq-delegation-token",
-          "Access-Control-Allow-Methods", "*", "Access-Control-Allow-Origin", "*", "Content-Type",
-          "application/json");
+    public Builder header(final String name, final String value) {
+      headers.put(name, value);
+      return this;
     }
 
     /**
-     * Builder {@link ApiRequestHandlerResponse}.
+     * Next Token.
      * 
-     * @return ApiRequestHandlerResponse
+     * @param nextToken {@link String}
+     * @return Builder
      */
-    public ApiRequestHandlerResponse build() {
-      Map<String, String> allHeaders = new HashMap<>(headers);
+    public Builder next(final String nextToken) {
+      this.body.put("next", nextToken);
+      return this;
+    }
 
-      if (statusCode != MOVED_PERMANENTLY.getStatusCode()
-          && statusCode != SC_TEMPORARY_REDIRECT.getStatusCode()) {
-        allHeaders.putAll(createJsonHeaders());
-      }
+    /**
+     * HTTP 200 OK.
+     * 
+     * @return Builder
+     */
+    public Builder ok() {
+      return status(SC_OK.getStatusCode());
+    }
 
-      return new ApiRequestHandlerResponse(statusCode, allHeaders,
-          this.object != null ? this.object : this.body);
+    /**
+     * Previous Token.
+     *
+     * @param previousToken {@link String}
+     * @return Builder
+     */
+    public Builder previous(final String previousToken) {
+      this.body.put("previous", previousToken);
+      return this;
+    }
+
+    /**
+     * Set Status.
+     * 
+     * @param status {@link ApiResponseStatus}
+     * @return Builder
+     */
+    public Builder status(final ApiResponseStatus status) {
+      this.statusCode = status.getStatusCode();
+      return this;
+    }
+
+    /**
+     * Set Status.
+     * 
+     * @param status int
+     * @return Builder
+     */
+    public Builder status(final int status) {
+      this.statusCode = status;
+      return this;
     }
   }
 }

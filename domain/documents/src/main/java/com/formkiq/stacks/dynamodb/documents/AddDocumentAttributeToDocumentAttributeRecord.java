@@ -146,18 +146,6 @@ public class AddDocumentAttributeToDocumentAttributeRecord
 
   }
 
-  private void validateJsonValueExclusive(final AddDocumentAttributeStandard attribute) {
-    boolean hasScalarValue = Stream.of(attribute.stringValue(), attribute.numberValue(),
-        attribute.booleanValue(), attribute.dateValue()).anyMatch(Objects::nonNull);
-    boolean hasListValue =
-        !notNull(attribute.stringValues()).isEmpty() || !notNull(attribute.numberValues()).isEmpty()
-            || !notNull(attribute.dateValues()).isEmpty();
-    if (hasScalarValue || hasListValue) {
-      throw ValidationException.builder()
-          .error(attribute.key(), "jsonValue cannot be combined with other value fields").build();
-    }
-  }
-
   private void addEntities(final AddDocumentAttributeEntities a,
       final Collection<DocumentAttributeRecord> c) throws ValidationException {
 
@@ -273,6 +261,18 @@ public class AddDocumentAttributeToDocumentAttributeRecord
       return DateUtil.toDateFromString(value, ZoneOffset.UTC);
     } catch (DateTimeException e) {
       throw ValidationException.builder().error("dateValue", "invalid date value").build();
+    }
+  }
+
+  private void validateJsonValueExclusive(final AddDocumentAttributeStandard attribute) {
+    boolean hasScalarValue = Stream.of(attribute.stringValue(), attribute.numberValue(),
+        attribute.booleanValue(), attribute.dateValue()).anyMatch(Objects::nonNull);
+    boolean hasListValue =
+        !notNull(attribute.stringValues()).isEmpty() || !notNull(attribute.numberValues()).isEmpty()
+            || !notNull(attribute.dateValues()).isEmpty();
+    if (hasScalarValue || hasListValue) {
+      throw ValidationException.builder()
+          .error(attribute.key(), "jsonValue cannot be combined with other value fields").build();
     }
   }
 }

@@ -149,6 +149,44 @@ public class WriteRequestBuilder {
   }
 
   /**
+   * Collects {@link WriteRequest} and adds to a internal list.
+   * 
+   * @param writes {@link Map} {@link WriteRequest}
+   * @return {@link WriteRequestBuilder}
+   */
+  public WriteRequestBuilder appends(final Map<String, List<WriteRequest>> writes) {
+
+    for (Entry<String, List<WriteRequest>> e : writes.entrySet()) {
+      if (this.items.containsKey(e.getKey())) {
+        this.items.get(e.getKey()).addAll(e.getValue());
+      } else {
+        this.items.put(e.getKey(), e.getValue());
+      }
+    }
+
+    return this;
+  }
+
+  /**
+   * Append List {@link Map} {@link AttributeValue}.
+   * 
+   * @param tableName {@link String}
+   * @param values {@link Collection} {@link Map} {@link AttributeValue}
+   * @return {@link WriteRequestBuilder}
+   */
+  public WriteRequestBuilder appends(final String tableName,
+      final Collection<Map<String, AttributeValue>> values) {
+
+    AttributeValueToWriteRequest convert = new AttributeValueToWriteRequest(tableName);
+    for (Map<String, AttributeValue> value : values) {
+      Map<String, WriteRequest> writes = convert.apply(value);
+      append(writes);
+    }
+
+    return this;
+  }
+
+  /**
    * Append an Update request using attribute values.
    *
    * <p>
@@ -235,44 +273,6 @@ public class WriteRequestBuilder {
         .expressionAttributeValues(attrValues.isEmpty() ? null : attrValues).build();
 
     this.updates.computeIfAbsent(tableName, k -> new ArrayList<>()).add(u);
-
-    return this;
-  }
-
-  /**
-   * Collects {@link WriteRequest} and adds to a internal list.
-   * 
-   * @param writes {@link Map} {@link WriteRequest}
-   * @return {@link WriteRequestBuilder}
-   */
-  public WriteRequestBuilder appends(final Map<String, List<WriteRequest>> writes) {
-
-    for (Entry<String, List<WriteRequest>> e : writes.entrySet()) {
-      if (this.items.containsKey(e.getKey())) {
-        this.items.get(e.getKey()).addAll(e.getValue());
-      } else {
-        this.items.put(e.getKey(), e.getValue());
-      }
-    }
-
-    return this;
-  }
-
-  /**
-   * Append List {@link Map} {@link AttributeValue}.
-   * 
-   * @param tableName {@link String}
-   * @param values {@link Collection} {@link Map} {@link AttributeValue}
-   * @return {@link WriteRequestBuilder}
-   */
-  public WriteRequestBuilder appends(final String tableName,
-      final Collection<Map<String, AttributeValue>> values) {
-
-    AttributeValueToWriteRequest convert = new AttributeValueToWriteRequest(tableName);
-    for (Map<String, AttributeValue> value : values) {
-      Map<String, WriteRequest> writes = convert.apply(value);
-      append(writes);
-    }
 
     return this;
   }

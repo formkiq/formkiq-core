@@ -57,10 +57,10 @@ public interface AttributeService {
    * @param key {@link String}
    * @param dataType {@link AttributeDataType}
    * @param type {@link AttributeType}
-   * @param validationRegex {@link String}
+   * @param allowReservedAttributeKey boolean
    */
   void addAttribute(AttributeValidationAccess validationAccess, String siteId, String key,
-      AttributeDataType dataType, AttributeType type, String validationRegex);
+      AttributeDataType dataType, AttributeType type, boolean allowReservedAttributeKey);
 
   /**
    * Add Attribute.
@@ -70,10 +70,10 @@ public interface AttributeService {
    * @param key {@link String}
    * @param dataType {@link AttributeDataType}
    * @param type {@link AttributeType}
-   * @param allowReservedAttributeKey boolean
+   * @param validationRegex {@link String}
    */
   void addAttribute(AttributeValidationAccess validationAccess, String siteId, String key,
-      AttributeDataType dataType, AttributeType type, boolean allowReservedAttributeKey);
+      AttributeDataType dataType, AttributeType type, String validationRegex);
 
   /**
    * Add Watermark Attribute.

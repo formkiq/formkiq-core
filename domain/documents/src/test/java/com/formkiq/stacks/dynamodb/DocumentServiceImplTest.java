@@ -988,78 +988,6 @@ public class DocumentServiceImplTest implements DbKeys {
     }
   }
 
-  /** Test Finding Document's Tag && Remove one. */
-  @Test
-  public void testFindDocumentTags01() {
-    createTestData("finance", 1);
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String documentId = createTestData(siteId, 1).getFirst().documentId();
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
-
-      // when
-      Pagination<DocumentTag> results =
-          service.findDocumentTags(siteId, document, null, MAX_RESULTS);
-
-      // then
-      assertNull(results.getNextToken());
-      assertEquals(1, results.getResults().size());
-
-      assertEquals("status", results.getResults().getFirst().getKey());
-      assertEquals("active", results.getResults().getFirst().getValue());
-      assertNotNull(results.getResults().getFirst().getInsertedDate());
-      assertNotNull(results.getResults().getFirst().getUserId());
-      assertEquals(DocumentTagType.USERDEFINED, results.getResults().getFirst().getType());
-
-      // given
-      List<String> tags = List.of("status");
-
-      // when
-      service.removeTags(siteId, document, tags);
-
-      // then
-      results = service.findDocumentTags(siteId, document, null, MAX_RESULTS);
-
-      assertNull(results.getNextToken());
-      assertEquals(0, results.getResults().size());
-    }
-  }
-
-  /** Test Finding Document's particular Tag. */
-  @Test
-  public void testFindDocumentTags02() {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String tagKey = "status";
-      String tagValue = "active";
-      String documentId = createTestData(siteId, 1).getFirst().documentId();
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
-
-      // when
-      String result = service.findDocumentTag(siteId, document, tagKey).getValue();
-
-      // then
-      assertEquals(tagValue, result);
-    }
-  }
-
-  /** Test Finding Document's Tag does not exist. */
-  @Test
-  public void testFindDocumentTags03() {
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      String tagKey = "status";
-      String documentId = createTestData(siteId, 1).getFirst().documentId();
-      DocumentArtifact document = DocumentArtifact.of(documentId, null);
-
-      // when
-      DocumentTag result = service.findDocumentTag(siteId, document, tagKey + "!");
-
-      // then
-      assertNull(result);
-    }
-  }
-
   /** Find documents. */
   @Test
   public void testFindDocuments01() {
@@ -1423,6 +1351,78 @@ public class DocumentServiceImplTest implements DbKeys {
     }
   }
 
+  /** Test Finding Document's Tag && Remove one. */
+  @Test
+  public void testFindDocumentTags01() {
+    createTestData("finance", 1);
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String documentId = createTestData(siteId, 1).getFirst().documentId();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      // when
+      Pagination<DocumentTag> results =
+          service.findDocumentTags(siteId, document, null, MAX_RESULTS);
+
+      // then
+      assertNull(results.getNextToken());
+      assertEquals(1, results.getResults().size());
+
+      assertEquals("status", results.getResults().getFirst().getKey());
+      assertEquals("active", results.getResults().getFirst().getValue());
+      assertNotNull(results.getResults().getFirst().getInsertedDate());
+      assertNotNull(results.getResults().getFirst().getUserId());
+      assertEquals(DocumentTagType.USERDEFINED, results.getResults().getFirst().getType());
+
+      // given
+      List<String> tags = List.of("status");
+
+      // when
+      service.removeTags(siteId, document, tags);
+
+      // then
+      results = service.findDocumentTags(siteId, document, null, MAX_RESULTS);
+
+      assertNull(results.getNextToken());
+      assertEquals(0, results.getResults().size());
+    }
+  }
+
+  /** Test Finding Document's particular Tag. */
+  @Test
+  public void testFindDocumentTags02() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String tagKey = "status";
+      String tagValue = "active";
+      String documentId = createTestData(siteId, 1).getFirst().documentId();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      // when
+      String result = service.findDocumentTag(siteId, document, tagKey).getValue();
+
+      // then
+      assertEquals(tagValue, result);
+    }
+  }
+
+  /** Test Finding Document's Tag does not exist. */
+  @Test
+  public void testFindDocumentTags03() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      String tagKey = "status";
+      String documentId = createTestData(siteId, 1).getFirst().documentId();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+
+      // when
+      DocumentTag result = service.findDocumentTag(siteId, document, tagKey + "!");
+
+      // then
+      assertNull(result);
+    }
+  }
+
   /**
    * Test finding most recent documents date.
    *
@@ -1459,48 +1459,6 @@ public class DocumentServiceImplTest implements DbKeys {
 
     // then
     assertNull(date);
-  }
-
-  /**
-   * Test Find Preset Tag.
-   * 
-   * @deprecated method needs to be updated
-   */
-  @Test
-  @Deprecated
-  public void testFindPresetTags01() {
-    // given
-    String type = "tagging";
-    String presetId = ID.uuid();
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-
-      PresetTag tag = new PresetTag();
-
-      try {
-        tag.setInsertedDate(new Date());
-        tag.setKey(ID.uuid());
-        tag.setUserId("joe");
-
-        service.savePreset(siteId, presetId, type, null, List.of(tag));
-
-        // when
-        Pagination<PresetTag> results = service.findPresetTags(siteId, presetId, null, MAX_RESULTS);
-        Optional<PresetTag> ptag = service.findPresetTag(siteId, presetId, tag.getKey());
-
-        // then
-        assertEquals(1, results.getResults().size());
-        assertTrue(ptag.isPresent());
-        assertEquals(tag.getKey(), ptag.get().getKey());
-        assertEquals("joe", ptag.get().getUserId());
-        assertNotNull(ptag.get().getInsertedDate());
-
-      } finally {
-        service.deletePresetTag(siteId, presetId, tag.getKey());
-        assertEquals(0,
-            service.findPresetTags(siteId, presetId, null, MAX_RESULTS).getResults().size());
-      }
-    }
   }
 
   /**
@@ -1574,6 +1532,48 @@ public class DocumentServiceImplTest implements DbKeys {
 
         Pagination<Preset> p0 = service.findPresets(siteId, null, type, null, null, MAX_RESULTS);
         assertEquals(0, p0.getResults().size());
+      }
+    }
+  }
+
+  /**
+   * Test Find Preset Tag.
+   * 
+   * @deprecated method needs to be updated
+   */
+  @Test
+  @Deprecated
+  public void testFindPresetTags01() {
+    // given
+    String type = "tagging";
+    String presetId = ID.uuid();
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+
+      PresetTag tag = new PresetTag();
+
+      try {
+        tag.setInsertedDate(new Date());
+        tag.setKey(ID.uuid());
+        tag.setUserId("joe");
+
+        service.savePreset(siteId, presetId, type, null, List.of(tag));
+
+        // when
+        Pagination<PresetTag> results = service.findPresetTags(siteId, presetId, null, MAX_RESULTS);
+        Optional<PresetTag> ptag = service.findPresetTag(siteId, presetId, tag.getKey());
+
+        // then
+        assertEquals(1, results.getResults().size());
+        assertTrue(ptag.isPresent());
+        assertEquals(tag.getKey(), ptag.get().getKey());
+        assertEquals("joe", ptag.get().getUserId());
+        assertNotNull(ptag.get().getInsertedDate());
+
+      } finally {
+        service.deletePresetTag(siteId, presetId, tag.getKey());
+        assertEquals(0,
+            service.findPresetTags(siteId, presetId, null, MAX_RESULTS).getResults().size());
       }
     }
   }

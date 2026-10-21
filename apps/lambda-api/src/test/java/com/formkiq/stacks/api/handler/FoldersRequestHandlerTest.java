@@ -384,70 +384,6 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
-   * Test add folders with permissions with govern role.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  void testAddFolderWithPermissions() throws Exception {
-    // given
-    final String path = "path1/path2/path3";
-
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId + "_govern");
-
-      // when
-      AddFolderResponse response = addFolder(siteId, path);
-
-      // then
-      assertEquals("created folder", response.getMessage());
-
-      // when
-      var folders =
-          notNull(new GetFoldersRequestBuilder().submit(client, siteId).response().getDocuments());
-
-      // then
-      assertEquals(1, folders.size());
-      String indexKey = folders.getFirst().getIndexKey();
-      assertNotNull(indexKey);
-      assertEquals("path1", folders.getFirst().getPath());
-
-      // when - get permissions before set
-      var permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
-          .submitOk(this.client, siteId).response().getRoles());
-
-      // then
-      assertEquals(0, permissions.size());
-
-      // when
-      var setResponse = new SetFolderPermissionsRequestBuilder().path("path1").addReadRole("myrole")
-          .submit(client, siteId);
-
-      // then
-      assertEquals("Folder permissions set", setResponse.response().getMessage());
-
-      permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
-          .submitOk(this.client, siteId).response().getRoles());
-      assertEquals(1, permissions.size());
-      assertEquals("myrole", permissions.getFirst().getRoleName());
-      assertEquals("READ", notNull(permissions.getFirst().getPermissions()).stream()
-          .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
-
-      // when - set NO roles
-      setResponse = new SetFolderPermissionsRequestBuilder().path("path1").submit(client, siteId);
-
-      // then
-      assertNull(setResponse.exception());
-      assertEquals("Folder permissions set", setResponse.response().getMessage());
-
-      permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
-          .submitOk(this.client, siteId).response().getRoles());
-      assertEquals(0, permissions.size());
-    }
-  }
-
-  /**
    * Test add /delete folders.
    * 
    * @throws Exception Exception
@@ -524,6 +460,70 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
         // then
         assertEquals("{\"message\":\"missing 'path' parameters\"}", e.getResponseBody());
       }
+    }
+  }
+
+  /**
+   * Test add folders with permissions with govern role.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  void testAddFolderWithPermissions() throws Exception {
+    // given
+    final String path = "path1/path2/path3";
+
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId + "_govern");
+
+      // when
+      AddFolderResponse response = addFolder(siteId, path);
+
+      // then
+      assertEquals("created folder", response.getMessage());
+
+      // when
+      var folders =
+          notNull(new GetFoldersRequestBuilder().submit(client, siteId).response().getDocuments());
+
+      // then
+      assertEquals(1, folders.size());
+      String indexKey = folders.getFirst().getIndexKey();
+      assertNotNull(indexKey);
+      assertEquals("path1", folders.getFirst().getPath());
+
+      // when - get permissions before set
+      var permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
+          .submitOk(this.client, siteId).response().getRoles());
+
+      // then
+      assertEquals(0, permissions.size());
+
+      // when
+      var setResponse = new SetFolderPermissionsRequestBuilder().path("path1").addReadRole("myrole")
+          .submit(client, siteId);
+
+      // then
+      assertEquals("Folder permissions set", setResponse.response().getMessage());
+
+      permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
+          .submitOk(this.client, siteId).response().getRoles());
+      assertEquals(1, permissions.size());
+      assertEquals("myrole", permissions.getFirst().getRoleName());
+      assertEquals("READ", notNull(permissions.getFirst().getPermissions()).stream()
+          .map(FolderPermissionType::getValue).collect(Collectors.joining(",")));
+
+      // when - set NO roles
+      setResponse = new SetFolderPermissionsRequestBuilder().path("path1").submit(client, siteId);
+
+      // then
+      assertNull(setResponse.exception());
+      assertEquals("Folder permissions set", setResponse.response().getMessage());
+
+      permissions = notNull(new GetFolderPermissionsRequestBuilder().indexKey(indexKey)
+          .submitOk(this.client, siteId).response().getRoles());
+      assertEquals(0, permissions.size());
     }
   }
 
@@ -984,6 +984,71 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Test folder READ permission filters documents from listing.
+   *
+   */
+  @Test
+  void testListDocumentWithoutFolderReadPermission() throws ApiException {
+    // given
+    for (var siteId : Arrays.asList(DEFAULT_SITE_ID, ID.ulid())) {
+      var folder = "noReadFolder-" + ID.uuid();
+
+      new SetBearers().apply(client, new String[] {siteId, "Admins"});
+      createFolder(siteId, folder);
+
+      new SetFolderPermissionsRequestBuilder().path(folder).addRole("API_KEY", List.of())
+          .addRole("FormKiQ_User", List.of()).submitOk(client, siteId);
+
+      var document0 = new AddDocumentRequestBuilder().path(folder + "/test0.txt").content()
+          .getDocument(client, siteId);
+      var document1 = new AddDocumentRequestBuilder().path(folder + "/test1.txt").content()
+          .getDocument(client, siteId);
+
+      new SetBearers().apply(client, new String[] {siteId, "API_KEY", "FormKiQ_User"});
+
+      // when
+      var url = new GetDocumentUrlRequestBuilder(document0).submit(client, siteId);
+      var docContent = new GetDocumentContentRequestBuilder(document1).submit(client, siteId);
+      final var rootFolder =
+          new GetFoldersRequestBuilder().path("").getFolderDocuments(client, siteId);
+      final var folderDocuments =
+          new GetFoldersRequestBuilder().path(folder).getFolderDocuments(client, siteId);
+      final var searchDocuments = searchMeta(siteId, folder);
+
+      // then
+      assertTrue(url.isError());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), url.exception().getCode());
+      assertTrue(docContent.isError());
+      assertEquals(SC_UNAUTHORIZED.getStatusCode(), docContent.exception().getCode());
+      assertEquals(0, rootFolder.size(), "GET root folder");
+      assertEquals(0, folderDocuments.size(), "GET /folders");
+      assertEquals(0, searchDocuments.size(), "POST /search");
+
+      // given - subfolder with folder permissions
+      new SetBearers().apply(client, new String[] {siteId, "Admins"});
+      createFolder(siteId, "anotherfolder/" + folder);
+      new SetFolderPermissionsRequestBuilder().path("anotherfolder/" + folder)
+          .addRole("API_KEY", List.of()).addRole("FormKiQ_User", List.of())
+          .submitOk(client, siteId);
+
+      new AddDocumentRequestBuilder().path("anotherfolder/" + folder + "/test2.txt").content()
+          .getDocument(client, siteId);
+
+      new SetBearers().apply(client, new String[] {siteId, "API_KEY", "FormKiQ_User"});
+
+      // when
+      final var rootFolder2 =
+          new GetFoldersRequestBuilder().path("").getFolderDocuments(client, siteId);
+      var anotherFolder =
+          new GetFoldersRequestBuilder().path("anotherfolder/").getFolderDocuments(client, siteId);
+
+      // then
+      assertEquals(1, rootFolder2.size(), "GET root folder");
+      assertEquals(0, anotherFolder.size(), "GET anotherFolder/ folder");
+    }
+  }
+
+  /**
    * Test add folders listing with permissions.
    *
    * @throws Exception Exception
@@ -1047,71 +1112,6 @@ public class FoldersRequestHandlerTest extends AbstractApiClientRequestTest {
     assertEquals(2, withPermsSearch.size());
     assertEquals("path2", withPermsSearch.get(0).getPath());
     assertEquals("path3", withPermsSearch.get(1).getPath());
-  }
-
-  /**
-   * Test folder READ permission filters documents from listing.
-   *
-   */
-  @Test
-  void testListDocumentWithoutFolderReadPermission() throws ApiException {
-    // given
-    for (var siteId : Arrays.asList(DEFAULT_SITE_ID, ID.ulid())) {
-      var folder = "noReadFolder-" + ID.uuid();
-
-      new SetBearers().apply(client, new String[] {siteId, "Admins"});
-      createFolder(siteId, folder);
-
-      new SetFolderPermissionsRequestBuilder().path(folder).addRole("API_KEY", List.of())
-          .addRole("FormKiQ_User", List.of()).submitOk(client, siteId);
-
-      var document0 = new AddDocumentRequestBuilder().path(folder + "/test0.txt").content()
-          .getDocument(client, siteId);
-      var document1 = new AddDocumentRequestBuilder().path(folder + "/test1.txt").content()
-          .getDocument(client, siteId);
-
-      new SetBearers().apply(client, new String[] {siteId, "API_KEY", "FormKiQ_User"});
-
-      // when
-      var url = new GetDocumentUrlRequestBuilder(document0).submit(client, siteId);
-      var docContent = new GetDocumentContentRequestBuilder(document1).submit(client, siteId);
-      final var rootFolder =
-          new GetFoldersRequestBuilder().path("").getFolderDocuments(client, siteId);
-      final var folderDocuments =
-          new GetFoldersRequestBuilder().path(folder).getFolderDocuments(client, siteId);
-      final var searchDocuments = searchMeta(siteId, folder);
-
-      // then
-      assertTrue(url.isError());
-      assertEquals(SC_UNAUTHORIZED.getStatusCode(), url.exception().getCode());
-      assertTrue(docContent.isError());
-      assertEquals(SC_UNAUTHORIZED.getStatusCode(), docContent.exception().getCode());
-      assertEquals(0, rootFolder.size(), "GET root folder");
-      assertEquals(0, folderDocuments.size(), "GET /folders");
-      assertEquals(0, searchDocuments.size(), "POST /search");
-
-      // given - subfolder with folder permissions
-      new SetBearers().apply(client, new String[] {siteId, "Admins"});
-      createFolder(siteId, "anotherfolder/" + folder);
-      new SetFolderPermissionsRequestBuilder().path("anotherfolder/" + folder)
-          .addRole("API_KEY", List.of()).addRole("FormKiQ_User", List.of())
-          .submitOk(client, siteId);
-
-      new AddDocumentRequestBuilder().path("anotherfolder/" + folder + "/test2.txt").content()
-          .getDocument(client, siteId);
-
-      new SetBearers().apply(client, new String[] {siteId, "API_KEY", "FormKiQ_User"});
-
-      // when
-      final var rootFolder2 =
-          new GetFoldersRequestBuilder().path("").getFolderDocuments(client, siteId);
-      var anotherFolder =
-          new GetFoldersRequestBuilder().path("anotherfolder/").getFolderDocuments(client, siteId);
-
-      // then
-      assertEquals(1, rootFolder2.size(), "GET root folder");
-      assertEquals(0, anotherFolder.size(), "GET anotherFolder/ folder");
-    }
   }
 
   /**

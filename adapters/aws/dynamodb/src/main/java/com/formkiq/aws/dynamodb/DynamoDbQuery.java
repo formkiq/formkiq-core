@@ -44,6 +44,21 @@ public interface DynamoDbQuery {
   QueryRequest build(String tableName, String siteId, String nextToken, int limit);
 
   /**
+   * Queries using the service's default table, delegating to
+   * {@link #query(DynamoDbService, String, String, String, int)}. That method returns one page by
+   * default; implementations may override it to load all pages.
+   *
+   * @param db {@link DynamoDbService}
+   * @param siteId Site Identifier
+   * @param nextToken continuation token for the starting position, or null for the first page
+   * @param limit page size requested from DynamoDB
+   * @return the query's items and continuation key, if more results may be available
+   */
+  default QueryResult query(DynamoDbService db, String siteId, String nextToken, int limit) {
+    return query(db, db.getTableName(), siteId, nextToken, limit);
+  }
+
+  /**
    * Queries one page from the specified table. The default implementation makes one database
    * request and returns its continuation key so callers can request the next page. Implementations
    * that load all pages may override this method.
@@ -60,20 +75,5 @@ public interface DynamoDbQuery {
     QueryRequest queryRequest = build(tableName, siteId, nextToken, limit);
     QueryResponse response = db.query(queryRequest);
     return new QueryResult(response.items(), response.lastEvaluatedKey());
-  }
-
-  /**
-   * Queries using the service's default table, delegating to
-   * {@link #query(DynamoDbService, String, String, String, int)}. That method returns one page by
-   * default; implementations may override it to load all pages.
-   *
-   * @param db {@link DynamoDbService}
-   * @param siteId Site Identifier
-   * @param nextToken continuation token for the starting position, or null for the first page
-   * @param limit page size requested from DynamoDB
-   * @return the query's items and continuation key, if more results may be available
-   */
-  default QueryResult query(DynamoDbService db, String siteId, String nextToken, int limit) {
-    return query(db, db.getTableName(), siteId, nextToken, limit);
   }
 }

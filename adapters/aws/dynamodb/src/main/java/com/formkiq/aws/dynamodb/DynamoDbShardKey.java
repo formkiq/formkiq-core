@@ -205,17 +205,6 @@ public record DynamoDbShardKey(DynamoDbKey key, String pkShard, String pkGsi1Sha
     }
 
     /**
-     * Set gsi1Pk Shard.
-     *
-     * @param shard {@link String}
-     * @return this Builder instance
-     */
-    public Builder pkGsi1Shard(final String shard) {
-      gsi1PkShard = shard;
-      return this;
-    }
-
-    /**
      * Generates gsi1Pk Shard.
      *
      * @param shardCount int
@@ -227,13 +216,13 @@ public record DynamoDbShardKey(DynamoDbKey key, String pkShard, String pkGsi1Sha
     }
 
     /**
-     * Set gsi2Pk Shard.
+     * Set gsi1Pk Shard.
      *
      * @param shard {@link String}
      * @return this Builder instance
      */
-    public Builder pkGsi2Shard(final String shard) {
-      gsi2PkShard = shard;
+    public Builder pkGsi1Shard(final String shard) {
+      gsi1PkShard = shard;
       return this;
     }
 
@@ -249,13 +238,13 @@ public record DynamoDbShardKey(DynamoDbKey key, String pkShard, String pkGsi1Sha
     }
 
     /**
-     * Set PK Shard.
+     * Set gsi2Pk Shard.
      *
      * @param shard {@link String}
      * @return this Builder instance
      */
-    public Builder pkShard(final String shard) {
-      pkShard = shard;
+    public Builder pkGsi2Shard(final String shard) {
+      gsi2PkShard = shard;
       return this;
     }
 
@@ -267,6 +256,17 @@ public record DynamoDbShardKey(DynamoDbKey key, String pkShard, String pkGsi1Sha
      */
     public Builder pkShard(final int shardCount) {
       pkShard = getShardKey(shardCount);
+      return this;
+    }
+
+    /**
+     * Set PK Shard.
+     *
+     * @param shard {@link String}
+     * @return this Builder instance
+     */
+    public Builder pkShard(final String shard) {
+      pkShard = shard;
       return this;
     }
   }

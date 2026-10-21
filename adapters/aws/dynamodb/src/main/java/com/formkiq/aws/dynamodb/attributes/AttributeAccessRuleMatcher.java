@@ -34,6 +34,39 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 /** Matches conditional attribute access rules against document attributes. */
 public class AttributeAccessRuleMatcher {
 
+  private boolean compare(final Object left, final Object right, final IntPredicate predicate) {
+    Double leftNumber = toNumber(left);
+    Double rightNumber = toNumber(right);
+    return leftNumber != null && rightNumber != null
+        && predicate.test(leftNumber.compareTo(rightNumber));
+  }
+
+  private boolean containedIn(final Object value, final Object candidates) {
+    return candidates instanceof Collection<?> collection
+        && collection.stream().anyMatch(candidate -> equal(value, candidate));
+  }
+
+  private boolean equal(final Object left, final Object right) {
+    if (left instanceof Number || right instanceof Number) {
+      Double leftNumber = toNumber(left);
+      Double rightNumber = toNumber(right);
+      return leftNumber != null && rightNumber != null && leftNumber.compareTo(rightNumber) == 0;
+    }
+    return Objects.equals(left, right);
+  }
+
+  private Object getValue(final DocumentAttributeRecord attribute) {
+    DocumentAttributeValueType type = attribute.getValueType();
+    if (DocumentAttributeValueType.BOOLEAN.equals(type)) {
+      return attribute.getBooleanValue();
+    } else if (DocumentAttributeValueType.NUMBER.equals(type)) {
+      return attribute.getNumberValue();
+    } else if (DocumentAttributeValueType.DATE.equals(type)) {
+      return attribute.getDateValueAsString();
+    }
+    return attribute.getStringValue();
+  }
+
   /**
    * Tests whether a rule matches the effective attributes.
    *
@@ -72,39 +105,6 @@ public class AttributeAccessRuleMatcher {
       case NOT_IN -> !values.isEmpty()
           && values.stream().noneMatch(value -> containedIn(value, criterion.value()));
     };
-  }
-
-  private boolean containedIn(final Object value, final Object candidates) {
-    return candidates instanceof Collection<?> collection
-        && collection.stream().anyMatch(candidate -> equal(value, candidate));
-  }
-
-  private boolean equal(final Object left, final Object right) {
-    if (left instanceof Number || right instanceof Number) {
-      Double leftNumber = toNumber(left);
-      Double rightNumber = toNumber(right);
-      return leftNumber != null && rightNumber != null && leftNumber.compareTo(rightNumber) == 0;
-    }
-    return Objects.equals(left, right);
-  }
-
-  private boolean compare(final Object left, final Object right, final IntPredicate predicate) {
-    Double leftNumber = toNumber(left);
-    Double rightNumber = toNumber(right);
-    return leftNumber != null && rightNumber != null
-        && predicate.test(leftNumber.compareTo(rightNumber));
-  }
-
-  private Object getValue(final DocumentAttributeRecord attribute) {
-    DocumentAttributeValueType type = attribute.getValueType();
-    if (DocumentAttributeValueType.BOOLEAN.equals(type)) {
-      return attribute.getBooleanValue();
-    } else if (DocumentAttributeValueType.NUMBER.equals(type)) {
-      return attribute.getNumberValue();
-    } else if (DocumentAttributeValueType.DATE.equals(type)) {
-      return attribute.getDateValueAsString();
-    }
-    return attribute.getStringValue();
   }
 
   private Collection<DocumentAttributeRecord> notNull(

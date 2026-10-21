@@ -69,16 +69,6 @@ public class LambdaContextRecorder implements Context {
   }
 
   @Override
-  public String getLogGroupName() {
-    throw new UnsupportedOperationException("Method is not implemented.");
-  }
-
-  @Override
-  public String getLogStreamName() {
-    throw new UnsupportedOperationException("Method is not implemented.");
-  }
-
-  @Override
   public LambdaLogger getLogger() {
     return this.loggerRecorder;
   }
@@ -90,6 +80,16 @@ public class LambdaContextRecorder implements Context {
    */
   public LambdaLoggerRecorder getLoggerRecorder() {
     return this.loggerRecorder;
+  }
+
+  @Override
+  public String getLogGroupName() {
+    throw new UnsupportedOperationException("Method is not implemented.");
+  }
+
+  @Override
+  public String getLogStreamName() {
+    throw new UnsupportedOperationException("Method is not implemented.");
   }
 
   @Override

@@ -189,15 +189,15 @@ public record UserActivity(
       return this;
     }
 
-    public Builder status(final UserActivityStatus userActivityStatus) {
-      this.status = userActivityStatus;
-      return this;
-    }
-
     public Builder status(final int userActivityStatusCode) {
       final int error = 500;
       status(userActivityStatusCode != error ? UserActivityStatus.COMPLETE
           : UserActivityStatus.FAILED);
+      return this;
+    }
+
+    public Builder status(final UserActivityStatus userActivityStatus) {
+      this.status = userActivityStatus;
       return this;
     }
 

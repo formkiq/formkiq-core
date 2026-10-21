@@ -65,6 +65,12 @@ public class AttributeValueToMap
     this.config = attributeValueToMapConfig;
   }
 
+  private void addValues(final Map<String, Object> result) {
+    if (this.config != null) {
+      result.putAll(notNull(this.config.getAddValues()));
+    }
+  }
+
   @Override
   public Map<String, Object> apply(final Map<String, AttributeValue> map) {
 
@@ -88,39 +94,6 @@ public class AttributeValueToMap
     return result;
   }
 
-  private void addValues(final Map<String, Object> result) {
-    if (this.config != null) {
-      result.putAll(notNull(this.config.getAddValues()));
-    }
-  }
-
-  private void deleteKeys(final Map<String, Object> result) {
-    if (this.config != null) {
-      notNull(this.config.getDeleteKeys()).forEach(result::remove);
-    }
-  }
-
-  private void renameKeys(final Map<String, Object> result) {
-    if (this.config != null) {
-      this.config.getRenameKeys().forEach((k, v) -> result.put(v, result.get(k)));
-      this.config.getRenameKeys().forEach((k, v) -> result.remove(k));
-    }
-  }
-
-  private void removeKeys(final Map<String, Object> result) {
-    if (config != null && config.isRemoveDbKeys()) {
-      result.remove(PK);
-      result.remove(PK + SHARD);
-      result.remove(SK);
-      result.remove(GSI1_PK);
-      result.remove(GSI1_PK + SHARD);
-      result.remove(GSI1_SK);
-      result.remove(GSI2_PK);
-      result.remove(GSI2_PK + SHARD);
-      result.remove(GSI2_SK);
-    }
-  }
-
   private Object convert(final AttributeValue val) {
     Object obj;
 
@@ -140,6 +113,12 @@ public class AttributeValueToMap
     return obj;
   }
 
+  private void deleteKeys(final Map<String, Object> result) {
+    if (this.config != null) {
+      notNull(this.config.getDeleteKeys()).forEach(result::remove);
+    }
+  }
+
   private String getKey(final String key) {
 
     String k = key;
@@ -151,5 +130,26 @@ public class AttributeValueToMap
     }
 
     return k;
+  }
+
+  private void removeKeys(final Map<String, Object> result) {
+    if (config != null && config.isRemoveDbKeys()) {
+      result.remove(PK);
+      result.remove(PK + SHARD);
+      result.remove(SK);
+      result.remove(GSI1_PK);
+      result.remove(GSI1_PK + SHARD);
+      result.remove(GSI1_SK);
+      result.remove(GSI2_PK);
+      result.remove(GSI2_PK + SHARD);
+      result.remove(GSI2_SK);
+    }
+  }
+
+  private void renameKeys(final Map<String, Object> result) {
+    if (this.config != null) {
+      this.config.getRenameKeys().forEach((k, v) -> result.put(v, result.get(k)));
+      this.config.getRenameKeys().forEach((k, v) -> result.remove(k));
+    }
   }
 }

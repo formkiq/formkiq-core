@@ -49,30 +49,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class CognitoRequestTest extends AbstractApiClientRequestTest {
 
   /**
-   * POST /groups/{groupName}/users only allowed by admin.
-   *
-   */
-  @Test
-  public void testAddGroupUsers01() {
-    // given
-    setBearerToken("security");
-    AddUserRequest req = new AddUserRequest().user(new AddUser().username("test"));
-
-    // when
-    try {
-      new AddUserToGroupRequestBuilder().withGroupName("test").withAddUserRequest(req)
-          .submitOk(this.client, null);
-      fail();
-    } catch (ApiException e) {
-      // then
-      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-      assertEquals(
-          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
-          e.getResponseBody());
-    }
-  }
-
-  /**
    * POST /groups only allowed by admin.
    *
    */
@@ -86,6 +62,30 @@ public class CognitoRequestTest extends AbstractApiClientRequestTest {
     // when
     try {
       new AddGroupsRequestBuilder(req.getGroup().getName()).submitOk(this.client, null);
+      fail();
+    } catch (ApiException e) {
+      // then
+      assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
+      assertEquals(
+          "{\"message\":\"fkq access denied " + "(groups: security (DELETE,READ,WRITE))\"}",
+          e.getResponseBody());
+    }
+  }
+
+  /**
+   * POST /groups/{groupName}/users only allowed by admin.
+   *
+   */
+  @Test
+  public void testAddGroupUsers01() {
+    // given
+    setBearerToken("security");
+    AddUserRequest req = new AddUserRequest().user(new AddUser().username("test"));
+
+    // when
+    try {
+      new AddUserToGroupRequestBuilder().withGroupName("test").withAddUserRequest(req)
+          .submitOk(this.client, null);
       fail();
     } catch (ApiException e) {
       // then

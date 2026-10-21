@@ -170,6 +170,25 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
   }
 
+  private static Collection<List<Map<String, AttributeValue>>> fetchActivityKeys(
+      final AwsEventDynamodbNewImage newImage) {
+
+    DynamodbAttributeValue activityKeys = newImage.activityKeys();
+
+    List<DynamoDbKey> keys = activityKeys.l().stream()
+        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
+        .toList();
+
+    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
+    Collection<Map<String, AttributeValue>> activities =
+        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
+
+    Map<String, List<Map<String, AttributeValue>>> map = activities.stream()
+        .collect(Collectors.groupingBy(e -> DynamoDbTypes.toString(e.get("documentId"))));
+
+    return map.values();
+  }
+
   /**
    * Initialize.
    * 
@@ -263,8 +282,55 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     return serviceCache.getExtension(ActionsService.class);
   }
 
+  private DynamoDbService getDb() {
+    return serviceCache.getExtension(DynamoDbService.class);
+  }
+
   private ActionsNotificationService getNotificationService() {
     return serviceCache.getExtension(ActionsNotificationService.class);
+  }
+
+  private void handleException(final Logger logger, final String siteId,
+      final DocumentArtifact document, final Action action, final Throwable e) {
+    ActionBuilder builder = new ActionBuilder().status(ActionStatus.FAILED).userId(action.userId())
+        .document(document).index(action.index()).type(action.type());
+
+    boolean isRetry = e instanceof HttpRetryException;
+    if (isRetry) {
+
+      Integer retryCount = action.retryCount();
+      builder.status(WAITING_FOR_RETRY);
+
+      if (retryCount == null || retryCount < 0) {
+        builder.retryCount(1);
+        builder.maxRetries(MAX_RETRY_COUNT);
+      } else if (retryCount < MAX_RETRY_COUNT) {
+        builder.retryCount(action.retryCount() + 1);
+      } else {
+        builder.status(ActionStatus.MAX_RETRIES_REACHED);
+        builder.completedDate(new Date());
+      }
+
+    } else {
+      logger.error(e);
+      builder.completedDate(new Date());
+    }
+
+    if (!isEmpty(e.getMessage())) {
+      builder.message(e.getMessage());
+    } else {
+      String stacktrace = Strings.toString(e);
+      builder.message(stacktrace);
+    }
+
+    WriteRequestBuilder wrb = new WriteRequestBuilder();
+    updateDocumentWorkflow(wrb, siteId, document, action, builder.status());
+
+    Action updateAction = builder.build(siteId);
+    logger.debug(String.format("Updating Action Status to %s", updateAction.status()));
+
+    wrb.appendUpdate(getDb().getTableName(), updateAction.getAttributes());
+    wrb.transactWriteItems(getDb().getClient());
   }
 
   @Override
@@ -311,30 +377,6 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       logger.debug(s);
     }
-  }
-
-  /**
-   * Process Action.
-   * 
-   * @param logger {@link Logger}
-   * @param siteId {@link String}
-   * @param document {@link DocumentArtifact}
-   * @param actions {@link List} {@link Action}
-   * @param action {@link Action}
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
-   */
-  private void processAction(final Logger logger, final String siteId,
-      final DocumentArtifact document, final List<Action> actions, final Action action)
-      throws IOException, InterruptedException, ValidationException {
-
-    logAction(logger, "action start", siteId, document, action);
-
-    ProcessActionStatus actionStatus = performAction(logger, siteId, document, actions, action);
-
-    logAction(logger, "action complete", siteId, document, action);
-
-    updateComplete(logger, siteId, document, action, actionStatus);
   }
 
   private ProcessActionStatus performAction(final Logger logger, final String siteId,
@@ -416,6 +458,95 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
   }
 
   /**
+   * Process Action.
+   * 
+   * @param logger {@link Logger}
+   * @param siteId {@link String}
+   * @param document {@link DocumentArtifact}
+   * @param actions {@link List} {@link Action}
+   * @param action {@link Action}
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
+   */
+  private void processAction(final Logger logger, final String siteId,
+      final DocumentArtifact document, final List<Action> actions, final Action action)
+      throws IOException, InterruptedException, ValidationException {
+
+    logAction(logger, "action start", siteId, document, action);
+
+    ProcessActionStatus actionStatus = performAction(logger, siteId, document, actions, action);
+
+    logAction(logger, "action complete", siteId, document, action);
+
+    updateComplete(logger, siteId, document, action, actionStatus);
+  }
+
+  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map)
+      throws IOException {
+    DocumentEvent event = this.gson.fromJson(map.message(), DocumentEvent.class);
+
+    if (TEST_NOTIFICATION.equals(event.type())) {
+      NotificationTestEvent notificationEvent =
+          this.gson.fromJson(map.message(), NotificationTestEvent.class);
+      processNotificationTest(logger, notificationEvent);
+      return;
+    }
+
+    String s = String.format(
+        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","
+            + "\"type\": \"%s\",\"userId\": %s,"
+            + "\"contentType\": \"%s\",\"path\":\"%s\",\"content\":%s}",
+        event.siteId(), event.documentId(), event.s3key(), event.s3bucket(), event.type(),
+        event.userId(), event.contentType(), event.path(), event.content());
+
+    logger.info(s);
+    processEvent(logger, event);
+  }
+
+  private void processDynamodbStream(final Logger logger, final AwsEventRecord map) {
+
+    String eventName = map.eventName();
+    AwsEventDynamodbEntity dynamodb = map.dynamodb();
+    AwsEventDynamodbNewImage newImage = dynamodb.newImage();
+
+    if (newImage != null) {
+      String siteId = newImage.siteId().s();
+      String documentId = newImage.documentId().s();
+      String artifactId = newImage.artifactId() != null ? newImage.artifactId().s() : null;
+      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
+      Collection<List<Map<String, AttributeValue>>> activitiesByDoc = fetchActivityKeys(newImage);
+
+      DetailTypeResolver resolver = new DetailTypeResolver();
+
+      for (List<Map<String, AttributeValue>> activity : activitiesByDoc) {
+
+        String detailType = resolver.apply(activity);
+        if (!detailType.equals(DEFAULT_DETAIL)) {
+
+          String pk = dynamodb.keys().pk().s();
+          String sk = dynamodb.keys().sk().s();
+          String s = String.format("{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
+              + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"artifactId\":\"%s\",\"type\":\"%s\"}",
+              eventName, pk, sk, siteId, documentId, artifactId, detailType);
+          logger.info(s);
+
+          String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, document,
+              activity.stream().map(new AttributeValueToMap()).toList());
+
+          String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
+          EventBridgeMessage msg =
+              new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
+          EventBridgeService eventBridgeService =
+              serviceCache.getExtension(EventBridgeService.class);
+
+          String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
+          eventBridgeService.putEvents(documentEventsBus, msg);
+        }
+      }
+    }
+  }
+
+  /**
    * Process {@link DocumentEvent}.
    * 
    * @param logger {@link Logger}
@@ -475,6 +606,13 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
   }
 
+  private void processNotificationTest(final Logger logger, final NotificationTestEvent event)
+      throws IOException {
+    logger.info("Processing notification test for site " + event.siteId());
+    new NotificationAction(event.siteId(), serviceCache).sendTestNotification(event.siteId(),
+        event.to());
+  }
+
   private void processPendingAction(final Logger logger, final String siteId,
       final DocumentArtifact document, final List<Action> actions, final Action action) {
 
@@ -490,49 +628,6 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
       handleException(logger, siteId, document, action, e);
     }
-  }
-
-  private void handleException(final Logger logger, final String siteId,
-      final DocumentArtifact document, final Action action, final Throwable e) {
-    ActionBuilder builder = new ActionBuilder().status(ActionStatus.FAILED).userId(action.userId())
-        .document(document).index(action.index()).type(action.type());
-
-    boolean isRetry = e instanceof HttpRetryException;
-    if (isRetry) {
-
-      Integer retryCount = action.retryCount();
-      builder.status(WAITING_FOR_RETRY);
-
-      if (retryCount == null || retryCount < 0) {
-        builder.retryCount(1);
-        builder.maxRetries(MAX_RETRY_COUNT);
-      } else if (retryCount < MAX_RETRY_COUNT) {
-        builder.retryCount(action.retryCount() + 1);
-      } else {
-        builder.status(ActionStatus.MAX_RETRIES_REACHED);
-        builder.completedDate(new Date());
-      }
-
-    } else {
-      logger.error(e);
-      builder.completedDate(new Date());
-    }
-
-    if (!isEmpty(e.getMessage())) {
-      builder.message(e.getMessage());
-    } else {
-      String stacktrace = Strings.toString(e);
-      builder.message(stacktrace);
-    }
-
-    WriteRequestBuilder wrb = new WriteRequestBuilder();
-    updateDocumentWorkflow(wrb, siteId, document, action, builder.status());
-
-    Action updateAction = builder.build(siteId);
-    logger.debug(String.format("Updating Action Status to %s", updateAction.status()));
-
-    wrb.appendUpdate(getDb().getTableName(), updateAction.getAttributes());
-    wrb.transactWriteItems(getDb().getClient());
   }
 
   /**
@@ -560,97 +655,6 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
         processDynamodbStream(logger, e);
       }
     }
-  }
-
-  private void processDynamodbStream(final Logger logger, final AwsEventRecord map) {
-
-    String eventName = map.eventName();
-    AwsEventDynamodbEntity dynamodb = map.dynamodb();
-    AwsEventDynamodbNewImage newImage = dynamodb.newImage();
-
-    if (newImage != null) {
-      String siteId = newImage.siteId().s();
-      String documentId = newImage.documentId().s();
-      String artifactId = newImage.artifactId() != null ? newImage.artifactId().s() : null;
-      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
-      Collection<List<Map<String, AttributeValue>>> activitiesByDoc = fetchActivityKeys(newImage);
-
-      DetailTypeResolver resolver = new DetailTypeResolver();
-
-      for (List<Map<String, AttributeValue>> activity : activitiesByDoc) {
-
-        String detailType = resolver.apply(activity);
-        if (!detailType.equals(DEFAULT_DETAIL)) {
-
-          String pk = dynamodb.keys().pk().s();
-          String sk = dynamodb.keys().sk().s();
-          String s = String.format("{\"eventName\": \"%s\",\"PK\": \"%s\",\"SK\":\"%s\","
-              + "\"siteId\":\"%s\",\"documentId\":\"%s\",\"artifactId\":\"%s\",\"type\":\"%s\"}",
-              eventName, pk, sk, siteId, documentId, artifactId, detailType);
-          logger.info(s);
-
-          String detail = new DocumentExternalSystemExport(serviceCache).apply(siteId, document,
-              activity.stream().map(new AttributeValueToMap()).toList());
-
-          String appEnvironment = serviceCache.environment("APP_ENVIRONMENT");
-          EventBridgeMessage msg =
-              new EventBridgeMessageBuilder().build(appEnvironment, detailType, detail);
-          EventBridgeService eventBridgeService =
-              serviceCache.getExtension(EventBridgeService.class);
-
-          String documentEventsBus = serviceCache.environment("DOCUMENT_EVENTS_BUS");
-          eventBridgeService.putEvents(documentEventsBus, msg);
-        }
-      }
-    }
-  }
-
-  private static Collection<List<Map<String, AttributeValue>>> fetchActivityKeys(
-      final AwsEventDynamodbNewImage newImage) {
-
-    DynamodbAttributeValue activityKeys = newImage.activityKeys();
-
-    List<DynamoDbKey> keys = activityKeys.l().stream()
-        .map(a -> new DynamoDbKey(a.m().get(PK).s(), a.m().get(SK).s(), null, null, null, null))
-        .toList();
-
-    DynamoDbService db = serviceCache.getExtension(DynamoDbService.class);
-    Collection<Map<String, AttributeValue>> activities =
-        db.get(serviceCache.environment("DOCUMENTS_AUDIT_TABLE"), keys);
-
-    Map<String, List<Map<String, AttributeValue>>> map = activities.stream()
-        .collect(Collectors.groupingBy(e -> DynamoDbTypes.toString(e.get("documentId"))));
-
-    return map.values();
-  }
-
-  private void processDocumentEvent(final Logger logger, final AwsEventSnsNotification map)
-      throws IOException {
-    DocumentEvent event = this.gson.fromJson(map.message(), DocumentEvent.class);
-
-    if (TEST_NOTIFICATION.equals(event.type())) {
-      NotificationTestEvent notificationEvent =
-          this.gson.fromJson(map.message(), NotificationTestEvent.class);
-      processNotificationTest(logger, notificationEvent);
-      return;
-    }
-
-    String s = String.format(
-        "{\"siteId\": \"%s\",\"documentId\": \"%s\",\"s3key\": \"%s\",\"s3bucket\": \"%s\","
-            + "\"type\": \"%s\",\"userId\": %s,"
-            + "\"contentType\": \"%s\",\"path\":\"%s\",\"content\":%s}",
-        event.siteId(), event.documentId(), event.s3key(), event.s3bucket(), event.type(),
-        event.userId(), event.contentType(), event.path(), event.content());
-
-    logger.info(s);
-    processEvent(logger, event);
-  }
-
-  private void processNotificationTest(final Logger logger, final NotificationTestEvent event)
-      throws IOException {
-    logger.info("Processing notification test for site " + event.siteId());
-    new NotificationAction(event.siteId(), serviceCache).sendTestNotification(event.siteId(),
-        event.to());
   }
 
   /**
@@ -693,6 +697,30 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
     } catch (URISyntaxException e) {
       throw new IOException(e);
+    }
+  }
+
+  private void sendWorkflowDecisionIfNeeded(final String siteId, final DocumentArtifact document,
+      final Action action, final ProcessActionStatus processStatus) throws IOException {
+
+    if (ActionStatus.COMPLETE.equals(processStatus.actionStatus())
+        && !isEmpty(action.workflowId())) {
+      HttpService http = serviceCache.getExtension(HttpService.class);
+      String url = serviceCache.environment("documentsIamUrl");
+      Map<String, String> queryParameters = new HashMap<>();
+      if (siteId != null) {
+        queryParameters.put("siteId", siteId);
+      }
+      if (document.artifactId() != null) {
+        queryParameters.put("artifactId", document.artifactId());
+      }
+      HttpResponse<String> response =
+          http.post(url + "/documents/" + document.documentId() + "/workflow/" + action.workflowId()
+              + "/decisions", Optional.empty(), Optional.of(queryParameters), "{}");
+      if (!HttpResponseStatus.is2XX(response) && !HttpResponseStatus.is400(response)) {
+        throw new IOException(
+            "Error sending workflow decision: " + response.statusCode() + ":" + response.body());
+      }
     }
   }
 
@@ -749,36 +777,8 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
     }
   }
 
-  private void sendWorkflowDecisionIfNeeded(final String siteId, final DocumentArtifact document,
-      final Action action, final ProcessActionStatus processStatus) throws IOException {
-
-    if (ActionStatus.COMPLETE.equals(processStatus.actionStatus())
-        && !isEmpty(action.workflowId())) {
-      HttpService http = serviceCache.getExtension(HttpService.class);
-      String url = serviceCache.environment("documentsIamUrl");
-      Map<String, String> queryParameters = new HashMap<>();
-      if (siteId != null) {
-        queryParameters.put("siteId", siteId);
-      }
-      if (document.artifactId() != null) {
-        queryParameters.put("artifactId", document.artifactId());
-      }
-      HttpResponse<String> response =
-          http.post(url + "/documents/" + document.documentId() + "/workflow/" + action.workflowId()
-              + "/decisions", Optional.empty(), Optional.of(queryParameters), "{}");
-      if (!HttpResponseStatus.is2XX(response) && !HttpResponseStatus.is400(response)) {
-        throw new IOException(
-            "Error sending workflow decision: " + response.statusCode() + ":" + response.body());
-      }
-    }
-  }
-
   private void updateDocumentWorkflow(final WriteRequestBuilder wrb, final String siteId,
       final DocumentArtifact document, final Action action, final ActionStatus newStatus) {
     new DocumentWorkflowStatusUpdate(getDb(), siteId, document, action, newStatus).appendTo(wrb);
-  }
-
-  private DynamoDbService getDb() {
-    return serviceCache.getExtension(DynamoDbService.class);
   }
 }

@@ -203,6 +203,16 @@ public interface DocumentService {
   void deletePreset(String siteId, String id);
 
   /**
+   * Delete Presets by type.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param type {@link String}
+   * @deprecated method needs to be updated
+   */
+  @Deprecated
+  void deletePresets(String siteId, String type);
+
+  /**
    * Delete Preset Tag.
    * 
    * @param siteId {@link String}
@@ -222,16 +232,6 @@ public interface DocumentService {
    */
   @Deprecated
   void deletePresetTags(String siteId, String id);
-
-  /**
-   * Delete Presets by type.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param type {@link String}
-   * @deprecated method needs to be updated
-   */
-  @Deprecated
-  void deletePresets(String siteId, String type);
 
   /**
    * Delete Publish Document.
@@ -320,29 +320,6 @@ public interface DocumentService {
       DocumentArtifact document, DocumentAttributeValueType valueType, String nextToken, int limit);
 
   /**
-   * Find Document Tag Value.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param document {@link DocumentArtifact}
-   * @param tagKey {@link String}
-   * 
-   * @return {@link DocumentTag}
-   */
-  DocumentTag findDocumentTag(String siteId, DocumentArtifact document, String tagKey);
-
-  /**
-   * Find Tags for {@link DocumentTag}.
-   * 
-   * @param siteId Optional Grouping siteId
-   * @param document {@link DocumentArtifact}
-   * @param nextToken {@link String}
-   * @param maxresults int
-   * @return {@link Pagination} {@link DocumentTag}
-   */
-  Pagination<DocumentTag> findDocumentTags(String siteId, DocumentArtifact document,
-      String nextToken, int maxresults);
-
-  /**
    * Find {@link DocumentRecord}.
    * 
    * @param siteId Optional Grouping siteId
@@ -375,6 +352,29 @@ public interface DocumentService {
       Collection<String> documentIds, List<String> tags);
 
   /**
+   * Find Document Tag Value.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param document {@link DocumentArtifact}
+   * @param tagKey {@link String}
+   * 
+   * @return {@link DocumentTag}
+   */
+  DocumentTag findDocumentTag(String siteId, DocumentArtifact document, String tagKey);
+
+  /**
+   * Find Tags for {@link DocumentTag}.
+   * 
+   * @param siteId Optional Grouping siteId
+   * @param document {@link DocumentArtifact}
+   * @param nextToken {@link String}
+   * @param maxresults int
+   * @return {@link Pagination} {@link DocumentTag}
+   */
+  Pagination<DocumentTag> findDocumentTags(String siteId, DocumentArtifact document,
+      String nextToken, int maxresults);
+
+  /**
    * Find most recent inserted document {@link ZonedDateTime}.
    * 
    * @return {@link ZonedDateTime}
@@ -391,6 +391,22 @@ public interface DocumentService {
    */
   @Deprecated
   Optional<Preset> findPreset(String siteId, String id);
+
+  /**
+   * Get Presets.
+   * 
+   * @param siteId {@link String}
+   * @param id {@link String}
+   * @param type {@link String}
+   * @param name {@link String}
+   * @param nextToken {@link String}
+   * @param maxresults int
+   * @return {@link Pagination} {@link Preset}
+   * @deprecated method needs to be updated
+   */
+  @Deprecated
+  Pagination<Preset> findPresets(String siteId, String id, String type, String name,
+      String nextToken, int maxresults);
 
   /**
    * Find Preset Tag.
@@ -416,22 +432,6 @@ public interface DocumentService {
    */
   @Deprecated
   Pagination<PresetTag> findPresetTags(String siteId, String id, String nextToken, int maxresults);
-
-  /**
-   * Get Presets.
-   * 
-   * @param siteId {@link String}
-   * @param id {@link String}
-   * @param type {@link String}
-   * @param name {@link String}
-   * @param nextToken {@link String}
-   * @param maxresults int
-   * @return {@link Pagination} {@link Preset}
-   * @deprecated method needs to be updated
-   */
-  @Deprecated
-  Pagination<Preset> findPresets(String siteId, String id, String type, String name,
-      String nextToken, int maxresults);
 
   /**
    * Get Publish Document.

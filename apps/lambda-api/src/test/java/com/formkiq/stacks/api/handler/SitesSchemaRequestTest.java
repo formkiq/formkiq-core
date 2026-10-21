@@ -1769,6 +1769,107 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. invalid attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes01() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      try {
+        new DeleteDocumentAttributeRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null), "strings")
+            .submitOk(this.client, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"message\":\"attribute 'strings' not found on document '" + documentId + "'\"}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. valid attributeKey.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes02() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      DeleteResponse response = new DeleteDocumentAttributeRequestBuilder(
+          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null), "strings")
+          .submitOk(this.client, siteId).response();
+
+      // then
+      assertEquals("attribute 'strings' removed from document '" + documentId + "'",
+          response.getMessage());
+      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
+      assertEquals(0, attributes.size());
+    }
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}. schema required attribute.
+   *
+   * @throws ApiException an error has occurred
+   */
+  @Test
+  public void testDeleteDocumentAttributes03() throws ApiException {
+    // given
+    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
+
+      setBearerToken(siteId);
+
+      addAttribute(siteId, "strings", null);
+
+      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
+          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
+      new SetSitesSchemaRequestBuilder().withSetSitesSchemaRequest(req).submitOk(this.client,
+          siteId);
+
+      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
+          .addAttributesItem(new AddDocumentAttribute(
+              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
+      String documentId = addDocumentUpload(siteId, ureq0);
+
+      // when
+      try {
+        new DeleteDocumentAttributeRequestBuilder(
+            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null), "strings")
+            .submitOk(this.client, siteId);
+        fail();
+      } catch (ApiException e) {
+        // then
+        assertEquals(
+            "{\"errors\":[{\"key\":\"strings\",\"error\":\"'strings' is a required attribute\"}]}",
+            e.getResponseBody());
+      }
+    }
+  }
+
+  /**
    * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue}. invalid
    * attributeKey.
    *
@@ -1868,107 +1969,6 @@ public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
           response.getMessage());
       List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
       assertEquals(0, attributes.size());
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}/attributes/{attributeKey}. invalid attributeKey.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteDocumentAttributes01() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt");
-      String documentId = addDocumentUpload(siteId, ureq0);
-
-      // when
-      try {
-        new DeleteDocumentAttributeRequestBuilder(
-            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null), "strings")
-            .submitOk(this.client, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(
-            "{\"message\":\"attribute 'strings' not found on document '" + documentId + "'\"}",
-            e.getResponseBody());
-      }
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}/attributes/{attributeKey}. valid attributeKey.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteDocumentAttributes02() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "strings", null);
-
-      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
-          .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("111")));
-      String documentId = addDocumentUpload(siteId, ureq0);
-
-      // when
-      DeleteResponse response = new DeleteDocumentAttributeRequestBuilder(
-          com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null), "strings")
-          .submitOk(this.client, siteId).response();
-
-      // then
-      assertEquals("attribute 'strings' removed from document '" + documentId + "'",
-          response.getMessage());
-      List<DocumentAttribute> attributes = getDocumentAttributes(siteId, documentId);
-      assertEquals(0, attributes.size());
-    }
-  }
-
-  /**
-   * DELETE /documents/{documentId}/attributes/{attributeKey}. schema required attribute.
-   *
-   * @throws ApiException an error has occurred
-   */
-  @Test
-  public void testDeleteDocumentAttributes03() throws ApiException {
-    // given
-    for (String siteId : Arrays.asList(DEFAULT_SITE_ID, ID.uuid())) {
-
-      setBearerToken(siteId);
-
-      addAttribute(siteId, "strings", null);
-
-      SetSitesSchemaRequest req = new SetSitesSchemaRequest().name("joe")
-          .attributes(new SetSchemaAttributes().addRequiredItem(createRequired("strings")));
-      new SetSitesSchemaRequestBuilder().withSetSitesSchemaRequest(req).submitOk(this.client,
-          siteId);
-
-      AddDocumentUploadRequest ureq0 = new AddDocumentUploadRequest().path("sample.txt")
-          .addAttributesItem(new AddDocumentAttribute(
-              new AddDocumentAttributeStandard().key("strings").addStringValuesItem("1")));
-      String documentId = addDocumentUpload(siteId, ureq0);
-
-      // when
-      try {
-        new DeleteDocumentAttributeRequestBuilder(
-            com.formkiq.aws.dynamodb.documents.DocumentArtifact.of(documentId, null), "strings")
-            .submitOk(this.client, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(
-            "{\"errors\":[{\"key\":\"strings\",\"error\":\"'strings' is a required attribute\"}]}",
-            e.getResponseBody());
-      }
     }
   }
 

@@ -153,6 +153,15 @@ public class ApiGatewayRequestEvent {
   }
 
   /**
+   * Get Request Headers.
+   *
+   * @return {@link Map}
+   */
+  public Map<String, String> getHeaders() {
+    return this.headers;
+  }
+
+  /**
    * Get Header Value.
    *
    * @param key {@link String}
@@ -160,15 +169,6 @@ public class ApiGatewayRequestEvent {
    */
   public String getHeaderValue(final String key) {
     return this.headers != null ? this.headers.get(key) : null;
-  }
-
-  /**
-   * Get Request Headers.
-   *
-   * @return {@link Map}
-   */
-  public Map<String, String> getHeaders() {
-    return this.headers;
   }
 
   /**

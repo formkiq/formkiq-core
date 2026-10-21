@@ -639,22 +639,6 @@ public class S3Service {
    * 
    * @param bucket {@link String}
    * @param key {@link String}
-   * @param is {@link InputStream}
-   * @param contentType {@link String}
-   * @return {@link PutObjectResponse}
-   * @throws IOException IOException
-   */
-  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
-      final String contentType) throws IOException {
-    byte[] data = toByteArray(is);
-    return putObject(bucket, key, data, contentType);
-  }
-
-  /**
-   * Put Object in Bucket.
-   * 
-   * @param bucket {@link String}
-   * @param key {@link String}
    * @param data byte[]
    * @param contentType {@link String}
    * @return {@link PutObjectResponse}
@@ -715,6 +699,22 @@ public class S3Service {
     }
 
     return this.s3Client.putObject(request, RequestBody.fromBytes(data));
+  }
+
+  /**
+   * Put Object in Bucket.
+   * 
+   * @param bucket {@link String}
+   * @param key {@link String}
+   * @param is {@link InputStream}
+   * @param contentType {@link String}
+   * @return {@link PutObjectResponse}
+   * @throws IOException IOException
+   */
+  public PutObjectResponse putObject(final String bucket, final String key, final InputStream is,
+      final String contentType) throws IOException {
+    byte[] data = toByteArray(is);
+    return putObject(bucket, key, data, contentType);
   }
 
   /**

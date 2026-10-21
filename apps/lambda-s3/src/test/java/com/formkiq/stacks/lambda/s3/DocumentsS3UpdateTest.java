@@ -144,9 +144,6 @@ import software.amazon.awssdk.services.sqs.model.Message;
 @ExtendWith(LocalStackExtension.class)
 public class DocumentsS3UpdateTest implements DbKeys {
 
-  /** Authorization observed while publishing document events. */
-  private static final List<ApiAuthorizationRecord> AUTHORIZATIONS = new ArrayList<>();
-
   /** Captures authorization at the downstream event boundary. */
   private record RecordingEventService(EventService delegate) implements EventService {
     @Override
@@ -166,6 +163,9 @@ public class DocumentsS3UpdateTest implements DbKeys {
       return delegate.publish(logger, event);
     }
   }
+
+  /** Authorization observed while publishing document events. */
+  private static final List<ApiAuthorizationRecord> AUTHORIZATIONS = new ArrayList<>();
 
   /**
    * {@link DocumentService}.
@@ -363,6 +363,11 @@ public class DocumentsS3UpdateTest implements DbKeys {
         .build();
   }
 
+  private void addS3File(final String key, final String contentType, final boolean addTags,
+      final String content) {
+    addS3File("example-bucket", key, contentType, addTags, content);
+  }
+
   private void addS3File(final String bucket, final String key, final String contentType,
       final boolean addTags, final String content) {
 
@@ -377,11 +382,6 @@ public class DocumentsS3UpdateTest implements DbKeys {
           Arrays.asList(Tag.builder().key("sample").value("12345").build(),
               Tag.builder().key("CLAMAV_SCAN_STATUS").value("GOOD").build()));
     }
-  }
-
-  private void addS3File(final String key, final String contentType, final boolean addTags,
-      final String content) {
-    addS3File("example-bucket", key, contentType, addTags, content);
   }
 
   /**
@@ -1037,39 +1037,26 @@ public class DocumentsS3UpdateTest implements DbKeys {
     assertHandleContentType("test.txt", null, "binary/octet-stream", "text/plain");
   }
 
+  /** Direct uploads without an authorization record run as System. */
   @Test
-  public void testHandleRequestSetsGovernanceObjectLockFromPresignedUrlContext()
-      throws ValidationException {
+  public void testHandleRequestMissingAuthorization() throws ValidationException {
     // given
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      String bucket = "object-lock-" + ID.uuid();
-      s3service.createBucket(bucket, true);
+    String siteId = ID.uuid();
+    String documentId = ID.uuid();
+    String key = createDatabaseKey(siteId, documentId);
+    DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", "text/plain");
+    addS3File(key, "text/plain", false, "testdata");
 
-      String documentId = ID.uuid();
-      String key = createDatabaseKey(siteId, documentId);
-      final DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", null);
-      addS3File(bucket, key, "text/plain", false, "testdata");
+    // when
+    handler.handleRequest(createS3Map(siteId, doc), null);
 
-      String retainUntilDate =
-          DateUtil.getIsoDateFormatter().format(Date.from(Instant.now().plus(10, ChronoUnit.DAYS)));
-      DynamoDbKey cacheKey = new DynamoDbKey("s3PresignedUrl#" + bucket + "#" + key, "cache");
-      Map<String, AttributeValue> attributes =
-          ApiAuthorizationRecord.fromApiAuthorization(new ApiAuthorization().username("joe"),
-              cacheKey, new TimeToLiveBuilder().withDaysFromNow(7).build()).getAttributes();
-      attributes.put("objectLockRetentionMode", AttributeValue.fromS("GOVERNANCE"));
-      attributes.put("objectLockRetainUntilDate", AttributeValue.fromS(retainUntilDate));
-      db.putItem(request -> request.tableName(CACHE_TABLE).item(attributes));
-
-      // when
-      handler.handleRequest(createS3Map(siteId, doc, bucket), null);
-
-      // then
-      GetObjectRetentionResponse retention = s3service.getObjectRetention(bucket, key, null);
-      assertNotNull(retention.retention());
-      assertEquals(ObjectLockRetentionMode.GOVERNANCE, retention.retention().mode());
-      assertEquals(retainUntilDate, DateUtil.getIsoDateFormatter()
-          .format(Date.from(retention.retention().retainUntilDate())));
-    }
+    // then
+    assertEquals(1, AUTHORIZATIONS.size());
+    ApiAuthorization restored = AUTHORIZATIONS.getFirst().toApiAuthorization();
+    assertEquals("System", restored.getUsername());
+    assertNull(restored.getUserClaims());
+    assertTrue(restored.getAllPermissions().isEmpty());
+    assertEquals("System", ApiAuthorization.getAuthorization().getUsername());
   }
 
   /** Stored claims and exact grants are active during S3 event processing. */
@@ -1107,26 +1094,39 @@ public class DocumentsS3UpdateTest implements DbKeys {
     assertEquals("System", ApiAuthorization.getAuthorization().getUsername());
   }
 
-  /** Direct uploads without an authorization record run as System. */
   @Test
-  public void testHandleRequestMissingAuthorization() throws ValidationException {
+  public void testHandleRequestSetsGovernanceObjectLockFromPresignedUrlContext()
+      throws ValidationException {
     // given
-    String siteId = ID.uuid();
-    String documentId = ID.uuid();
-    String key = createDatabaseKey(siteId, documentId);
-    DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", "text/plain");
-    addS3File(key, "text/plain", false, "testdata");
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      String bucket = "object-lock-" + ID.uuid();
+      s3service.createBucket(bucket, true);
 
-    // when
-    handler.handleRequest(createS3Map(siteId, doc), null);
+      String documentId = ID.uuid();
+      String key = createDatabaseKey(siteId, documentId);
+      final DocumentRecordSet doc = createDocument(siteId, documentId, "test.txt", null);
+      addS3File(bucket, key, "text/plain", false, "testdata");
 
-    // then
-    assertEquals(1, AUTHORIZATIONS.size());
-    ApiAuthorization restored = AUTHORIZATIONS.getFirst().toApiAuthorization();
-    assertEquals("System", restored.getUsername());
-    assertNull(restored.getUserClaims());
-    assertTrue(restored.getAllPermissions().isEmpty());
-    assertEquals("System", ApiAuthorization.getAuthorization().getUsername());
+      String retainUntilDate =
+          DateUtil.getIsoDateFormatter().format(Date.from(Instant.now().plus(10, ChronoUnit.DAYS)));
+      DynamoDbKey cacheKey = new DynamoDbKey("s3PresignedUrl#" + bucket + "#" + key, "cache");
+      Map<String, AttributeValue> attributes =
+          ApiAuthorizationRecord.fromApiAuthorization(new ApiAuthorization().username("joe"),
+              cacheKey, new TimeToLiveBuilder().withDaysFromNow(7).build()).getAttributes();
+      attributes.put("objectLockRetentionMode", AttributeValue.fromS("GOVERNANCE"));
+      attributes.put("objectLockRetainUntilDate", AttributeValue.fromS(retainUntilDate));
+      db.putItem(request -> request.tableName(CACHE_TABLE).item(attributes));
+
+      // when
+      handler.handleRequest(createS3Map(siteId, doc, bucket), null);
+
+      // then
+      GetObjectRetentionResponse retention = s3service.getObjectRetention(bucket, key, null);
+      assertNotNull(retention.retention());
+      assertEquals(ObjectLockRetentionMode.GOVERNANCE, retention.retention().mode());
+      assertEquals(retainUntilDate, DateUtil.getIsoDateFormatter()
+          .format(Date.from(retention.retention().retainUntilDate())));
+    }
   }
 
   /**

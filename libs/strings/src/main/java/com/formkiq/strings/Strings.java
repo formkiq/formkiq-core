@@ -35,179 +35,34 @@ import java.util.stream.Collectors;
  */
 public class Strings {
 
+  public record SplitResult(String before, String after) {
+  }
+
   /** Three. */
   private static final int THREE = 3;
 
   /**
-   * Trim {@link String}.
-   * 
-   * @param s {@link String}
+   * Returns a list containing the elements in list1 but not in list2.
+   *
+   * @param <T> Type of {@link List}
+   * @param list1 the list from which to retain only elements not present in list2
+   * @param list2 the list whose elements should be excluded
+   * @return a list of elements that are in list2 but not in list1
+   */
+  public static <T> Collection<T> complement(final Collection<T> list1, final Collection<T> list2) {
+    Collection<T> set1 = new HashSet<>(list2);
+    return list1.stream().filter(element -> !set1.contains(element)).collect(Collectors.toList());
+  }
+
+  /**
+   * Return text or elseText if the text is empty.
+   *
+   * @param text {@link String}
+   * @param elseText {@link String}
    * @return {@link String}
    */
-  public static String trim(final String s) {
-    return s != null ? s.trim() : null;
-  }
-
-  /**
-   * Is {@link String} empty.
-   *
-   * @param cs {@link CharSequence}
-   * @return boolean
-   */
-  public static boolean isEmpty(final CharSequence cs) {
-    return cs == null || cs.isEmpty();
-  }
-
-  /**
-   * Checks whether a string is null or empty after {@link String#trim()}.
-   *
-   * @param s the string to check
-   * @return true if the string is null or empty after trimming
-   */
-  public static boolean isEmptyWithTrim(final String s) {
-    return isEmpty(trim(s));
-  }
-
-  /**
-   * Splits the given string by each occurrence of the specified delimiter character.
-   *
-   * @param input the string to split
-   * @param delimiter the character to split on
-   * @return an array of substrings obtained by splitting the input string
-   */
-  public static String[] splitByChar(final String input, final char delimiter) {
-
-    String[] result = new String[0];
-    if (input != null) {
-
-      int start = 0;
-      List<String> parts = new ArrayList<>();
-
-      for (int i = 0; i < input.length(); i++) {
-        if (input.charAt(i) == delimiter) {
-          parts.add(input.substring(start, i));
-          start = i + 1;
-        }
-      }
-
-      parts.add(input.substring(start));
-
-      result = parts.toArray(new String[0]);
-    }
-
-    return result;
-  }
-
-  /**
-   * Validates whether the provided string is numeric.
-   *
-   * @param str the string to validate
-   * @return true if the string is numeric, false otherwise
-   */
-  public static boolean isNumeric(final String str) {
-
-    boolean match = false;
-
-    if (!isEmpty(str)) {
-      try {
-        // Attempt to parse the string as a double.
-        // This covers integers, decimals, and numbers in scientific notation.
-        Double.parseDouble(str);
-        match = true;
-      } catch (NumberFormatException e) {
-        // ignore
-      }
-    }
-
-    return match;
-  }
-
-  /**
-   * Tests {@link String} is ISO 639 compliant language code.
-   *
-   * @param str {@link String}
-   * @return boolean
-   */
-  private static boolean isLanguageCodeIso639(final String str) {
-    return isAllLowerCase(str) && (str.length() == 2 || str.length() == THREE);
-  }
-
-  /**
-   * Tests {@link String} against ISO 3166 alpha-2 country code.
-   *
-   * @param str {@link String}
-   * @return boolean
-   */
-  private static boolean isCountryCodeIso3166(final String str) {
-    return isAllUpperCase(str) && str.length() == 2;
-  }
-
-  /**
-   * Tests {@link String} against the UN M.49 numeric area code.
-   *
-   * @param str {@link String}
-   * @return boolean
-   */
-  private static boolean isNumericAreaCode(final String str) {
-    return isNumeric(str) && str.length() == THREE;
-  }
-
-  /**
-   * Parse {@link String} to {@link Locale}.
-   * 
-   * @param str {@link String}
-   * @return Locale
-   */
-  public static Locale parseLocale(final String str) {
-
-    String[] parts = notNull(str).split("[-_]");
-    int len = parts.length;
-
-    return switch (len) {
-      case 1 -> isLanguageCodeIso639(str) ? new Locale(str) : null;
-      case 2 -> isLanguageCodeIso639(parts[0]) && isCountryCodeIso(parts[1])
-          ? new Locale(parts[0], parts[1])
-          : null;
-      case THREE ->
-        isLanguageCodeIso639(parts[0]) && isCountryCodeIso(parts[1]) && !parts[2].isEmpty()
-            ? new Locale(parts[0], parts[1], parts[2])
-            : null;
-      default -> null;
-    };
-  }
-
-  /**
-   * Convert Null {@link String} to "".
-   * 
-   * @param str {@link String}
-   * @return String
-   */
-  public static String notNull(final String str) {
-    return str != null ? str : "";
-  }
-
-  private static boolean isCountryCodeIso(final String s) {
-    return isCountryCodeIso3166(s) || isNumericAreaCode(s);
-  }
-
-  /**
-   * Checks if {@link String} only contains lowercase characters.
-   * 
-   * @param s {@link String}
-   * @return boolean
-   */
-  public static boolean isAllLowerCase(final String s) {
-    return isAllCase(s, true);
-  }
-
-  /**
-   * Checks if {@link String} only contains uppercase characters.
-   *
-   * @param s {@link String}
-   * @return boolean
-   */
-  public static boolean isAllUpperCase(final String s) {
-    return isAllCase(s, false);
+  public static String getNotNullOrDefault(final String text, final String elseText) {
+    return !isEmpty(text) ? text : elseText;
   }
 
   /**
@@ -237,43 +92,101 @@ public class Strings {
   }
 
   /**
-   * Find first {@link String} that is not empty.
+   * Checks if {@link String} only contains lowercase characters.
    * 
-   * @param strs {@link String}
-   * @return String
+   * @param s {@link String}
+   * @return boolean
    */
-  public static String notEmpty(final String... strs) {
-    for (String str : strs) {
-      if (!isEmpty(str)) {
-        return str;
+  public static boolean isAllLowerCase(final String s) {
+    return isAllCase(s, true);
+  }
+
+  /**
+   * Checks if {@link String} only contains uppercase characters.
+   *
+   * @param s {@link String}
+   * @return boolean
+   */
+  public static boolean isAllUpperCase(final String s) {
+    return isAllCase(s, false);
+  }
+
+  private static boolean isCountryCodeIso(final String s) {
+    return isCountryCodeIso3166(s) || isNumericAreaCode(s);
+  }
+
+  /**
+   * Tests {@link String} against ISO 3166 alpha-2 country code.
+   *
+   * @param str {@link String}
+   * @return boolean
+   */
+  private static boolean isCountryCodeIso3166(final String str) {
+    return isAllUpperCase(str) && str.length() == 2;
+  }
+
+  /**
+   * Is {@link String} empty.
+   *
+   * @param cs {@link CharSequence}
+   * @return boolean
+   */
+  public static boolean isEmpty(final CharSequence cs) {
+    return cs == null || cs.isEmpty();
+  }
+
+  /**
+   * Checks whether a string is null or empty after {@link String#trim()}.
+   *
+   * @param s the string to check
+   * @return true if the string is null or empty after trimming
+   */
+  public static boolean isEmptyWithTrim(final String s) {
+    return isEmpty(trim(s));
+  }
+
+  /**
+   * Tests {@link String} is ISO 639 compliant language code.
+   *
+   * @param str {@link String}
+   * @return boolean
+   */
+  private static boolean isLanguageCodeIso639(final String str) {
+    return isAllLowerCase(str) && (str.length() == 2 || str.length() == THREE);
+  }
+
+  /**
+   * Validates whether the provided string is numeric.
+   *
+   * @param str the string to validate
+   * @return true if the string is numeric, false otherwise
+   */
+  public static boolean isNumeric(final String str) {
+
+    boolean match = false;
+
+    if (!isEmpty(str)) {
+      try {
+        // Attempt to parse the string as a double.
+        // This covers integers, decimals, and numbers in scientific notation.
+        Double.parseDouble(str);
+        match = true;
+      } catch (NumberFormatException e) {
+        // ignore
       }
     }
 
-    return null;
+    return match;
   }
 
   /**
-   * Return text or elseText if the text is empty.
+   * Tests {@link String} against the UN M.49 numeric area code.
    *
-   * @param text {@link String}
-   * @param elseText {@link String}
-   * @return {@link String}
+   * @param str {@link String}
+   * @return boolean
    */
-  public static String getNotNullOrDefault(final String text, final String elseText) {
-    return !isEmpty(text) ? text : elseText;
-  }
-
-  /**
-   * Returns a list containing the elements in list1 but not in list2.
-   *
-   * @param <T> Type of {@link List}
-   * @param list1 the list from which to retain only elements not present in list2
-   * @param list2 the list whose elements should be excluded
-   * @return a list of elements that are in list2 but not in list1
-   */
-  public static <T> Collection<T> complement(final Collection<T> list1, final Collection<T> list2) {
-    Collection<T> set1 = new HashSet<>(list2);
-    return list1.stream().filter(element -> !set1.contains(element)).collect(Collectors.toList());
+  private static boolean isNumericAreaCode(final String str) {
+    return isNumeric(str) && str.length() == THREE;
   }
 
   /**
@@ -323,7 +236,84 @@ public class Strings {
     return new String(padded);
   }
 
-  public record SplitResult(String before, String after) {
+  /**
+   * Find first {@link String} that is not empty.
+   * 
+   * @param strs {@link String}
+   * @return String
+   */
+  public static String notEmpty(final String... strs) {
+    for (String str : strs) {
+      if (!isEmpty(str)) {
+        return str;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert Null {@link String} to "".
+   * 
+   * @param str {@link String}
+   * @return String
+   */
+  public static String notNull(final String str) {
+    return str != null ? str : "";
+  }
+
+  /**
+   * Parse {@link String} to {@link Locale}.
+   * 
+   * @param str {@link String}
+   * @return Locale
+   */
+  public static Locale parseLocale(final String str) {
+
+    String[] parts = notNull(str).split("[-_]");
+    int len = parts.length;
+
+    return switch (len) {
+      case 1 -> isLanguageCodeIso639(str) ? new Locale(str) : null;
+      case 2 -> isLanguageCodeIso639(parts[0]) && isCountryCodeIso(parts[1])
+          ? new Locale(parts[0], parts[1])
+          : null;
+      case THREE ->
+        isLanguageCodeIso639(parts[0]) && isCountryCodeIso(parts[1]) && !parts[2].isEmpty()
+            ? new Locale(parts[0], parts[1], parts[2])
+            : null;
+      default -> null;
+    };
+  }
+
+  /**
+   * Splits the given string by each occurrence of the specified delimiter character.
+   *
+   * @param input the string to split
+   * @param delimiter the character to split on
+   * @return an array of substrings obtained by splitting the input string
+   */
+  public static String[] splitByChar(final String input, final char delimiter) {
+
+    String[] result = new String[0];
+    if (input != null) {
+
+      int start = 0;
+      List<String> parts = new ArrayList<>();
+
+      for (int i = 0; i < input.length(); i++) {
+        if (input.charAt(i) == delimiter) {
+          parts.add(input.substring(start, i));
+          start = i + 1;
+        }
+      }
+
+      parts.add(input.substring(start));
+
+      result = parts.toArray(new String[0]);
+    }
+
+    return result;
   }
 
   /**
@@ -359,5 +349,15 @@ public class Strings {
     }
 
     return index != -1 ? value.substring(0, index) : null;
+  }
+
+  /**
+   * Trim {@link String}.
+   * 
+   * @param s {@link String}
+   * @return {@link String}
+   */
+  public static String trim(final String s) {
+    return s != null ? s.trim() : null;
   }
 }

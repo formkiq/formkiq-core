@@ -66,12 +66,6 @@ import com.formkiq.validation.ValidationException;
 public class DocumentsSyncsRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  /**
-   * constructor.
-   *
-   */
-  public DocumentsSyncsRequestHandler() {}
-
   private static void validate(final AddDocumentSync sync) throws BadException {
     if (sync == null) {
       throw new BadException("Invalid request");
@@ -85,6 +79,12 @@ public class DocumentsSyncsRequestHandler
       throw new BadException("Invalid Sync Type");
     }
   }
+
+  /**
+   * constructor.
+   *
+   */
+  public DocumentsSyncsRequestHandler() {}
 
   @Override
   public ApiRequestHandlerResponse get(final ApiGatewayRequestEvent event,
@@ -137,11 +137,24 @@ public class DocumentsSyncsRequestHandler
     };
   }
 
-  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
-      final DocumentArtifact document) throws Exception {
-    DocumentService ds = awsservice.getExtension(DocumentService.class);
-    DocumentRecord item = ds.findDocument(siteId, document);
-    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
+  private DocumentSyncServiceType getService(final AwsServiceCache awsservice,
+      final AddDocumentSyncServiceType service) throws BadException {
+    return switch (service) {
+      case FULLTEXT -> {
+        if (awsservice.hasModule("opensearch")) {
+          yield DocumentSyncServiceType.OPENSEARCH;
+        } else if (awsservice.hasModule("typesense")) {
+          yield DocumentSyncServiceType.TYPESENSE;
+        } else {
+          throw new BadException("No fulltext services enabled");
+        }
+      }
+      default -> throw new BadException("Unknown service type: " + service);
+    };
+  }
+
+  private boolean isActionService(final AddDocumentSyncServiceType service) {
+    return AddDocumentSyncServiceType.FULLTEXT.equals(service);
   }
 
   @Override
@@ -181,23 +194,10 @@ public class DocumentsSyncsRequestHandler
         .build();
   }
 
-  private DocumentSyncServiceType getService(final AwsServiceCache awsservice,
-      final AddDocumentSyncServiceType service) throws BadException {
-    return switch (service) {
-      case FULLTEXT -> {
-        if (awsservice.hasModule("opensearch")) {
-          yield DocumentSyncServiceType.OPENSEARCH;
-        } else if (awsservice.hasModule("typesense")) {
-          yield DocumentSyncServiceType.TYPESENSE;
-        } else {
-          throw new BadException("No fulltext services enabled");
-        }
-      }
-      default -> throw new BadException("Unknown service type: " + service);
-    };
-  }
-
-  private boolean isActionService(final AddDocumentSyncServiceType service) {
-    return AddDocumentSyncServiceType.FULLTEXT.equals(service);
+  private void verifyDocument(final AwsServiceCache awsservice, final String siteId,
+      final DocumentArtifact document) throws Exception {
+    DocumentService ds = awsservice.getExtension(DocumentService.class);
+    DocumentRecord item = ds.findDocument(siteId, document);
+    throwIfNull(item, new DocumentNotFoundException(document.documentId()));
   }
 }
