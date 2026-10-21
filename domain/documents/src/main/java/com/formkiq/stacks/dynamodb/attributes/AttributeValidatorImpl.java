@@ -94,6 +94,16 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     return this.attributeService.getAttributes(siteId, attributeKeys);
   }
 
+  private boolean isDateMatch(final String allowedValue, final String dateValue) {
+    boolean match = false;
+    try {
+      match = DateUtil.normalizeDateValue(allowedValue).equals(dateValue);
+    } catch (DateTimeException e) {
+      // ignore
+    }
+    return match;
+  }
+
   private boolean isEmptyDefaultValue(final SchemaAttributesRequired attribute) {
     return isEmpty(attribute.getDefaultValue()) && notNull(attribute.getDefaultValues()).isEmpty()
         && (isEmpty(attribute.getDefaultEntityTypeId()) || isEmpty(attribute.getDefaultEntityId()));
@@ -103,6 +113,24 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     boolean hasScalarValue = !isEmpty(da.getStringValue()) || da.getNumberValue() != null
         || da.getBooleanValue() != null;
     return !hasScalarValue && isEmpty(da.getDateValueAsString()) && da.getJsonValue() == null;
+  }
+
+  private boolean isProcessAttribute(final DocumentAttributeRecord da) {
+    return isProcessAttribute(da, Collections.emptyList());
+  }
+
+  private boolean isProcessAttribute(final DocumentAttributeRecord da,
+      final Collection<String> savedReservedKeys) {
+    return !DocumentAttributeValueType.COMPOSITE_STRING.equals(da.getValueType())
+        && !DocumentAttributeValueType.CLASSIFICATION.equals(da.getValueType())
+        && !savedReservedKeys.contains(da.getKey());
+  }
+
+  private boolean isUpdateDeleteOrSet(final AttributeValidationAccess validationAccess) {
+    return AttributeValidationAccess.DELETE.equals(validationAccess)
+        || AttributeValidationAccess.UPDATE.equals(validationAccess)
+        || AttributeValidationAccess.SET.equals(validationAccess)
+        || AttributeValidationAccess.SET_ITEM.equals(validationAccess);
   }
 
   private boolean validateAllowedValues(final List<String> allowedValues,
@@ -163,38 +191,6 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     });
   }
 
-  private boolean isDateMatch(final String allowedValue, final String dateValue) {
-    boolean match = false;
-    try {
-      match = DateUtil.normalizeDateValue(allowedValue).equals(dateValue);
-    } catch (DateTimeException e) {
-      // ignore
-    }
-    return match;
-  }
-
-  private void validateNumberOfValues(
-      final Map<String, List<DocumentAttributeRecord>> documentAttributeMap,
-      final String attributeKey, final Double minNumberOfValues, final Double maxNumberOfValues,
-      final ValidationBuilder vb) {
-
-    if (documentAttributeMap.containsKey(attributeKey) && minNumberOfValues != null
-        && maxNumberOfValues != null) {
-
-      double max = maxNumberOfValues < 0 ? Double.MAX_VALUE : maxNumberOfValues;
-      int count = documentAttributeMap.get(attributeKey).size();
-      if (count < minNumberOfValues) {
-        vb.addError("minNumberOfValues",
-            String.format("number of attributes %d is less than minimum of %d", count,
-                minNumberOfValues.intValue()));
-      } else if (count > max) {
-        vb.addError("maxNumberOfValues",
-            String.format("number of attributes %d is more than maximum of %d", count,
-                maxNumberOfValues.intValue()));
-      }
-    }
-  }
-
   /**
    * Validate Attribute exists and has the correct data type.
    *
@@ -247,21 +243,6 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
-  private void validateRegex(final AttributeRecord attribute, final DocumentAttributeRecord record,
-      final ValidationBuilder vb) {
-
-    String validationRegex = attribute.getValidationRegex();
-
-    if (!isEmpty(validationRegex) && DocumentAttributeValueType.STRING.equals(record.getValueType())
-        && !isEmpty(record.getStringValue())) {
-      try {
-        vb.isValidByRegex(record.getKey(), record.getStringValue(), validationRegex);
-      } catch (PatternSyntaxException e) {
-        vb.addError(record.getKey(), "invalid validationRegex");
-      }
-    }
-  }
-
   private void validateAttributeTypeOpaOrGoverance(final AttributeRecord attribute,
       final AttributeValidationAccess access, final ValidationBuilder vb) {
     boolean restrictedType = AttributeType.OPA.equals(attribute.getType())
@@ -271,17 +252,6 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       vb.isRequired(attribute.getKey(), access.isAdminOrGovernRole(),
           "attribute can only be changed by GOVERN or ADMIN role");
     }
-  }
-
-  private boolean isProcessAttribute(final DocumentAttributeRecord da) {
-    return isProcessAttribute(da, Collections.emptyList());
-  }
-
-  private boolean isProcessAttribute(final DocumentAttributeRecord da,
-      final Collection<String> savedReservedKeys) {
-    return !DocumentAttributeValueType.COMPOSITE_STRING.equals(da.getValueType())
-        && !DocumentAttributeValueType.CLASSIFICATION.equals(da.getValueType())
-        && !savedReservedKeys.contains(da.getKey());
   }
 
   private void validateDataType(final String siteId, final DocumentAttributeRecord a,
@@ -320,50 +290,25 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
-  private void validateEntity(final String siteId, final DocumentAttributeRecord a,
-      final ValidationBuilder vb) {
-    vb.isRequired("entityTypeId", a.getStringValue());
-    vb.isRequired("entityId", a.getStringValue());
+  @Override
+  public Collection<ValidationError> validateDeleteAttribute(final Schema schema,
+      final String siteId, final String attributeKey,
+      final AttributeAccessApproval accessApproval) {
+
+    ValidationBuilder vb = new ValidationBuilder();
+
+    vb.isRequired("key", attributeKey);
 
     if (vb.isEmpty()) {
-      if (a.getStringValue().endsWith("#null")) {
-        vb.addError("entityId", "'entityId' is required");
-      }
-      if (a.getStringValue().startsWith("null#")) {
-        vb.addError("entityTypeId", "'entityTypeId' is required");
-      }
-    }
+      validateOpaGoveranceAttribute(siteId, attributeKey, accessApproval.accessFor(attributeKey),
+          vb);
 
-    if (vb.isEmpty()) {
-      var entityKey = DocumentAttributeEntityKeyValue.fromString(a.getStringValue());
-
-      DynamoDbKey entityType =
-          EntityTypeRecord.builder().nameEmpty().namespace(EntityTypeNamespace.CUSTOM)
-              .documentId(entityKey.entityTypeId()).buildKey(siteId);
-      vb.isRequired("entityTypeId", this.db.exists(entityType), "EntityTypeId does not exist");
-
-      validateReservedPresetEntityType(a, entityType, vb);
-
-      DynamoDbKey entity = EntityRecord.builder().name("").entityTypeId(entityKey.entityTypeId())
-          .documentId(entityKey.entityId()).buildKey(siteId);
-      vb.isRequired("entityId", this.db.exists(entity), "EntityId does not exist");
-    }
-  }
-
-  private void validateReservedPresetEntityType(final DocumentAttributeRecord a,
-      final DynamoDbKey entityType, final ValidationBuilder vb) {
-    if (RESERVED_PRESET_ENTITY_KEYS.contains(a.getKey())) {
-      Map<String, AttributeValue> attributes = this.db.get(entityType);
-
-      if (!attributes.isEmpty()) {
-        EntityTypeRecord entityTypeRecord = EntityTypeRecord.fromAttributeMap(attributes);
-        if (!EntityTypeNamespace.PRESET.equals(entityTypeRecord.namespace())
-            || !a.getKey().equals(entityTypeRecord.name())) {
-          vb.addError(a.getKey(),
-              "attribute '" + a.getKey() + "' must use entityType '" + a.getKey() + "'");
-        }
+      if (vb.isEmpty() && schema != null) {
+        validateRequiredAttribute(schema.getAttributes(), attributeKey, vb);
       }
     }
+
+    return vb.getErrors();
   }
 
   @Override
@@ -395,60 +340,6 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
   }
 
   @Override
-  public Collection<ValidationError> validateDeleteAttribute(final Schema schema,
-      final String siteId, final String attributeKey,
-      final AttributeAccessApproval accessApproval) {
-
-    ValidationBuilder vb = new ValidationBuilder();
-
-    vb.isRequired("key", attributeKey);
-
-    if (vb.isEmpty()) {
-      validateOpaGoveranceAttribute(siteId, attributeKey, accessApproval.accessFor(attributeKey),
-          vb);
-
-      if (vb.isEmpty() && schema != null) {
-        validateRequiredAttribute(schema.getAttributes(), attributeKey, vb);
-      }
-    }
-
-    return vb.getErrors();
-  }
-
-  private void validateOpaGoveranceAttribute(final String siteId, final String attributeKey,
-      final AttributeValidationAccess validationAccess, final ValidationBuilder vb) {
-
-    if (AttributeValidationAccess.DELETE.equals(validationAccess)) {
-      AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
-      validateOpaGoveranceAttribute(attribute, validationAccess, vb);
-    }
-  }
-
-  @Deprecated
-  private void validateOpaGoveranceAttribute(final AttributeRecord attribute,
-      final AttributeValidationAccess validationAccess, final ValidationBuilder vb) {
-
-    if (isUpdateDeleteOrSet(validationAccess)) {
-
-      if (attribute != null) {
-        if (List.of(AttributeType.OPA, AttributeType.GOVERNANCE).contains(attribute.getType())) {
-          String attributeKey = attribute.getKey();
-          String errorMsg = "attribute '" + attributeKey
-              + "' is an protected attribute, can only be changed by Goverance/Admin role";
-          vb.addError(attributeKey, errorMsg);
-        }
-      }
-    }
-  }
-
-  private boolean isUpdateDeleteOrSet(final AttributeValidationAccess validationAccess) {
-    return AttributeValidationAccess.DELETE.equals(validationAccess)
-        || AttributeValidationAccess.UPDATE.equals(validationAccess)
-        || AttributeValidationAccess.SET.equals(validationAccess)
-        || AttributeValidationAccess.SET_ITEM.equals(validationAccess);
-  }
-
-  @Override
   public Collection<ValidationError> validateDeleteAttributeValue(final Schema schema,
       final String siteId, final String attributeKey, final String attributeValue,
       final AttributeAccessApproval accessApproval) {
@@ -467,6 +358,67 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
 
     return vb.getErrors();
+  }
+
+  private void validateEntity(final String siteId, final DocumentAttributeRecord a,
+      final ValidationBuilder vb) {
+    vb.isRequired("entityTypeId", a.getStringValue());
+    vb.isRequired("entityId", a.getStringValue());
+
+    if (vb.isEmpty()) {
+      if (a.getStringValue().endsWith("#null")) {
+        vb.addError("entityId", "'entityId' is required");
+      }
+      if (a.getStringValue().startsWith("null#")) {
+        vb.addError("entityTypeId", "'entityTypeId' is required");
+      }
+    }
+
+    if (vb.isEmpty()) {
+      var entityKey = DocumentAttributeEntityKeyValue.fromString(a.getStringValue());
+
+      DynamoDbKey entityType =
+          EntityTypeRecord.builder().nameEmpty().namespace(EntityTypeNamespace.CUSTOM)
+              .documentId(entityKey.entityTypeId()).buildKey(siteId);
+      vb.isRequired("entityTypeId", this.db.exists(entityType), "EntityTypeId does not exist");
+
+      validateReservedPresetEntityType(a, entityType, vb);
+
+      DynamoDbKey entity = EntityRecord.builder().name("").entityTypeId(entityKey.entityTypeId())
+          .documentId(entityKey.entityId()).buildKey(siteId);
+      vb.isRequired("entityId", this.db.exists(entity), "EntityId does not exist");
+    }
+  }
+
+  private void validateEntityTypeDefaults(final SchemaAttributes attributes,
+      final Collection<DocumentAttributeRecord> documentAttributes, final ValidationBuilder vb) {
+
+    Map<String, String> requiredEntityTypes =
+        notNull(attributes.getRequired()).stream().filter(a -> !isEmpty(a.getDefaultEntityTypeId()))
+            .collect(Collectors.toMap(SchemaAttributesRequired::getAttributeKey,
+                SchemaAttributesRequired::getDefaultEntityTypeId, (a, b) -> a));
+
+    Map<String, String> optionalEntityTypes =
+        notNull(attributes.getOptional()).stream().filter(a -> !isEmpty(a.getDefaultEntityTypeId()))
+            .collect(Collectors.toMap(SchemaAttributesOptional::getAttributeKey,
+                SchemaAttributesOptional::getDefaultEntityTypeId, (a, b) -> a));
+
+    for (DocumentAttributeRecord attribute : documentAttributes) {
+      if (DocumentAttributeValueType.ENTITY.equals(attribute.getValueType())) {
+        String expected = requiredEntityTypes.containsKey(attribute.getKey())
+            ? requiredEntityTypes.get(attribute.getKey())
+            : optionalEntityTypes.get(attribute.getKey());
+
+        if (!isEmpty(expected)) {
+          String entityTypeId =
+              DocumentAttributeEntityKeyValue.fromString(attribute.getStringValue()).entityTypeId();
+          if (!expected.equals(entityTypeId)) {
+            vb.addError(attribute.getKey(),
+                "attribute '" + attribute.getKey() + "' must use entityTypeId '" + expected + "'");
+          }
+        }
+      }
+    }
   }
 
   @Override
@@ -489,6 +441,54 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
 
     return vb.getErrors();
+  }
+
+  private void validateNumberOfValues(
+      final Map<String, List<DocumentAttributeRecord>> documentAttributeMap,
+      final String attributeKey, final Double minNumberOfValues, final Double maxNumberOfValues,
+      final ValidationBuilder vb) {
+
+    if (documentAttributeMap.containsKey(attributeKey) && minNumberOfValues != null
+        && maxNumberOfValues != null) {
+
+      double max = maxNumberOfValues < 0 ? Double.MAX_VALUE : maxNumberOfValues;
+      int count = documentAttributeMap.get(attributeKey).size();
+      if (count < minNumberOfValues) {
+        vb.addError("minNumberOfValues",
+            String.format("number of attributes %d is less than minimum of %d", count,
+                minNumberOfValues.intValue()));
+      } else if (count > max) {
+        vb.addError("maxNumberOfValues",
+            String.format("number of attributes %d is more than maximum of %d", count,
+                maxNumberOfValues.intValue()));
+      }
+    }
+  }
+
+  @Deprecated
+  private void validateOpaGoveranceAttribute(final AttributeRecord attribute,
+      final AttributeValidationAccess validationAccess, final ValidationBuilder vb) {
+
+    if (isUpdateDeleteOrSet(validationAccess)) {
+
+      if (attribute != null) {
+        if (List.of(AttributeType.OPA, AttributeType.GOVERNANCE).contains(attribute.getType())) {
+          String attributeKey = attribute.getKey();
+          String errorMsg = "attribute '" + attributeKey
+              + "' is an protected attribute, can only be changed by Goverance/Admin role";
+          vb.addError(attributeKey, errorMsg);
+        }
+      }
+    }
+  }
+
+  private void validateOpaGoveranceAttribute(final String siteId, final String attributeKey,
+      final AttributeValidationAccess validationAccess, final ValidationBuilder vb) {
+
+    if (AttributeValidationAccess.DELETE.equals(validationAccess)) {
+      AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
+      validateOpaGoveranceAttribute(attribute, validationAccess, vb);
+    }
   }
 
   private void validateOptionalAttributes(final SchemaAttributes attributes,
@@ -537,6 +537,21 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
 
     return vb.getErrors();
+  }
+
+  private void validateRegex(final AttributeRecord attribute, final DocumentAttributeRecord record,
+      final ValidationBuilder vb) {
+
+    String validationRegex = attribute.getValidationRegex();
+
+    if (!isEmpty(validationRegex) && DocumentAttributeValueType.STRING.equals(record.getValueType())
+        && !isEmpty(record.getStringValue())) {
+      try {
+        vb.isValidByRegex(record.getKey(), record.getStringValue(), validationRegex);
+      } catch (PatternSyntaxException e) {
+        vb.addError(record.getKey(), "invalid validationRegex");
+      }
+    }
   }
 
   private void validateRequired(final Collection<DocumentAttributeRecord> documentAttributes,
@@ -588,6 +603,22 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
+  private void validateReservedPresetEntityType(final DocumentAttributeRecord a,
+      final DynamoDbKey entityType, final ValidationBuilder vb) {
+    if (RESERVED_PRESET_ENTITY_KEYS.contains(a.getKey())) {
+      Map<String, AttributeValue> attributes = this.db.get(entityType);
+
+      if (!attributes.isEmpty()) {
+        EntityTypeRecord entityTypeRecord = EntityTypeRecord.fromAttributeMap(attributes);
+        if (!EntityTypeNamespace.PRESET.equals(entityTypeRecord.namespace())
+            || !a.getKey().equals(entityTypeRecord.name())) {
+          vb.addError(a.getKey(),
+              "attribute '" + a.getKey() + "' must use entityType '" + a.getKey() + "'");
+        }
+      }
+    }
+  }
+
   /**
    * Validate Site Schema.
    *
@@ -610,37 +641,6 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       validateAllowedValues(schemaAttributes, documentAttributes, vb);
 
       validateEntityTypeDefaults(schemaAttributes, documentAttributes, vb);
-    }
-  }
-
-  private void validateEntityTypeDefaults(final SchemaAttributes attributes,
-      final Collection<DocumentAttributeRecord> documentAttributes, final ValidationBuilder vb) {
-
-    Map<String, String> requiredEntityTypes =
-        notNull(attributes.getRequired()).stream().filter(a -> !isEmpty(a.getDefaultEntityTypeId()))
-            .collect(Collectors.toMap(SchemaAttributesRequired::getAttributeKey,
-                SchemaAttributesRequired::getDefaultEntityTypeId, (a, b) -> a));
-
-    Map<String, String> optionalEntityTypes =
-        notNull(attributes.getOptional()).stream().filter(a -> !isEmpty(a.getDefaultEntityTypeId()))
-            .collect(Collectors.toMap(SchemaAttributesOptional::getAttributeKey,
-                SchemaAttributesOptional::getDefaultEntityTypeId, (a, b) -> a));
-
-    for (DocumentAttributeRecord attribute : documentAttributes) {
-      if (DocumentAttributeValueType.ENTITY.equals(attribute.getValueType())) {
-        String expected = requiredEntityTypes.containsKey(attribute.getKey())
-            ? requiredEntityTypes.get(attribute.getKey())
-            : optionalEntityTypes.get(attribute.getKey());
-
-        if (!isEmpty(expected)) {
-          String entityTypeId =
-              DocumentAttributeEntityKeyValue.fromString(attribute.getStringValue()).entityTypeId();
-          if (!expected.equals(entityTypeId)) {
-            vb.addError(attribute.getKey(),
-                "attribute '" + attribute.getKey() + "' must use entityTypeId '" + expected + "'");
-          }
-        }
-      }
     }
   }
 }

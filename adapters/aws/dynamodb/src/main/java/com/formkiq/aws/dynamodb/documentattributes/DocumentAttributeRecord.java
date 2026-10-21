@@ -55,526 +55,6 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAttributeRecord>,
     DynamodbRecord<DocumentAttributeRecord>, DbKeys {
 
-  /** Attribute constant. */
-  public static final String ATTR = "attr#";
-  /** Boolean value. */
-  private Boolean booleanValue;
-  /** Date valueAttribute. */
-  private String dateValue;
-  /** Attribute Document Id. */
-  private String documentId;
-  /** Artifact Id. */
-  private String artifactId;
-  /** Key of Attribute. */
-  private String key;
-  /** Number value. */
-  private Double numberValue;
-  /** String valueAttribute. */
-  private String stringValue;
-  /** JSON object value. */
-  private Map<String, Object> jsonValue;
-  /** Type of Attribute. */
-  private DocumentAttributeValueType valueType;
-  /** Inserted Date. */
-  private Date insertedDate;
-  /** Attribute Document Id. */
-  private String userId;
-
-  /**
-   * Get {@link AttributeValidationAccess}.
-   * 
-   * @return {@link AttributeValidationAccess}
-   */
-  public AttributeValidationAccess getValidationAccess() {
-    return validationAccess;
-  }
-
-  /**
-   * Set {@link AttributeValidationAccess}.
-   * 
-   * @param attributeValidationAccess {@link AttributeValidationAccess}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setValidationAccess(
-      final AttributeValidationAccess attributeValidationAccess) {
-    this.validationAccess = attributeValidationAccess;
-    return this;
-  }
-
-  /** Override {@link AttributeValidationAccess}. */
-  private AttributeValidationAccess validationAccess;
-
-  /**
-   * constructor.
-   */
-  public DocumentAttributeRecord() {}
-
-  /**
-   * Get User Id.
-   * 
-   * @return String
-   */
-  public String getUserId() {
-    return this.userId;
-  }
-
-  /**
-   * Set User Id.
-   * 
-   * @param user {@link String}
-   * @return DocumentAttributeRecord
-   */
-  public DocumentAttributeRecord setUserId(final String user) {
-    this.userId = user;
-    return this;
-  }
-
-  @Override
-  public Map<String, AttributeValue> getAttributes(final String siteId) {
-
-    Map<String, AttributeValue> map = new HashMap<>(getDataAttributes());
-
-    DynamoDbKey dbKey = buildKey(siteId);
-    Map<String, AttributeValue> keyMap = dbKey.getAttributesBuilder().build();
-    map.putAll(keyMap);
-
-    return map;
-  }
-
-  @Override
-  public Map<String, AttributeValue> getDataAttributes() {
-
-    Map<String, AttributeValue> map = new HashMap<>();
-    map.put("key", fromS(this.key));
-    map.put("valueType", fromS(this.valueType.name()));
-    map.put("documentId", fromS(this.documentId));
-    map.put("userId", fromS(this.userId));
-
-    if (this.artifactId != null) {
-      map.put("artifactId", fromS(this.artifactId));
-    }
-
-    if (this.booleanValue != null) {
-      map.put("booleanValue", AttributeValue.fromBool(this.booleanValue));
-    }
-
-    if (this.dateValue != null) {
-      map.put("dateValue", fromS(this.dateValue));
-    }
-
-    if (this.numberValue != null) {
-      map.put("numberValue", AttributeValue.fromN(formatDouble(this.numberValue)));
-    }
-
-    if (this.stringValue != null) {
-      map.put("stringValue", fromS(this.stringValue));
-    }
-
-    if (this.jsonValue != null) {
-      map.put("jsonValue", new ObjectToAttributeValue().apply(this.jsonValue));
-    }
-
-    if (this.insertedDate != null) {
-      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-      map.put("inserteddate", fromS(df.format(this.insertedDate)));
-    }
-
-    return map;
-  }
-
-  @Override
-  public DocumentAttributeRecord getFromAttributes(final String siteId,
-      final Map<String, AttributeValue> attrs) {
-
-    DocumentAttributeRecord record = null;
-
-    if (!attrs.isEmpty()) {
-
-      var userIdAttr = DynamoDbTypes.toString(attrs.get("userId"));
-      var documentIdAttr = DynamoDbTypes.toString(attrs.get("documentId"));
-      var artifactIdAttr = DynamoDbTypes.toString(attrs.get("artifactId"));
-      var document = DocumentArtifact.of(documentIdAttr, artifactIdAttr);
-      var valueTypeAttr = DynamoDbTypes.toString(attrs.get("valueType"));
-      record = new DocumentAttributeRecord().setUserId(userIdAttr).setDocument(document)
-          .setKey(DynamoDbTypes.toString(attrs.get("key"))).setValueType(
-              valueTypeAttr != null ? DocumentAttributeValueType.valueOf(valueTypeAttr) : null);
-
-      if (attrs.containsKey("stringValue")) {
-        record.setStringValue(DynamoDbTypes.toString(attrs.get("stringValue")));
-      }
-
-      if (attrs.containsKey("booleanValue")) {
-        record.setBooleanValue(bb(attrs, "booleanValue"));
-      }
-
-      if (attrs.containsKey("dateValue")) {
-        record.dateValue = DynamoDbTypes.toString(attrs.get("dateValue"));
-      }
-
-      if (attrs.containsKey("numberValue")) {
-        record.setNumberValue(nn(attrs, "numberValue"));
-      }
-
-      if (attrs.containsKey("jsonValue")) {
-        record.setJsonValue((Map<String, Object>) DynamoDbTypes.toJson(attrs.get("jsonValue")));
-      }
-
-      if (attrs.containsKey("inserteddate")) {
-        try {
-          SimpleDateFormat df = DateUtil.getIsoDateFormatter();
-          String insereddate = DynamoDbTypes.toString(attrs.get("inserteddate"));
-          record = record.setInsertedDate(df.parse(insereddate));
-        } catch (ParseException e) {
-          // ignore
-        }
-      }
-
-    }
-
-    return record;
-  }
-
-  @Override
-  public String pk(final String siteId) {
-    if (this.documentId == null) {
-      throw new IllegalArgumentException("'documentId' is required");
-    }
-    return createDatabaseKey(siteId, PREFIX_DOCS + this.documentId);
-  }
-
-  @Override
-  public String pkGsi1(final String siteId) {
-    if (this.key == null) {
-      throw new IllegalArgumentException("'key' is required");
-    }
-    return createDatabaseKey(siteId, PREFIX_DOCS + ATTR + this.key);
-  }
-
-  @Override
-  public String pkGsi2(final String siteId) {
-    return DocumentAttributeValueType.WATERMARK.equals(this.valueType)
-        ? createDatabaseKey(siteId, PREFIX_DOCS + this.documentId)
-        : null;
-  }
-
-  @Override
-  public String sk() {
-
-    if (this.key == null) {
-      throw new IllegalArgumentException("'key' is required");
-    }
-
-    String sk = ATTR + this.key + "#";
-    if (artifactId != null) {
-      sk = "attr_art#" + artifactId + "#" + this.key + "#";
-    }
-
-    sk = getSkValue(sk);
-
-    return truncateSk(sk);
-  }
-
-  private String getSkValue(final String sk) {
-    String val = sk;
-    switch (this.valueType) {
-      case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS, ENTITY ->
-        val += this.stringValue;
-      case DATE -> val += this.dateValue;
-      case BOOLEAN -> val += this.booleanValue;
-      case NUMBER -> val += formatDouble(this.numberValue);
-      case KEY_ONLY, PUBLICATION, WATERMARK, JSON -> {
-      }
-      default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
-    }
-    return val;
-  }
-
-  @Override
-  public String skGsi1() {
-
-    return switch (this.valueType) {
-      case STRING, COMPOSITE_STRING, RELATIONSHIPS, ENTITY, CLASSIFICATION, PUBLICATION ->
-        truncateSk(this.stringValue);
-      case DATE -> truncateSk(this.dateValue);
-      case NUMBER -> formatDouble(this.numberValue);
-      case BOOLEAN -> this.booleanValue.toString();
-      case KEY_ONLY, WATERMARK, JSON -> "#";
-    };
-
-  }
-
-  @Override
-  public String skGsi2() {
-    return DocumentAttributeValueType.WATERMARK.equals(this.valueType)
-        ? ATTR + this.valueType + "#" + this.key
-        : null;
-  }
-
-  /**
-   * Get Attribute Value Type.
-   *
-   * @return {@link DocumentAttributeValueType}
-   */
-  public DocumentAttributeValueType getValueType() {
-    return this.valueType;
-  }
-
-  /**
-   * Set Attribute Type.
-   *
-   * @param attributeType {@link DocumentAttributeValueType}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setValueType(final DocumentAttributeValueType attributeType) {
-    this.valueType = attributeType;
-    return this;
-  }
-
-  /**
-   * Get Attribute Key.
-   *
-   * @return {@link String}
-   */
-  public String getKey() {
-    return this.key;
-  }
-
-  /**
-   * Set Key.
-   *
-   * @param attributeKey {@link String}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setKey(final String attributeKey) {
-    this.key = attributeKey;
-    return this;
-  }
-
-  /**
-   * Get Document Id.
-   *
-   * @return {@link String}
-   */
-  public String getDocumentId() {
-    return this.documentId;
-  }
-
-  /**
-   * Get Artifact Id.
-   *
-   * @return {@link String}
-   */
-  public String getArtifactId() {
-    return this.artifactId;
-  }
-
-  /**
-   * Set {@link DocumentArtifact}.
-   *
-   * @param documentArtifact {@link DocumentArtifact}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setDocument(final DocumentArtifact documentArtifact) {
-    if (documentArtifact != null) {
-      this.documentId = documentArtifact.documentId();
-      this.artifactId = documentArtifact.artifactId();
-    }
-    return this;
-  }
-
-  /**
-   * Get String value.
-   *
-   * @return {@link String}
-   */
-  public String getStringValue() {
-    return this.stringValue;
-  }
-
-  /**
-   * Set String value.
-   *
-   * @param value {@link String}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setStringValue(final String value) {
-    this.stringValue = value;
-    return this;
-  }
-
-  /**
-   * Get the JSON object value.
-   *
-   * @return JSON object, or null
-   */
-  public Map<String, Object> getJsonValue() {
-    return this.jsonValue;
-  }
-
-  /**
-   * Set the JSON object value.
-   *
-   * @param value JSON object
-   * @return this record
-   */
-  public DocumentAttributeRecord setJsonValue(final Map<String, Object> value) {
-    this.jsonValue = value;
-    return this;
-  }
-
-  /**
-   * Get Boolean Value.
-   *
-   * @return {@link Boolean}
-   */
-  public Boolean getBooleanValue() {
-    return this.booleanValue;
-  }
-
-  /**
-   * Set Boolean Value.
-   *
-   * @param value {@link Boolean}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setBooleanValue(final Boolean value) {
-    this.booleanValue = value;
-    return this;
-  }
-
-  /**
-   * Get Number Value.
-   *
-   * @return {@link Double}
-   */
-  public Double getNumberValue() {
-    return this.numberValue;
-  }
-
-  /**
-   * Set Number Value.
-   *
-   * @param value {@link Double}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setNumberValue(final Double value) {
-    this.numberValue = value;
-    return this;
-  }
-
-  /**
-   * Get Date value.
-   *
-   * @return {@link Date}
-   */
-  public Date getDateValue() {
-    return this.dateValue != null ? DateUtil.toDateFromString(this.dateValue, ZoneOffset.UTC)
-        : null;
-  }
-
-  /**
-   * Get Date value as String.
-   *
-   * @return {@link String}
-   */
-  public String getDateValueAsString() {
-    return this.dateValue;
-  }
-
-  /**
-   * Set Date value.
-   *
-   * @param value {@link Date}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setDateValue(final Date value) {
-    this.dateValue = value != null ? DateUtil.getInIso8601Format(value) : null;
-    return this;
-  }
-
-  /**
-   * Update Value Type.
-   *
-   * @return DocumentAttributeRecord
-   */
-  public DocumentAttributeRecord updateValueType() {
-    this.valueType = DocumentAttributeValueType.KEY_ONLY;
-
-    if (!isEmpty(this.stringValue)) {
-      this.valueType = DocumentAttributeValueType.STRING;
-    } else if (!isEmpty(this.dateValue)) {
-      this.valueType = DocumentAttributeValueType.DATE;
-    } else if (this.numberValue != null) {
-      this.valueType = DocumentAttributeValueType.NUMBER;
-    } else if (this.booleanValue != null) {
-      this.valueType = DocumentAttributeValueType.BOOLEAN;
-    } else if (this.jsonValue != null) {
-      this.valueType = DocumentAttributeValueType.JSON;
-    }
-
-    return this;
-  }
-
-  /**
-   * Get Inserted Date.
-   *
-   * @return {@link Date}
-   */
-  public Date getInsertedDate() {
-    return this.insertedDate;
-  }
-
-  /**
-   * Set Inserted Date.
-   *
-   * @param date {@link Date}
-   * @return {@link DocumentAttributeRecord}
-   */
-  public DocumentAttributeRecord setInsertedDate(final Date date) {
-    this.insertedDate = date;
-    return this;
-  }
-
-  /**
-   * Build {@link DocumentAttributeRecord}.
-   * 
-   * @return Builder
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  @Override
-  public DocumentAttributeRecord build(final DynamoDbKey dbKey) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public DocumentAttributeRecord build(final String siteId) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public DynamoDbKey buildKey(final String siteId) {
-    if (this.documentId == null) {
-      throw new IllegalArgumentException("'documentId' is required");
-    }
-
-    if (this.key == null) {
-      throw new IllegalArgumentException("'key' is required");
-    }
-
-    var dbKey = DynamoDbKey.builder().pk(siteId, PREFIX_DOCS + this.documentId).sk(sk())
-        .gsi1Pk(siteId, PREFIX_DOCS + ATTR + this.key).gsi1Sk(skGsi1());
-
-    String pkGsi2 = pkGsi2(siteId);
-    if (!isEmpty(pkGsi2)) {
-      dbKey.gsi2Pk(siteId, PREFIX_DOCS + this.documentId).gsi2Sk(skGsi2());
-    }
-
-    return dbKey.build();
-  }
-
   public static class Builder {
     /** User Id. */
     private String userId;
@@ -715,5 +195,528 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       this.valueType = attributeValueType;
       return this;
     }
+  }
+
+  /** Attribute constant. */
+  public static final String ATTR = "attr#";
+
+  /**
+   * Build {@link DocumentAttributeRecord}.
+   * 
+   * @return Builder
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /** Boolean value. */
+  private Boolean booleanValue;
+  /** Date valueAttribute. */
+  private String dateValue;
+  /** Attribute Document Id. */
+  private String documentId;
+  /** Artifact Id. */
+  private String artifactId;
+  /** Key of Attribute. */
+  private String key;
+  /** Number value. */
+  private Double numberValue;
+  /** String valueAttribute. */
+  private String stringValue;
+  /** JSON object value. */
+  private Map<String, Object> jsonValue;
+  /** Type of Attribute. */
+  private DocumentAttributeValueType valueType;
+
+  /** Inserted Date. */
+  private Date insertedDate;
+
+  /** Attribute Document Id. */
+  private String userId;
+
+  /** Override {@link AttributeValidationAccess}. */
+  private AttributeValidationAccess validationAccess;
+
+  /**
+   * constructor.
+   */
+  public DocumentAttributeRecord() {}
+
+  @Override
+  public DocumentAttributeRecord build(final DynamoDbKey dbKey) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DocumentAttributeRecord build(final String siteId) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DynamoDbKey buildKey(final String siteId) {
+    if (this.documentId == null) {
+      throw new IllegalArgumentException("'documentId' is required");
+    }
+
+    if (this.key == null) {
+      throw new IllegalArgumentException("'key' is required");
+    }
+
+    var dbKey = DynamoDbKey.builder().pk(siteId, PREFIX_DOCS + this.documentId).sk(sk())
+        .gsi1Pk(siteId, PREFIX_DOCS + ATTR + this.key).gsi1Sk(skGsi1());
+
+    String pkGsi2 = pkGsi2(siteId);
+    if (!isEmpty(pkGsi2)) {
+      dbKey.gsi2Pk(siteId, PREFIX_DOCS + this.documentId).gsi2Sk(skGsi2());
+    }
+
+    return dbKey.build();
+  }
+
+  /**
+   * Get Artifact Id.
+   *
+   * @return {@link String}
+   */
+  public String getArtifactId() {
+    return this.artifactId;
+  }
+
+  @Override
+  public Map<String, AttributeValue> getAttributes(final String siteId) {
+
+    Map<String, AttributeValue> map = new HashMap<>(getDataAttributes());
+
+    DynamoDbKey dbKey = buildKey(siteId);
+    Map<String, AttributeValue> keyMap = dbKey.getAttributesBuilder().build();
+    map.putAll(keyMap);
+
+    return map;
+  }
+
+  /**
+   * Get Boolean Value.
+   *
+   * @return {@link Boolean}
+   */
+  public Boolean getBooleanValue() {
+    return this.booleanValue;
+  }
+
+  @Override
+  public Map<String, AttributeValue> getDataAttributes() {
+
+    Map<String, AttributeValue> map = new HashMap<>();
+    map.put("key", fromS(this.key));
+    map.put("valueType", fromS(this.valueType.name()));
+    map.put("documentId", fromS(this.documentId));
+    map.put("userId", fromS(this.userId));
+
+    if (this.artifactId != null) {
+      map.put("artifactId", fromS(this.artifactId));
+    }
+
+    if (this.booleanValue != null) {
+      map.put("booleanValue", AttributeValue.fromBool(this.booleanValue));
+    }
+
+    if (this.dateValue != null) {
+      map.put("dateValue", fromS(this.dateValue));
+    }
+
+    if (this.numberValue != null) {
+      map.put("numberValue", AttributeValue.fromN(formatDouble(this.numberValue)));
+    }
+
+    if (this.stringValue != null) {
+      map.put("stringValue", fromS(this.stringValue));
+    }
+
+    if (this.jsonValue != null) {
+      map.put("jsonValue", new ObjectToAttributeValue().apply(this.jsonValue));
+    }
+
+    if (this.insertedDate != null) {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      map.put("inserteddate", fromS(df.format(this.insertedDate)));
+    }
+
+    return map;
+  }
+
+  /**
+   * Get Date value.
+   *
+   * @return {@link Date}
+   */
+  public Date getDateValue() {
+    return this.dateValue != null ? DateUtil.toDateFromString(this.dateValue, ZoneOffset.UTC)
+        : null;
+  }
+
+  /**
+   * Get Date value as String.
+   *
+   * @return {@link String}
+   */
+  public String getDateValueAsString() {
+    return this.dateValue;
+  }
+
+  /**
+   * Get Document Id.
+   *
+   * @return {@link String}
+   */
+  public String getDocumentId() {
+    return this.documentId;
+  }
+
+  @Override
+  public DocumentAttributeRecord getFromAttributes(final String siteId,
+      final Map<String, AttributeValue> attrs) {
+
+    DocumentAttributeRecord record = null;
+
+    if (!attrs.isEmpty()) {
+
+      var userIdAttr = DynamoDbTypes.toString(attrs.get("userId"));
+      var documentIdAttr = DynamoDbTypes.toString(attrs.get("documentId"));
+      var artifactIdAttr = DynamoDbTypes.toString(attrs.get("artifactId"));
+      var document = DocumentArtifact.of(documentIdAttr, artifactIdAttr);
+      var valueTypeAttr = DynamoDbTypes.toString(attrs.get("valueType"));
+      record = new DocumentAttributeRecord().setUserId(userIdAttr).setDocument(document)
+          .setKey(DynamoDbTypes.toString(attrs.get("key"))).setValueType(
+              valueTypeAttr != null ? DocumentAttributeValueType.valueOf(valueTypeAttr) : null);
+
+      if (attrs.containsKey("stringValue")) {
+        record.setStringValue(DynamoDbTypes.toString(attrs.get("stringValue")));
+      }
+
+      if (attrs.containsKey("booleanValue")) {
+        record.setBooleanValue(bb(attrs, "booleanValue"));
+      }
+
+      if (attrs.containsKey("dateValue")) {
+        record.dateValue = DynamoDbTypes.toString(attrs.get("dateValue"));
+      }
+
+      if (attrs.containsKey("numberValue")) {
+        record.setNumberValue(nn(attrs, "numberValue"));
+      }
+
+      if (attrs.containsKey("jsonValue")) {
+        record.setJsonValue((Map<String, Object>) DynamoDbTypes.toJson(attrs.get("jsonValue")));
+      }
+
+      if (attrs.containsKey("inserteddate")) {
+        try {
+          SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+          String insereddate = DynamoDbTypes.toString(attrs.get("inserteddate"));
+          record = record.setInsertedDate(df.parse(insereddate));
+        } catch (ParseException e) {
+          // ignore
+        }
+      }
+
+    }
+
+    return record;
+  }
+
+  /**
+   * Get Inserted Date.
+   *
+   * @return {@link Date}
+   */
+  public Date getInsertedDate() {
+    return this.insertedDate;
+  }
+
+  /**
+   * Get the JSON object value.
+   *
+   * @return JSON object, or null
+   */
+  public Map<String, Object> getJsonValue() {
+    return this.jsonValue;
+  }
+
+  /**
+   * Get Attribute Key.
+   *
+   * @return {@link String}
+   */
+  public String getKey() {
+    return this.key;
+  }
+
+  /**
+   * Get Number Value.
+   *
+   * @return {@link Double}
+   */
+  public Double getNumberValue() {
+    return this.numberValue;
+  }
+
+  private String getSkValue(final String sk) {
+    String val = sk;
+    switch (this.valueType) {
+      case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS, ENTITY ->
+        val += this.stringValue;
+      case DATE -> val += this.dateValue;
+      case BOOLEAN -> val += this.booleanValue;
+      case NUMBER -> val += formatDouble(this.numberValue);
+      case KEY_ONLY, PUBLICATION, WATERMARK, JSON -> {
+      }
+      default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
+    }
+    return val;
+  }
+
+  /**
+   * Get String value.
+   *
+   * @return {@link String}
+   */
+  public String getStringValue() {
+    return this.stringValue;
+  }
+
+  /**
+   * Get User Id.
+   * 
+   * @return String
+   */
+  public String getUserId() {
+    return this.userId;
+  }
+
+  /**
+   * Get {@link AttributeValidationAccess}.
+   * 
+   * @return {@link AttributeValidationAccess}
+   */
+  public AttributeValidationAccess getValidationAccess() {
+    return validationAccess;
+  }
+
+  /**
+   * Get Attribute Value Type.
+   *
+   * @return {@link DocumentAttributeValueType}
+   */
+  public DocumentAttributeValueType getValueType() {
+    return this.valueType;
+  }
+
+  @Override
+  public String pk(final String siteId) {
+    if (this.documentId == null) {
+      throw new IllegalArgumentException("'documentId' is required");
+    }
+    return createDatabaseKey(siteId, PREFIX_DOCS + this.documentId);
+  }
+
+  @Override
+  public String pkGsi1(final String siteId) {
+    if (this.key == null) {
+      throw new IllegalArgumentException("'key' is required");
+    }
+    return createDatabaseKey(siteId, PREFIX_DOCS + ATTR + this.key);
+  }
+
+  @Override
+  public String pkGsi2(final String siteId) {
+    return DocumentAttributeValueType.WATERMARK.equals(this.valueType)
+        ? createDatabaseKey(siteId, PREFIX_DOCS + this.documentId)
+        : null;
+  }
+
+  /**
+   * Set Boolean Value.
+   *
+   * @param value {@link Boolean}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setBooleanValue(final Boolean value) {
+    this.booleanValue = value;
+    return this;
+  }
+
+  /**
+   * Set Date value.
+   *
+   * @param value {@link Date}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setDateValue(final Date value) {
+    this.dateValue = value != null ? DateUtil.getInIso8601Format(value) : null;
+    return this;
+  }
+
+  /**
+   * Set {@link DocumentArtifact}.
+   *
+   * @param documentArtifact {@link DocumentArtifact}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setDocument(final DocumentArtifact documentArtifact) {
+    if (documentArtifact != null) {
+      this.documentId = documentArtifact.documentId();
+      this.artifactId = documentArtifact.artifactId();
+    }
+    return this;
+  }
+
+  /**
+   * Set Inserted Date.
+   *
+   * @param date {@link Date}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setInsertedDate(final Date date) {
+    this.insertedDate = date;
+    return this;
+  }
+
+  /**
+   * Set the JSON object value.
+   *
+   * @param value JSON object
+   * @return this record
+   */
+  public DocumentAttributeRecord setJsonValue(final Map<String, Object> value) {
+    this.jsonValue = value;
+    return this;
+  }
+
+  /**
+   * Set Key.
+   *
+   * @param attributeKey {@link String}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setKey(final String attributeKey) {
+    this.key = attributeKey;
+    return this;
+  }
+
+  /**
+   * Set Number Value.
+   *
+   * @param value {@link Double}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setNumberValue(final Double value) {
+    this.numberValue = value;
+    return this;
+  }
+
+  /**
+   * Set String value.
+   *
+   * @param value {@link String}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setStringValue(final String value) {
+    this.stringValue = value;
+    return this;
+  }
+
+  /**
+   * Set User Id.
+   * 
+   * @param user {@link String}
+   * @return DocumentAttributeRecord
+   */
+  public DocumentAttributeRecord setUserId(final String user) {
+    this.userId = user;
+    return this;
+  }
+
+  /**
+   * Set {@link AttributeValidationAccess}.
+   * 
+   * @param attributeValidationAccess {@link AttributeValidationAccess}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setValidationAccess(
+      final AttributeValidationAccess attributeValidationAccess) {
+    this.validationAccess = attributeValidationAccess;
+    return this;
+  }
+
+  /**
+   * Set Attribute Type.
+   *
+   * @param attributeType {@link DocumentAttributeValueType}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setValueType(final DocumentAttributeValueType attributeType) {
+    this.valueType = attributeType;
+    return this;
+  }
+
+  @Override
+  public String sk() {
+
+    if (this.key == null) {
+      throw new IllegalArgumentException("'key' is required");
+    }
+
+    String sk = ATTR + this.key + "#";
+    if (artifactId != null) {
+      sk = "attr_art#" + artifactId + "#" + this.key + "#";
+    }
+
+    sk = getSkValue(sk);
+
+    return truncateSk(sk);
+  }
+
+  @Override
+  public String skGsi1() {
+
+    return switch (this.valueType) {
+      case STRING, COMPOSITE_STRING, RELATIONSHIPS, ENTITY, CLASSIFICATION, PUBLICATION ->
+        truncateSk(this.stringValue);
+      case DATE -> truncateSk(this.dateValue);
+      case NUMBER -> formatDouble(this.numberValue);
+      case BOOLEAN -> this.booleanValue.toString();
+      case KEY_ONLY, WATERMARK, JSON -> "#";
+    };
+
+  }
+
+  @Override
+  public String skGsi2() {
+    return DocumentAttributeValueType.WATERMARK.equals(this.valueType)
+        ? ATTR + this.valueType + "#" + this.key
+        : null;
+  }
+
+  /**
+   * Update Value Type.
+   *
+   * @return DocumentAttributeRecord
+   */
+  public DocumentAttributeRecord updateValueType() {
+    this.valueType = DocumentAttributeValueType.KEY_ONLY;
+
+    if (!isEmpty(this.stringValue)) {
+      this.valueType = DocumentAttributeValueType.STRING;
+    } else if (!isEmpty(this.dateValue)) {
+      this.valueType = DocumentAttributeValueType.DATE;
+    } else if (this.numberValue != null) {
+      this.valueType = DocumentAttributeValueType.NUMBER;
+    } else if (this.booleanValue != null) {
+      this.valueType = DocumentAttributeValueType.BOOLEAN;
+    } else if (this.jsonValue != null) {
+      this.valueType = DocumentAttributeValueType.JSON;
+    }
+
+    return this;
   }
 }

@@ -85,6 +85,37 @@ class DocumentSearchTimeBudgetTest {
     this.items.put(Map.of("PK", item.get("PK"), "SK", item.get("SK")), item);
   }
 
+  private Map<String, AttributeValue> attribute(final int id, final String key,
+      final String value) {
+    return new DocumentAttributeRecord()
+        .setDocument(DocumentArtifact.of(Integer.toString(id), null)).setKey(key)
+        .setValueType(DocumentAttributeValueType.STRING).setStringValue(value)
+        .getAttributes("site");
+  }
+
+  private BatchGetItemResponse batch(final BatchGetItemRequest request) {
+    assertTrue(request.overrideConfiguration().isEmpty());
+    var keys = request.requestItems().get("Documents").keys();
+    String sk = keys.getFirst().get("SK").s();
+    if (sk.startsWith("attr#")) {
+      this.attributeReads++;
+      stop("attributeBatch");
+    }
+    if (this.offset == 100) {
+      stop(sk.startsWith("attr#") ? "filter" : "documents");
+    }
+    List<Map<String, AttributeValue>> found =
+        keys.stream().map(this.items::get).filter(java.util.Objects::nonNull).toList().reversed();
+    return BatchGetItemResponse.builder().responses(Map.of("Documents", found)).build();
+  }
+
+  private SearchQuery criteria() {
+    return new SearchQueryBuilder()
+        .attributes(List.of(new SearchAttributeCriteria("customer", null, "123", null, null),
+            new SearchAttributeCriteria("status", null, "approved", null, null)))
+        .build();
+  }
+
   private void fixtures(final boolean matches) {
     for (int i = 0; i < 201; i++) {
       Map<String, AttributeValue> customer = attribute(i, "customer", "123");
@@ -95,20 +126,6 @@ class DocumentSearchTimeBudgetTest {
       if (matches && (i == 42 || i == 142)) {
         add(attribute(i, "status", "approved"));
       }
-    }
-  }
-
-  private Map<String, AttributeValue> attribute(final int id, final String key,
-      final String value) {
-    return new DocumentAttributeRecord()
-        .setDocument(DocumentArtifact.of(Integer.toString(id), null)).setKey(key)
-        .setValueType(DocumentAttributeValueType.STRING).setStringValue(value)
-        .getAttributes("site");
-  }
-
-  private void stop(final String stage) {
-    if (stage.equals(this.stopAt)) {
-      this.clock.addAndGet(Duration.ofSeconds(25).toNanos());
     }
   }
 
@@ -147,22 +164,6 @@ class DocumentSearchTimeBudgetTest {
         .build();
   }
 
-  private BatchGetItemResponse batch(final BatchGetItemRequest request) {
-    assertTrue(request.overrideConfiguration().isEmpty());
-    var keys = request.requestItems().get("Documents").keys();
-    String sk = keys.getFirst().get("SK").s();
-    if (sk.startsWith("attr#")) {
-      this.attributeReads++;
-      stop("attributeBatch");
-    }
-    if (this.offset == 100) {
-      stop(sk.startsWith("attr#") ? "filter" : "documents");
-    }
-    List<Map<String, AttributeValue>> found =
-        keys.stream().map(this.items::get).filter(java.util.Objects::nonNull).toList().reversed();
-    return BatchGetItemResponse.builder().responses(Map.of("Documents", found)).build();
-  }
-
   private DocumentSearchQuery search() {
     DynamoDbClient client = stub(DynamoDbClient.class, (method, args) -> switch (method) {
       case "getItem" -> GetItemResponse.builder().build();
@@ -184,52 +185,15 @@ class DocumentSearchTimeBudgetTest {
         new AttributeServiceDynamodb(db), new SchemaServiceDynamodb(db), this.clock::get);
   }
 
-  private SearchQuery criteria() {
-    return new SearchQueryBuilder()
-        .attributes(List.of(new SearchAttributeCriteria("customer", null, "123", null, null),
-            new SearchAttributeCriteria("status", null, "approved", null, null)))
-        .build();
+  private void stop(final String stage) {
+    if (stage.equals(this.stopAt)) {
+      this.clock.addAndGet(Duration.ofSeconds(25).toNanos());
+    }
   }
 
   private <T> T stub(final Class<T> type, final BiFunction<String, Object[], Object> handler) {
     return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type},
         (proxy, method, args) -> handler.apply(method.getName(), args)));
-  }
-
-  /** An expired budget before the next read retains the preceding completed batch. */
-  @Test
-  void testUnfinishedBatchResumesWithoutSkippingMatches() {
-    for (String stage : List.of("index", "filter")) {
-      // given
-      this.rows.clear();
-      this.starts.clear();
-      fixtures(true);
-      this.stopAt = stage;
-
-      // when
-      var first = search().query("site", criteria(), null, 10);
-
-      // then
-      assertTrue(first.isTruncated());
-      assertEquals(List.of("42"),
-          first.getResults().stream().map(result -> result.documentRecord().documentId()).toList());
-      Map<String, AttributeValue> token =
-          new StringToMapAttributeValue().apply(first.getNextToken());
-      assertEquals("100", token.get("offset").s());
-
-      // given
-      this.stopAt = null;
-
-      // when
-      var second = search().query("site", criteria(), first.getNextToken(), 10);
-
-      // then
-      assertEquals(List.of("142"), second.getResults().stream()
-          .map(result -> result.documentRecord().documentId()).toList());
-      assertEquals(List.of(0, 100, 100, 200), this.starts);
-      assertFalse(second.isTruncated());
-      assertNull(second.getNextToken());
-    }
   }
 
   /** The processing budget starts in the index loop after the empty-index prechecks. */
@@ -247,45 +211,6 @@ class DocumentSearchTimeBudgetTest {
     assertEquals(2, page.getResults().size());
     assertFalse(page.isTruncated());
     assertNull(page.getNextToken());
-  }
-
-  /** Stop per-document filtering reads at the deadline and retry the unfinished batch. */
-  @Test
-  void testNonEqualityFilterTimeoutResumes() {
-    // given
-    fixtures(true);
-    this.stopAt = "filterQueries";
-    SearchQuery criteria = new SearchQueryBuilder()
-        .attributes(List.of(new SearchAttributeCriteria("customer", null, "123", null, null),
-            new SearchAttributeCriteria("status", "a", null, null, null)))
-        .build();
-    DocumentSearchQuery query = search();
-
-    // when
-    var first = query.query("site", criteria, null, 10);
-
-    // then
-    assertTrue(first.isTruncated());
-    assertEquals(List.of("42"),
-        first.getResults().stream().map(result -> result.documentRecord().documentId()).toList());
-    assertEquals(106, this.filterReads.size());
-    assertEquals(105, this.filterReads.getLast());
-    assertEquals("100",
-        new StringToMapAttributeValue().apply(first.getNextToken()).get("offset").s());
-
-    // given
-    this.stopAt = null;
-    this.filterReads.clear();
-
-    // when
-    var second = query.query("site", criteria, first.getNextToken(), 10);
-
-    // then
-    assertEquals(100, this.filterReads.getFirst());
-    assertEquals(List.of("142"),
-        second.getResults().stream().map(result -> result.documentRecord().documentId()).toList());
-    assertFalse(second.isTruncated());
-    assertNull(second.getNextToken());
   }
 
   /** No matches is incomplete when time runs out; its cursor still makes progress. */
@@ -313,20 +238,6 @@ class DocumentSearchTimeBudgetTest {
     assertTrue(second.getResults().isEmpty());
     assertFalse(second.isTruncated());
     assertNull(second.getNextToken());
-  }
-
-  /** Counts include only completed batches and advertise that they are lower bounds. */
-  @Test
-  void testPartialCount() {
-    // given
-    fixtures(true);
-    this.stopAt = "filter";
-
-    // when
-    SearchCountResult count = search().count("site", criteria(), 10000);
-
-    // then
-    assertEquals(new SearchCountResult(1, true), count);
   }
 
   /** An equality lookup exceeding 100 keys checks the budget before its next batch read. */
@@ -382,6 +293,59 @@ class DocumentSearchTimeBudgetTest {
     assertEquals(List.of(0, 100, 200), this.starts);
   }
 
+  /** Stop per-document filtering reads at the deadline and retry the unfinished batch. */
+  @Test
+  void testNonEqualityFilterTimeoutResumes() {
+    // given
+    fixtures(true);
+    this.stopAt = "filterQueries";
+    SearchQuery criteria = new SearchQueryBuilder()
+        .attributes(List.of(new SearchAttributeCriteria("customer", null, "123", null, null),
+            new SearchAttributeCriteria("status", "a", null, null, null)))
+        .build();
+    DocumentSearchQuery query = search();
+
+    // when
+    var first = query.query("site", criteria, null, 10);
+
+    // then
+    assertTrue(first.isTruncated());
+    assertEquals(List.of("42"),
+        first.getResults().stream().map(result -> result.documentRecord().documentId()).toList());
+    assertEquals(106, this.filterReads.size());
+    assertEquals(105, this.filterReads.getLast());
+    assertEquals("100",
+        new StringToMapAttributeValue().apply(first.getNextToken()).get("offset").s());
+
+    // given
+    this.stopAt = null;
+    this.filterReads.clear();
+
+    // when
+    var second = query.query("site", criteria, first.getNextToken(), 10);
+
+    // then
+    assertEquals(100, this.filterReads.getFirst());
+    assertEquals(List.of("142"),
+        second.getResults().stream().map(result -> result.documentRecord().documentId()).toList());
+    assertFalse(second.isTruncated());
+    assertNull(second.getNextToken());
+  }
+
+  /** Counts include only completed batches and advertise that they are lower bounds. */
+  @Test
+  void testPartialCount() {
+    // given
+    fixtures(true);
+    this.stopAt = "filter";
+
+    // when
+    SearchCountResult count = search().count("site", criteria(), 10000);
+
+    // then
+    assertEquals(new SearchCountResult(1, true), count);
+  }
+
   /** A reusable query starts a fresh local budget for each fallback invocation. */
   @Test
   void testQueryStartsFreshBudget() {
@@ -412,6 +376,42 @@ class DocumentSearchTimeBudgetTest {
 
     // then
     assertEquals(new SearchCountResult(2, false), count);
+  }
+
+  /** An expired budget before the next read retains the preceding completed batch. */
+  @Test
+  void testUnfinishedBatchResumesWithoutSkippingMatches() {
+    for (String stage : List.of("index", "filter")) {
+      // given
+      this.rows.clear();
+      this.starts.clear();
+      fixtures(true);
+      this.stopAt = stage;
+
+      // when
+      var first = search().query("site", criteria(), null, 10);
+
+      // then
+      assertTrue(first.isTruncated());
+      assertEquals(List.of("42"),
+          first.getResults().stream().map(result -> result.documentRecord().documentId()).toList());
+      Map<String, AttributeValue> token =
+          new StringToMapAttributeValue().apply(first.getNextToken());
+      assertEquals("100", token.get("offset").s());
+
+      // given
+      this.stopAt = null;
+
+      // when
+      var second = search().query("site", criteria(), first.getNextToken(), 10);
+
+      // then
+      assertEquals(List.of("142"), second.getResults().stream()
+          .map(result -> result.documentRecord().documentId()).toList());
+      assertEquals(List.of(0, 100, 100, 200), this.starts);
+      assertFalse(second.isTruncated());
+      assertNull(second.getNextToken());
+    }
   }
 
 }

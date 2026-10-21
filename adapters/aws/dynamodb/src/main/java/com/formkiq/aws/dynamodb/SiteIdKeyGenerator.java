@@ -36,8 +36,19 @@ import java.util.stream.Stream;
  */
 public final class SiteIdKeyGenerator {
 
+  /**
+   * S3 key parts.
+   *
+   * @param siteId {@link String}
+   * @param documentId {@link String}
+   * @param artifactId {@link String}
+   */
+  public record S3KeyParts(String siteId, String documentId, String artifactId) {
+  }
+
   /** Default Site Id. */
   public static final String DEFAULT_SITE_ID = "default";
+
   /** S3 key parts with site id. */
   private static final int S3_KEY_PARTS_WITH_SITE_ID = 3;
 
@@ -263,14 +274,4 @@ public final class SiteIdKeyGenerator {
    * private constructor.
    */
   private SiteIdKeyGenerator() {}
-
-  /**
-   * S3 key parts.
-   *
-   * @param siteId {@link String}
-   * @param documentId {@link String}
-   * @param artifactId {@link String}
-   */
-  public record S3KeyParts(String siteId, String documentId, String artifactId) {
-  }
 }

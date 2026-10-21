@@ -58,8 +58,13 @@ import static software.amazon.awssdk.services.dynamodb.model.AttributeValue.from
  */
 public class LocaleServiceDynamodb implements LocaleService {
 
+  private static Map<String, AttributeValue> toMap(final String siteId, final String sk) {
+    return Map.of(PK, fromS(LocaleTypeRecord.createPk(siteId)), SK, fromS(sk));
+  }
+
   /** {@link DynamoDbService}. */
   private final DynamoDbService db;
+
   /** {@link SchemaService}. */
   private final SchemaService schema;
 
@@ -74,8 +79,98 @@ public class LocaleServiceDynamodb implements LocaleService {
     this.schema = schemaService;
   }
 
-  private static Map<String, AttributeValue> toMap(final String siteId, final String sk) {
-    return Map.of(PK, fromS(LocaleTypeRecord.createPk(siteId)), SK, fromS(sk));
+  @Override
+  public boolean delete(final String siteId, final String locale, final String itemKey) {
+    LocaleTypeRecord record = new LocaleTypeRecord();
+    String pk = record.pk(siteId);
+    String sk = locale + "##" + itemKey;
+    return this.db.deleteItem(fromS(pk), fromS(sk));
+  }
+
+  @Override
+  public List<ValidationError> deleteLocale(final String siteId, final String locale) {
+
+    List<ValidationError> errors = new ArrayList<>();
+
+    if (!isLocaleExists(siteId, locale)) {
+      errors
+          .add(new ValidationErrorImpl().key("locale").error("Locale '" + locale + "' not found"));
+    } else {
+      int size = findAll(siteId, locale, null, null, 1).getResults().size();
+      if (size > 0) {
+        errors.add(new ValidationErrorImpl().key("locale")
+            .error("Locale Item Resources found for Locale '" + locale + "'"));
+      }
+    }
+
+    if (errors.isEmpty()) {
+      LocaleRecord lr = new LocaleRecord().setLocale(locale);
+      this.db.deleteItem(Map.of(PK, fromS(lr.pk(siteId)), SK, fromS(lr.sk())));
+    }
+
+    return errors;
+  }
+
+  @Override
+  public LocaleTypeRecord find(final String siteId, final String locale, final String itemKey) {
+    LocaleTypeRecord record = new LocaleTypeRecord();
+    String pk = record.pk(siteId);
+    String sk = locale + "##" + itemKey;
+    Map<String, AttributeValue> attr = this.db.get(fromS(pk), fromS(sk));
+    return record.getFromAttributes(siteId, attr);
+  }
+
+  @Override
+  public Pagination<LocaleTypeRecord> findAll(final String siteId, final String locale,
+      final LocaleResourceType itemType, final String nextToken, final int limit) {
+
+    String sk = locale + "##" + (itemType != null ? itemType.name() : "");
+    Map<String, AttributeValue> key = toMap(siteId, sk);
+    Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
+    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
+
+    QueryResponse response =
+        this.db.queryBeginsWith(config, key.get(PK), key.get(SK), startKey, limit);
+    List<LocaleTypeRecord> list = response.items().stream()
+        .map(r -> new LocaleTypeRecord().getFromAttributes(siteId, r)).toList();
+    return new Pagination<>(list, response.lastEvaluatedKey());
+  }
+
+  private Map<String, List<String>> findAllowedValues(final String siteId,
+      final Collection<LocaleTypeRecord> records) {
+
+    Map<String, List<String>> map = new HashMap<>();
+
+    Schema sitesSchema = schema.getSitesSchema(siteId);
+
+    if (sitesSchema != null && sitesSchema.getAttributes() != null) {
+
+      notNull(sitesSchema.getAttributes().getRequired())
+          .forEach(a -> map.put("schema#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
+
+      notNull(sitesSchema.getAttributes().getOptional())
+          .forEach(a -> map.put("schema#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
+    }
+
+    notNull(records).forEach(record -> {
+
+      if (!isEmpty(record.getClassificationId())) {
+        ClassificationRecord classificationRecord =
+            schema.findClassification(siteId, record.getClassificationId());
+
+        if (classificationRecord != null) {
+          Schema classification = schema.getSchema(classificationRecord);
+          String classificationId = classificationRecord.getDocumentId();
+          notNull(classification.getAttributes().getRequired()).forEach(a -> map
+              .put(classificationId + "#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
+
+          notNull(classification.getAttributes().getOptional()).forEach(a -> map
+              .put(classificationId + "#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
+        }
+      }
+    });
+
+    return map;
   }
 
   @Override
@@ -92,20 +187,15 @@ public class LocaleServiceDynamodb implements LocaleService {
     return new Pagination<>(list, response.lastEvaluatedKey());
   }
 
+  private Map<String, LocaleTypeRecord> getAttributeKeysByResourceTypes(
+      final Collection<LocaleTypeRecord> records, final List<LocaleResourceType> allowedTypes) {
+    return records.stream().filter(record -> allowedTypes.contains(record.getItemType()))
+        .collect(Collectors.toMap(LocaleTypeRecord::getAttributeKey, Function.identity()));
+  }
+
   private boolean isLocaleExists(final String siteId, final String locale) {
     LocaleRecord r = new LocaleRecord().setLocale(locale);
     return this.db.exists(fromS(r.pk(siteId)), fromS(r.sk()));
-  }
-
-  @Override
-  public List<ValidationError> saveLocale(final String siteId, final String locale) {
-    List<ValidationError> errors = validate(locale);
-
-    if (errors.isEmpty()) {
-      this.db.putItem(new LocaleRecord().setLocale(locale).getAttributes(siteId));
-    }
-
-    return errors;
   }
 
   @Override
@@ -116,6 +206,17 @@ public class LocaleServiceDynamodb implements LocaleService {
       List<Map<String, AttributeValue>> attrs =
           records.stream().map(r -> r.getAttributes(siteId)).toList();
       this.db.putItems(attrs);
+    }
+
+    return errors;
+  }
+
+  @Override
+  public List<ValidationError> saveLocale(final String siteId, final String locale) {
+    List<ValidationError> errors = validate(locale);
+
+    if (errors.isEmpty()) {
+      this.db.putItem(new LocaleRecord().setLocale(locale).getAttributes(siteId));
     }
 
     return errors;
@@ -166,25 +267,6 @@ public class LocaleServiceDynamodb implements LocaleService {
     return errors;
   }
 
-  private void validateLocale(final String siteId, final Collection<LocaleTypeRecord> records,
-      final List<ValidationError> errors) {
-
-    List<LocaleRecord> list = records.stream().map(LocaleTypeRecord::getLocale)
-        .map(r -> new LocaleRecord().setLocale(r)).toList();
-    List<Map<String, AttributeValue>> keys =
-        list.stream().map(new DynamodbRecordToKeys(siteId)).toList();
-    Collection<String> locales = this.db.getBatch(new BatchGetConfig(), keys).stream()
-        .map(a -> a.get("locale").s()).collect(Collectors.toSet());
-
-    records.forEach(r -> {
-      if (!locales.contains(r.getLocale())) {
-        errors.add(new ValidationErrorImpl().key("locale")
-            .error("invalid locale '" + r.getLocale() + "'"));
-      }
-    });
-
-  }
-
   /**
    * Validate Allowed Values.
    * 
@@ -224,6 +306,55 @@ public class LocaleServiceDynamodb implements LocaleService {
         }
       });
     }
+  }
+
+  private void validateAttribute(final LocaleTypeRecord record,
+      final List<ValidationError> errors) {
+    if (isEmpty(record.getAttributeKey())) {
+      errors.add(new ValidationErrorImpl().key("attributeKey").error("'attributeKey' is required"));
+    }
+    if (isEmpty(record.getAllowedValue())) {
+      errors.add(new ValidationErrorImpl().key("allowedValue").error("'allowedValue' is required"));
+    }
+  }
+
+  private void validateAttribute(final String siteId, final Collection<LocaleTypeRecord> records,
+      final List<ValidationError> errors) {
+
+    Collection<String> attributeKeys = getAttributeKeysByResourceTypes(records,
+        List.of(LocaleResourceType.SCHEMA, LocaleResourceType.CLASSIFICATION)).keySet();
+
+    Collection<AttributeRecord> attributes = attributeKeys.stream()
+        .map(k -> new AttributeRecord().documentId(k)).collect(Collectors.toSet());
+
+    List<Map<String, AttributeValue>> keys =
+        attributes.stream().map(new DynamodbRecordToKeys(siteId)).toList();
+
+    List<Map<String, AttributeValue>> batch =
+        this.db.getBatch(new BatchGetConfig().projectionExpression("PK,SK,documentId"), keys);
+
+    attributeKeys.removeAll(batch.stream().map(a -> a.get("documentId").s()).toList());
+    attributeKeys.forEach(
+        a -> errors.add(new ValidationErrorImpl().key(a).error("missing attribute '" + a + "'")));
+  }
+
+  private void validateLocale(final String siteId, final Collection<LocaleTypeRecord> records,
+      final List<ValidationError> errors) {
+
+    List<LocaleRecord> list = records.stream().map(LocaleTypeRecord::getLocale)
+        .map(r -> new LocaleRecord().setLocale(r)).toList();
+    List<Map<String, AttributeValue>> keys =
+        list.stream().map(new DynamodbRecordToKeys(siteId)).toList();
+    Collection<String> locales = this.db.getBatch(new BatchGetConfig(), keys).stream()
+        .map(a -> a.get("locale").s()).collect(Collectors.toSet());
+
+    records.forEach(r -> {
+      if (!locales.contains(r.getLocale())) {
+        errors.add(new ValidationErrorImpl().key("locale")
+            .error("invalid locale '" + r.getLocale() + "'"));
+      }
+    });
+
   }
 
   /**
@@ -267,135 +398,5 @@ public class LocaleServiceDynamodb implements LocaleService {
         default -> throw new IllegalStateException("Unexpected value: " + record.getItemType());
       }
     }
-  }
-
-  private Map<String, List<String>> findAllowedValues(final String siteId,
-      final Collection<LocaleTypeRecord> records) {
-
-    Map<String, List<String>> map = new HashMap<>();
-
-    Schema sitesSchema = schema.getSitesSchema(siteId);
-
-    if (sitesSchema != null && sitesSchema.getAttributes() != null) {
-
-      notNull(sitesSchema.getAttributes().getRequired())
-          .forEach(a -> map.put("schema#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
-
-      notNull(sitesSchema.getAttributes().getOptional())
-          .forEach(a -> map.put("schema#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
-    }
-
-    notNull(records).forEach(record -> {
-
-      if (!isEmpty(record.getClassificationId())) {
-        ClassificationRecord classificationRecord =
-            schema.findClassification(siteId, record.getClassificationId());
-
-        if (classificationRecord != null) {
-          Schema classification = schema.getSchema(classificationRecord);
-          String classificationId = classificationRecord.getDocumentId();
-          notNull(classification.getAttributes().getRequired()).forEach(a -> map
-              .put(classificationId + "#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
-
-          notNull(classification.getAttributes().getOptional()).forEach(a -> map
-              .put(classificationId + "#" + a.getAttributeKey(), notNull(a.getAllowedValues())));
-        }
-      }
-    });
-
-    return map;
-  }
-
-  private Map<String, LocaleTypeRecord> getAttributeKeysByResourceTypes(
-      final Collection<LocaleTypeRecord> records, final List<LocaleResourceType> allowedTypes) {
-    return records.stream().filter(record -> allowedTypes.contains(record.getItemType()))
-        .collect(Collectors.toMap(LocaleTypeRecord::getAttributeKey, Function.identity()));
-  }
-
-  private void validateAttribute(final String siteId, final Collection<LocaleTypeRecord> records,
-      final List<ValidationError> errors) {
-
-    Collection<String> attributeKeys = getAttributeKeysByResourceTypes(records,
-        List.of(LocaleResourceType.SCHEMA, LocaleResourceType.CLASSIFICATION)).keySet();
-
-    Collection<AttributeRecord> attributes = attributeKeys.stream()
-        .map(k -> new AttributeRecord().documentId(k)).collect(Collectors.toSet());
-
-    List<Map<String, AttributeValue>> keys =
-        attributes.stream().map(new DynamodbRecordToKeys(siteId)).toList();
-
-    List<Map<String, AttributeValue>> batch =
-        this.db.getBatch(new BatchGetConfig().projectionExpression("PK,SK,documentId"), keys);
-
-    attributeKeys.removeAll(batch.stream().map(a -> a.get("documentId").s()).toList());
-    attributeKeys.forEach(
-        a -> errors.add(new ValidationErrorImpl().key(a).error("missing attribute '" + a + "'")));
-  }
-
-  private void validateAttribute(final LocaleTypeRecord record,
-      final List<ValidationError> errors) {
-    if (isEmpty(record.getAttributeKey())) {
-      errors.add(new ValidationErrorImpl().key("attributeKey").error("'attributeKey' is required"));
-    }
-    if (isEmpty(record.getAllowedValue())) {
-      errors.add(new ValidationErrorImpl().key("allowedValue").error("'allowedValue' is required"));
-    }
-  }
-
-  @Override
-  public Pagination<LocaleTypeRecord> findAll(final String siteId, final String locale,
-      final LocaleResourceType itemType, final String nextToken, final int limit) {
-
-    String sk = locale + "##" + (itemType != null ? itemType.name() : "");
-    Map<String, AttributeValue> key = toMap(siteId, sk);
-    Map<String, AttributeValue> startKey = new StringToMapAttributeValue().apply(nextToken);
-    QueryConfig config = new QueryConfig().scanIndexForward(Boolean.TRUE);
-
-    QueryResponse response =
-        this.db.queryBeginsWith(config, key.get(PK), key.get(SK), startKey, limit);
-    List<LocaleTypeRecord> list = response.items().stream()
-        .map(r -> new LocaleTypeRecord().getFromAttributes(siteId, r)).toList();
-    return new Pagination<>(list, response.lastEvaluatedKey());
-  }
-
-  @Override
-  public LocaleTypeRecord find(final String siteId, final String locale, final String itemKey) {
-    LocaleTypeRecord record = new LocaleTypeRecord();
-    String pk = record.pk(siteId);
-    String sk = locale + "##" + itemKey;
-    Map<String, AttributeValue> attr = this.db.get(fromS(pk), fromS(sk));
-    return record.getFromAttributes(siteId, attr);
-  }
-
-  @Override
-  public boolean delete(final String siteId, final String locale, final String itemKey) {
-    LocaleTypeRecord record = new LocaleTypeRecord();
-    String pk = record.pk(siteId);
-    String sk = locale + "##" + itemKey;
-    return this.db.deleteItem(fromS(pk), fromS(sk));
-  }
-
-  @Override
-  public List<ValidationError> deleteLocale(final String siteId, final String locale) {
-
-    List<ValidationError> errors = new ArrayList<>();
-
-    if (!isLocaleExists(siteId, locale)) {
-      errors
-          .add(new ValidationErrorImpl().key("locale").error("Locale '" + locale + "' not found"));
-    } else {
-      int size = findAll(siteId, locale, null, null, 1).getResults().size();
-      if (size > 0) {
-        errors.add(new ValidationErrorImpl().key("locale")
-            .error("Locale Item Resources found for Locale '" + locale + "'"));
-      }
-    }
-
-    if (errors.isEmpty()) {
-      LocaleRecord lr = new LocaleRecord().setLocale(locale);
-      this.db.deleteItem(Map.of(PK, fromS(lr.pk(siteId)), SK, fromS(lr.sk())));
-    }
-
-    return errors;
   }
 }

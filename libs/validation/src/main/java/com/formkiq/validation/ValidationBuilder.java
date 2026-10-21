@@ -153,6 +153,48 @@ public class ValidationBuilder {
   }
 
   /**
+   * Add {@link ValidationError} on boolean condition.
+   *
+   * @param value boolean.
+   * @param error {@link ValidationError}
+   * @return {@link ValidationBuilder}
+   */
+  public ValidationBuilder isRequired(final boolean value, final ValidationError error) {
+    if (!value) {
+      errors.add(error);
+    }
+    return this;
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value boolean
+   * @return {@link ValidationBuilder}
+   */
+  public ValidationBuilder isRequired(final String key, final boolean value) {
+    return isRequired(key, value, "'" + key + "' is invalid");
+  }
+
+  /**
+   * Validate Field is required.
+   *
+   * @param key {@link String}
+   * @param value boolean
+   * @param errorMessage {@link String}
+   * @return {@link ValidationBuilder}
+   */
+  public ValidationBuilder isRequired(final String key, final boolean value,
+      final String errorMessage) {
+    if (!value) {
+      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
+    }
+
+    return this;
+  }
+
+  /**
    * Validate Field is required.
    *
    * @param key {@link String}
@@ -304,48 +346,6 @@ public class ValidationBuilder {
       errors.add(new ValidationErrorImpl().key(key).error(error));
     }
 
-    return this;
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value boolean
-   * @return {@link ValidationBuilder}
-   */
-  public ValidationBuilder isRequired(final String key, final boolean value) {
-    return isRequired(key, value, "'" + key + "' is invalid");
-  }
-
-  /**
-   * Validate Field is required.
-   *
-   * @param key {@link String}
-   * @param value boolean
-   * @param errorMessage {@link String}
-   * @return {@link ValidationBuilder}
-   */
-  public ValidationBuilder isRequired(final String key, final boolean value,
-      final String errorMessage) {
-    if (!value) {
-      errors.add(new ValidationErrorImpl().key(key).error(errorMessage));
-    }
-
-    return this;
-  }
-
-  /**
-   * Add {@link ValidationError} on boolean condition.
-   *
-   * @param value boolean.
-   * @param error {@link ValidationError}
-   * @return {@link ValidationBuilder}
-   */
-  public ValidationBuilder isRequired(final boolean value, final ValidationError error) {
-    if (!value) {
-      errors.add(error);
-    }
     return this;
   }
 

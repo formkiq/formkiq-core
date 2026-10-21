@@ -286,6 +286,47 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
   }
 
   /**
+   * Test GET /groups.
+   *
+   * @throws Exception Exception
+   */
+  @Test
+  @Timeout(value = TEST_TIMEOUT)
+  public void testGetGroups01() throws Exception {
+
+    // given
+    List<ApiClient> clients = getApiClients(null);
+
+    for (ApiClient client : List.of(clients.get(0), clients.get(1))) {
+
+      UserManagementApi userApi = new UserManagementApi(client);
+
+      // when
+      GetGroupsResponse response = userApi.getGroups("60", null);
+
+      // then
+      List<Group> groups = notNull(response.getGroups());
+      assertFalse(groups.isEmpty());
+
+      Optional<Group> o =
+          groups.stream().filter(g -> "admins".equalsIgnoreCase(g.getName())).findFirst();
+      assertFalse(o.isEmpty());
+      Group ogroup = o.get();
+      assertNotNull(ogroup);
+
+      assertNotNull(ogroup.getDescription());
+      assertNotNull(ogroup.getInsertedDate());
+      assertNotNull(ogroup.getLastModifiedDate());
+
+      Group group = userApi.getGroup(requireNonNull(ogroup.getName())).getGroup();
+      assertNotNull(group);
+      assertNotNull(group.getDescription());
+      assertNotNull(group.getInsertedDate());
+      assertNotNull(group.getLastModifiedDate());
+    }
+  }
+
+  /**
    * Test GET /groups/{groupName}/users.
    *
    * @throws Exception Exception
@@ -328,47 +369,6 @@ public class CognitoRequestTest extends AbstractAwsIntegrationTest {
     } catch (ApiException e) {
       // then
       assertEquals(ApiResponseStatus.SC_UNAUTHORIZED.getStatusCode(), e.getCode());
-    }
-  }
-
-  /**
-   * Test GET /groups.
-   *
-   * @throws Exception Exception
-   */
-  @Test
-  @Timeout(value = TEST_TIMEOUT)
-  public void testGetGroups01() throws Exception {
-
-    // given
-    List<ApiClient> clients = getApiClients(null);
-
-    for (ApiClient client : List.of(clients.get(0), clients.get(1))) {
-
-      UserManagementApi userApi = new UserManagementApi(client);
-
-      // when
-      GetGroupsResponse response = userApi.getGroups("60", null);
-
-      // then
-      List<Group> groups = notNull(response.getGroups());
-      assertFalse(groups.isEmpty());
-
-      Optional<Group> o =
-          groups.stream().filter(g -> "admins".equalsIgnoreCase(g.getName())).findFirst();
-      assertFalse(o.isEmpty());
-      Group ogroup = o.get();
-      assertNotNull(ogroup);
-
-      assertNotNull(ogroup.getDescription());
-      assertNotNull(ogroup.getInsertedDate());
-      assertNotNull(ogroup.getLastModifiedDate());
-
-      Group group = userApi.getGroup(requireNonNull(ogroup.getName())).getGroup();
-      assertNotNull(group);
-      assertNotNull(group.getDescription());
-      assertNotNull(group.getInsertedDate());
-      assertNotNull(group.getLastModifiedDate());
     }
   }
 

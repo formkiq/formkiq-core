@@ -39,26 +39,6 @@ import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.createDatabaseKey;
 @Reflectable
 public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
 
-  /** Locale. */
-  private String locale;
-  /** {@link LocaleResourceType}. */
-  private LocaleResourceType itemType;
-  /** Localized Value. */
-  private String localizedValue;
-  /** Interface Key. */
-  private String interfaceKey;
-  /** Attribute Key. */
-  private String attributeKey;
-  /** Allowed Value. */
-  private String allowedValue;
-  /** Classification Id. */
-  private String classificationId;
-
-  /**
-   * constructor.
-   */
-  public LocaleTypeRecord() {}
-
   /**
    * Create Pk.
    * 
@@ -67,6 +47,22 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
    */
   public static String createPk(final String siteId) {
     return createDatabaseKey(siteId, "locale#type");
+  }
+
+  /**
+   * Get Classification SK.
+   * 
+   * @param locale {@link String}
+   * @param itemType {@link LocaleResourceType}
+   * @param classificationId {@link String}
+   * @param attributeKey {@link String}
+   * @param allowedValue {@link String}
+   * @return String
+   */
+  public static String getClassificationSk(final String locale, final LocaleResourceType itemType,
+      final String classificationId, final String attributeKey, final String allowedValue) {
+    return locale + "##" + itemType.name() + "##" + classificationId + "##" + attributeKey + "##"
+        + allowedValue;
   }
 
   /**
@@ -96,60 +92,35 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
     return locale + "##" + itemType.name() + "##" + attributeKey + "##" + allowedValue;
   }
 
-  /**
-   * Get Classification SK.
-   * 
-   * @param locale {@link String}
-   * @param itemType {@link LocaleResourceType}
-   * @param classificationId {@link String}
-   * @param attributeKey {@link String}
-   * @param allowedValue {@link String}
-   * @return String
-   */
-  public static String getClassificationSk(final String locale, final LocaleResourceType itemType,
-      final String classificationId, final String attributeKey, final String allowedValue) {
-    return locale + "##" + itemType.name() + "##" + classificationId + "##" + attributeKey + "##"
-        + allowedValue;
-  }
+  /** Locale. */
+  private String locale;
+  /** {@link LocaleResourceType}. */
+  private LocaleResourceType itemType;
+  /** Localized Value. */
+  private String localizedValue;
+
+  /** Interface Key. */
+  private String interfaceKey;
+
+  /** Attribute Key. */
+  private String attributeKey;
+
+  /** Allowed Value. */
+  private String allowedValue;
+
+  /** Classification Id. */
+  private String classificationId;
 
   /**
-   * Get Locale.
-   * 
-   * @return String
+   * constructor.
    */
-  public String getLocale() {
-    return this.locale;
-  }
+  public LocaleTypeRecord() {}
 
-  /**
-   * Set Locale.
-   * 
-   * @param localeValue {@link String}
-   * @return LocaleRecord
-   */
-  public LocaleTypeRecord setLocale(final String localeValue) {
-    this.locale = localeValue;
-    return this;
-  }
-
-  /**
-   * Get Classification Id.
-   * 
-   * @return String
-   */
-  public String getClassificationId() {
-    return this.classificationId;
-  }
-
-  /**
-   * Set Classification Id.
-   * 
-   * @param classification {@link String}
-   * @return LocaleRecord
-   */
-  public LocaleTypeRecord setClassificationId(final String classification) {
-    this.classificationId = classification;
-    return this;
+  private void addValue(final Map<String, AttributeValue> map, final String key,
+      final String value) {
+    if (value != null) {
+      map.put(key, fromS(value));
+    }
   }
 
   /**
@@ -162,94 +133,12 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
   }
 
   /**
-   * Set Allowed Value.
-   * 
-   * @param allowed {@link String}
-   * @return LocaleRecord
-   */
-  public LocaleTypeRecord setAllowedValue(final String allowed) {
-    this.allowedValue = allowed;
-    return this;
-  }
-
-  /**
    * Get Attribute Key.
    * 
    * @return String
    */
   public String getAttributeKey() {
     return this.attributeKey;
-  }
-
-  /**
-   * Set Attribute Key.
-   * 
-   * @param key {@link String}
-   * @return LocaleRecord
-   */
-  public LocaleTypeRecord setAttributeKey(final String key) {
-    this.attributeKey = key;
-    return this;
-  }
-
-  /**
-   * Get Interface Key.
-   * 
-   * @return String
-   */
-  public String getInterfaceKey() {
-    return this.interfaceKey;
-  }
-
-  /**
-   * Set Interface Key.
-   * 
-   * @param key {@link String}
-   * @return LocaleRecord
-   */
-  public LocaleTypeRecord setInterfaceKey(final String key) {
-    this.interfaceKey = key;
-    return this;
-  }
-
-  /**
-   * Get Localized Value.
-   * 
-   * @return String
-   */
-  public String getLocalizedValue() {
-    return this.localizedValue;
-  }
-
-  /**
-   * Set Localized Value.
-   * 
-   * @param value {@link String}
-   * @return LocaleRecord
-   */
-  public LocaleTypeRecord setLocalizedValue(final String value) {
-    this.localizedValue = value;
-    return this;
-  }
-
-  /**
-   * Get {@link LocaleResourceType}.
-   * 
-   * @return {@link LocaleResourceType}
-   */
-  public LocaleResourceType getItemType() {
-    return this.itemType;
-  }
-
-  /**
-   * Set Item Type.
-   * 
-   * @param type {@link LocaleResourceType}
-   * @return LocaleRecord
-   */
-  public LocaleTypeRecord setItemType(final LocaleResourceType type) {
-    this.itemType = type;
-    return this;
   }
 
   @Override
@@ -261,6 +150,15 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
     map.put(DbKeys.SK, fromS(sk()));
 
     return map;
+  }
+
+  /**
+   * Get Classification Id.
+   * 
+   * @return String
+   */
+  public String getClassificationId() {
+    return this.classificationId;
   }
 
   @Override
@@ -276,13 +174,6 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
     addValue(map, "allowedValue", this.allowedValue);
     addValue(map, "classificationId", this.classificationId);
     return map;
-  }
-
-  private void addValue(final Map<String, AttributeValue> map, final String key,
-      final String value) {
-    if (value != null) {
-      map.put(key, fromS(value));
-    }
   }
 
   @Override
@@ -301,6 +192,47 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
     return record;
   }
 
+  /**
+   * Get Interface Key.
+   * 
+   * @return String
+   */
+  public String getInterfaceKey() {
+    return this.interfaceKey;
+  }
+
+  public String getItemKey() {
+    String sk = sk();
+    return sk.substring(sk.indexOf("##") + 2);
+  }
+
+  /**
+   * Get {@link LocaleResourceType}.
+   * 
+   * @return {@link LocaleResourceType}
+   */
+  public LocaleResourceType getItemType() {
+    return this.itemType;
+  }
+
+  /**
+   * Get Locale.
+   * 
+   * @return String
+   */
+  public String getLocale() {
+    return this.locale;
+  }
+
+  /**
+   * Get Localized Value.
+   * 
+   * @return String
+   */
+  public String getLocalizedValue() {
+    return this.localizedValue;
+  }
+
   @Override
   public String pk(final String siteId) {
     return createPk(siteId);
@@ -314,6 +246,83 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
   @Override
   public String pkGsi2(final String siteId) {
     return null;
+  }
+
+  /**
+   * Set Allowed Value.
+   * 
+   * @param allowed {@link String}
+   * @return LocaleRecord
+   */
+  public LocaleTypeRecord setAllowedValue(final String allowed) {
+    this.allowedValue = allowed;
+    return this;
+  }
+
+  /**
+   * Set Attribute Key.
+   * 
+   * @param key {@link String}
+   * @return LocaleRecord
+   */
+  public LocaleTypeRecord setAttributeKey(final String key) {
+    this.attributeKey = key;
+    return this;
+  }
+
+  /**
+   * Set Classification Id.
+   * 
+   * @param classification {@link String}
+   * @return LocaleRecord
+   */
+  public LocaleTypeRecord setClassificationId(final String classification) {
+    this.classificationId = classification;
+    return this;
+  }
+
+  /**
+   * Set Interface Key.
+   * 
+   * @param key {@link String}
+   * @return LocaleRecord
+   */
+  public LocaleTypeRecord setInterfaceKey(final String key) {
+    this.interfaceKey = key;
+    return this;
+  }
+
+  /**
+   * Set Item Type.
+   * 
+   * @param type {@link LocaleResourceType}
+   * @return LocaleRecord
+   */
+  public LocaleTypeRecord setItemType(final LocaleResourceType type) {
+    this.itemType = type;
+    return this;
+  }
+
+  /**
+   * Set Locale.
+   * 
+   * @param localeValue {@link String}
+   * @return LocaleRecord
+   */
+  public LocaleTypeRecord setLocale(final String localeValue) {
+    this.locale = localeValue;
+    return this;
+  }
+
+  /**
+   * Set Localized Value.
+   * 
+   * @param value {@link String}
+   * @return LocaleRecord
+   */
+  public LocaleTypeRecord setLocalizedValue(final String value) {
+    this.localizedValue = value;
+    return this;
   }
 
   @Override
@@ -346,22 +355,6 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
     return sk;
   }
 
-  private void validateSchemaRequiredFields() {
-    if (this.attributeKey == null) {
-      throw new IllegalArgumentException("'attributeKey' is required");
-    }
-    if (this.allowedValue == null) {
-      throw new IllegalArgumentException("'allowedValue' is required");
-    }
-  }
-
-  private void validateClassificationRequiredFields() {
-    validateSchemaRequiredFields();
-    if (this.classificationId == null) {
-      throw new IllegalArgumentException("'classificationId' is required");
-    }
-  }
-
   @Override
   public String skGsi1() {
     return null;
@@ -372,8 +365,19 @@ public class LocaleTypeRecord implements DynamodbRecord<LocaleTypeRecord> {
     return null;
   }
 
-  public String getItemKey() {
-    String sk = sk();
-    return sk.substring(sk.indexOf("##") + 2);
+  private void validateClassificationRequiredFields() {
+    validateSchemaRequiredFields();
+    if (this.classificationId == null) {
+      throw new IllegalArgumentException("'classificationId' is required");
+    }
+  }
+
+  private void validateSchemaRequiredFields() {
+    if (this.attributeKey == null) {
+      throw new IllegalArgumentException("'attributeKey' is required");
+    }
+    if (this.allowedValue == null) {
+      throw new IllegalArgumentException("'allowedValue' is required");
+    }
   }
 }

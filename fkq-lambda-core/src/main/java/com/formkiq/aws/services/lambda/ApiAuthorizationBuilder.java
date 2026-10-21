@@ -431,6 +431,16 @@ public class ApiAuthorizationBuilder {
     return event != null && !isEmpty(event.getResource()) ? event.getResource() : "";
   }
 
+  /**
+   * Get {@link ApiGatewayRequestEvent} roles.
+   * 
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link Collection} {@link String}
+   */
+  private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
+    return getClaimsList(event, "cognito:groups");
+  }
+
   private Map<String, String> getRoleSiteMap(final ApiGatewayRequestEvent event) {
     Map<String, Object> claims = getAuthorizerClaimsOrSitesClaims(event);
 
@@ -440,16 +450,6 @@ public class ApiAuthorizationBuilder {
     }
 
     return map;
-  }
-
-  /**
-   * Get {@link ApiGatewayRequestEvent} roles.
-   * 
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link Collection} {@link String}
-   */
-  private Collection<String> getRoles(final ApiGatewayRequestEvent event) {
-    return getClaimsList(event, "cognito:groups");
   }
 
   private Collection<String> getSamlGroups(final ApiGatewayRequestEvent event) {
@@ -523,31 +523,6 @@ public class ApiAuthorizationBuilder {
   }
 
   /**
-   * Get the Cognito Groups of the calling Cognito Username.
-   *
-   * @param event {@link ApiGatewayRequestEvent}
-   * @return {@link String}
-   */
-  private String getUserRoleArn(final ApiGatewayRequestEvent event) {
-
-    String arn = null;
-
-    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
-
-    if (requestContext != null) {
-
-      Map<String, Object> identity = requestContext.getIdentity();
-
-      if (identity != null) {
-        Object obj = identity.getOrDefault("userArn", null);
-        arn = obj != null ? obj.toString() : null;
-      }
-    }
-
-    return arn;
-  }
-
-  /**
    * Get the calling Cognito Username.
    *
    * @param event {@link ApiGatewayRequestEvent}.
@@ -588,6 +563,31 @@ public class ApiAuthorizationBuilder {
     }
 
     return username;
+  }
+
+  /**
+   * Get the Cognito Groups of the calling Cognito Username.
+   *
+   * @param event {@link ApiGatewayRequestEvent}
+   * @return {@link String}
+   */
+  private String getUserRoleArn(final ApiGatewayRequestEvent event) {
+
+    String arn = null;
+
+    ApiGatewayRequestContext requestContext = event != null ? event.getRequestContext() : null;
+
+    if (requestContext != null) {
+
+      Map<String, Object> identity = requestContext.getIdentity();
+
+      if (identity != null) {
+        Object obj = identity.getOrDefault("userArn", null);
+        arn = obj != null ? obj.toString() : null;
+      }
+    }
+
+    return arn;
   }
 
   /**

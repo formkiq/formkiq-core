@@ -90,17 +90,6 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
     return this;
   }
 
-  /**
-   * Set the complete mapping request.
-   *
-   * @param mappingRequest {@link AddMappingRequest}
-   * @return this builder
-   */
-  public AddMappingRequestBuilder request(final AddMappingRequest mappingRequest) {
-    this.req.setMapping(mappingRequest.getMapping());
-    return this;
-  }
-
   private MappingAttribute createMappingAttribute(final String attributeKey,
       final MappingAttributeSourceType sourceType,
       final MappingAttributeLabelMatchingType labelMatchingType, final String labelText) {
@@ -116,6 +105,28 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
   }
 
   /**
+   * Get Mapping Id.
+   * 
+   * @param apiClient {@link ApiClient}
+   * @param siteId {@link String}
+   * @return {@link String}
+   */
+  public String getMappingId(final ApiClient apiClient, final String siteId) throws ApiException {
+    return submit(apiClient, siteId).throwIfError().response().getMappingId();
+  }
+
+  /**
+   * Set the complete mapping request.
+   *
+   * @param mappingRequest {@link AddMappingRequest}
+   * @return this builder
+   */
+  public AddMappingRequestBuilder request(final AddMappingRequest mappingRequest) {
+    this.req.setMapping(mappingRequest.getMapping());
+    return this;
+  }
+
+  /**
    * Optionally run the request using the FormKiQ API.
    *
    * @param apiClient ApiClient
@@ -125,16 +136,5 @@ public class AddMappingRequestBuilder implements HttpRequestBuilder<AddMappingRe
   public ApiHttpResponse<AddMappingResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new MappingsApi(apiClient).addMapping(req, siteId));
-  }
-
-  /**
-   * Get Mapping Id.
-   * 
-   * @param apiClient {@link ApiClient}
-   * @param siteId {@link String}
-   * @return {@link String}
-   */
-  public String getMappingId(final ApiClient apiClient, final String siteId) throws ApiException {
-    return submit(apiClient, siteId).throwIfError().response().getMappingId();
   }
 }

@@ -213,38 +213,6 @@ public final class DocumentSearchTagQuery implements DocumentSearchQuery {
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private Map<String, Map<String, AttributeValue>> findDocumentTags(final String siteId,
-      final Collection<String> documentIds, final String tagKey) {
-
-    Map<String, Map<String, AttributeValue>> results = new HashMap<>();
-    List<Map<String, AttributeValue>> keys = documentIds.stream()
-        .map(id -> Map.of(PK, AttributeValue.fromS(createDatabaseKey(siteId, PREFIX_DOCS + id)), SK,
-            AttributeValue.fromS(PREFIX_TAGS + tagKey)))
-        .collect(Collectors.toList());
-    Map<String, KeysAndAttributes> items =
-        Map.of(this.db.getTableName(), KeysAndAttributes.builder().keys(keys).build());
-    BatchGetItemRequest request = BatchGetItemRequest.builder().requestItems(items).build();
-    BatchGetItemResponse response = this.dbClient.batchGetItem(request);
-    Collection<List<Map<String, AttributeValue>>> values = response.responses().values();
-
-    if (!values.isEmpty()) {
-      values.iterator().next().forEach(record -> {
-        Map<String, AttributeValue> item = new HashMap<>();
-        item.put("type", record.get("type"));
-        item.put("tagKey", record.get("tagKey"));
-        if (record.containsKey("tagValue")) {
-          item.put("tagValue", record.get("tagValue"));
-        }
-        if (record.containsKey("tagValues")) {
-          item.put("tagValues", record.get("tagValues"));
-        }
-        results.put(record.get("documentId").s(), item);
-      });
-    }
-
-    return results;
-  }
-
   private Pagination<DocumentSearchResult> findDocumentsByRange(final String siteId,
       final SearchQuery query, final String key, final SearchTagCriteriaRange range,
       final String nextToken, final int maxResults, final String projectionExpression) {
@@ -307,6 +275,38 @@ public final class DocumentSearchTagQuery implements DocumentSearchQuery {
     QueryRequest request = createQueryRequest(GSI2, expression, values, nextToken, maxResults,
         Boolean.FALSE, projectionExpression);
     return queryDocuments(siteId, query, request);
+  }
+
+  private Map<String, Map<String, AttributeValue>> findDocumentTags(final String siteId,
+      final Collection<String> documentIds, final String tagKey) {
+
+    Map<String, Map<String, AttributeValue>> results = new HashMap<>();
+    List<Map<String, AttributeValue>> keys = documentIds.stream()
+        .map(id -> Map.of(PK, AttributeValue.fromS(createDatabaseKey(siteId, PREFIX_DOCS + id)), SK,
+            AttributeValue.fromS(PREFIX_TAGS + tagKey)))
+        .collect(Collectors.toList());
+    Map<String, KeysAndAttributes> items =
+        Map.of(this.db.getTableName(), KeysAndAttributes.builder().keys(keys).build());
+    BatchGetItemRequest request = BatchGetItemRequest.builder().requestItems(items).build();
+    BatchGetItemResponse response = this.dbClient.batchGetItem(request);
+    Collection<List<Map<String, AttributeValue>>> values = response.responses().values();
+
+    if (!values.isEmpty()) {
+      values.iterator().next().forEach(record -> {
+        Map<String, AttributeValue> item = new HashMap<>();
+        item.put("type", record.get("type"));
+        item.put("tagKey", record.get("tagKey"));
+        if (record.containsKey("tagValue")) {
+          item.put("tagValue", record.get("tagValue"));
+        }
+        if (record.containsKey("tagValues")) {
+          item.put("tagValues", record.get("tagValues"));
+        }
+        results.put(record.get("documentId").s(), item);
+      });
+    }
+
+    return results;
   }
 
   private boolean hasFilter(final SearchTagCriteria search) {

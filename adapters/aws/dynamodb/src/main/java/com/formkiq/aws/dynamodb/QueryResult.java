@@ -73,6 +73,15 @@ public record QueryResult(List<Map<String, AttributeValue>> items,
     public Builder() {}
 
     /**
+     * Build a new {@link QueryResult} instance using the configured builder state.
+     *
+     * @return a new {@link QueryResult}
+     */
+    public QueryResult build() {
+      return new QueryResult(items, truncated ? lastEvaluatedKey : null);
+    }
+
+    /**
      * Set the list of results returned by the query.
      *
      * @param results the results to include in the result
@@ -105,15 +114,6 @@ public record QueryResult(List<Map<String, AttributeValue>> items,
     public Builder lastEvaluatedKey(final Map<String, AttributeValue> queryLastEvaluatedKey) {
       this.lastEvaluatedKey = queryLastEvaluatedKey;
       return this;
-    }
-
-    /**
-     * Build a new {@link QueryResult} instance using the configured builder state.
-     *
-     * @return a new {@link QueryResult}
-     */
-    public QueryResult build() {
-      return new QueryResult(items, truncated ? lastEvaluatedKey : null);
     }
 
     /**

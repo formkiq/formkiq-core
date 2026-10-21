@@ -100,21 +100,21 @@ public class TestEnvironment {
   /**
    * Set Enable AWS X-Ray.
    *
-   * @param enabled {@link String}
-   * @return {@link TestEnvironment}
-   */
-  public TestEnvironment enableAwsXray(final String enabled) {
-    return environment("ENABLE_AWS_X_RAY", enabled);
-  }
-
-  /**
-   * Set Enable AWS X-Ray.
-   *
    * @param enabled boolean
    * @return {@link TestEnvironment}
    */
   public TestEnvironment enableAwsXray(final boolean enabled) {
     return enableAwsXray(Boolean.toString(enabled));
+  }
+
+  /**
+   * Set Enable AWS X-Ray.
+   *
+   * @param enabled {@link String}
+   * @return {@link TestEnvironment}
+   */
+  public TestEnvironment enableAwsXray(final String enabled) {
+    return environment("ENABLE_AWS_X_RAY", enabled);
   }
 
   /**

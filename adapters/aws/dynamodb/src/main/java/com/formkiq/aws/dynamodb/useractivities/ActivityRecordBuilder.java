@@ -289,6 +289,14 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     return buildActivityKey(siteId, "queues#" + queueId, queueId);
   }
 
+  private DynamoDbShardKey buildRulesetsKey(final String siteId) {
+
+    Objects.requireNonNull(rulesetId, "rulesetId must not be null");
+    Objects.requireNonNull(userId, "userId must not be null");
+
+    return buildActivityKey(siteId, "rulesets#" + rulesetId, rulesetId);
+  }
+
   private DynamoDbShardKey buildRulesKey(final String siteId) {
 
     Objects.requireNonNull(rulesetId, "rulesetId must not be null");
@@ -296,14 +304,6 @@ public class ActivityRecordBuilder implements DynamoDbShardEntityBuilder<Activit
     Objects.requireNonNull(userId, "userId must not be null");
 
     return buildActivityKey(siteId, "rulesetRules#" + rulesetId + "#" + ruleId, ruleId);
-  }
-
-  private DynamoDbShardKey buildRulesetsKey(final String siteId) {
-
-    Objects.requireNonNull(rulesetId, "rulesetId must not be null");
-    Objects.requireNonNull(userId, "userId must not be null");
-
-    return buildActivityKey(siteId, "rulesets#" + rulesetId, rulesetId);
   }
 
   private DynamoDbShardKey buildSchemas(final String siteId) {

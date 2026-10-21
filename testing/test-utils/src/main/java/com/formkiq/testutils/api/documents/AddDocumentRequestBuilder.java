@@ -349,17 +349,6 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
 
   /**
    * Set Content.
-   * 
-   * @param content {@link String}
-   * @return AddDocumentRequestBuilder
-   */
-  public AddDocumentRequestBuilder content(final String content) {
-    this.request.setContent(content);
-    return this;
-  }
-
-  /**
-   * Set Content.
    *
    * @param content {@link String}
    * @return AddDocumentRequestBuilder
@@ -367,6 +356,17 @@ public class AddDocumentRequestBuilder implements HttpRequestBuilder<AddDocument
   public AddDocumentRequestBuilder content(final byte[] content) {
     this.request.setContent(Base64.getEncoder().encodeToString(content));
     this.request.setIsBase64(true);
+    return this;
+  }
+
+  /**
+   * Set Content.
+   * 
+   * @param content {@link String}
+   * @return AddDocumentRequestBuilder
+   */
+  public AddDocumentRequestBuilder content(final String content) {
+    this.request.setContent(content);
     return this;
   }
 

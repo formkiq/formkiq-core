@@ -85,6 +85,10 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
     return this;
   }
 
+  public AddEntityRequestBuilder addAttribute(final String attributeKey, final int numberValue) {
+    return addAttribute(attributeKey, new BigDecimal(numberValue));
+  }
+
   public AddEntityRequestBuilder addAttribute(final String attributeKey,
       final List<String> stringValues) {
     addEntity
@@ -96,10 +100,6 @@ public class AddEntityRequestBuilder implements HttpRequestBuilder<AddEntityResp
     addEntity
         .addAttributesItem(new AddEntityAttribute().key(attributeKey).stringValue(stringValue));
     return this;
-  }
-
-  public AddEntityRequestBuilder addAttribute(final String attributeKey, final int numberValue) {
-    return addAttribute(attributeKey, new BigDecimal(numberValue));
   }
 
   /**

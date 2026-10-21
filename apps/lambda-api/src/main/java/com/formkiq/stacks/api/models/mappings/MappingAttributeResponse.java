@@ -34,6 +34,10 @@ import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 @Reflectable
 public interface MappingAttributeResponse {
 
+  private static String emptyToNull(final String value) {
+    return isEmpty(value) ? null : value;
+  }
+
   /**
    * Create a response from a {@link MappingAttribute}.
    *
@@ -63,9 +67,5 @@ public interface MappingAttributeResponse {
       case MALWARE_SCAN ->
         new MappingAttributeMalwareScan(attribute.getAttributeKey(), attribute.getSourceType());
     };
-  }
-
-  private static String emptyToNull(final String value) {
-    return isEmpty(value) ? null : value;
   }
 }

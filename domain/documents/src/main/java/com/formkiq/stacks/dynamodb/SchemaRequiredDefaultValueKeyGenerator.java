@@ -103,30 +103,6 @@ public class SchemaRequiredDefaultValueKeyGenerator {
         .toList();
   }
 
-  private AttributeDataType findDataType(final SchemaAttributesRequired r,
-      final Map<String, AttributeRecord> attributeRecordMap) {
-    AttributeDataType dataType = null;
-    AttributeRecord ar = attributeRecordMap.get(r.getAttributeKey());
-    if (ar != null) {
-      dataType = ar.getDataType();
-    } else {
-      AttributeKeyReserved attributeKeyReserved = AttributeKeyReserved.find(r.getAttributeKey());
-      if (attributeKeyReserved != null) {
-        dataType = attributeKeyReserved.getDataType();
-      }
-    }
-
-    return dataType;
-  }
-
-  private boolean hasDefaultValue(final SchemaAttributesRequired r) {
-    return r.getDefaultValue() != null || !notNull(r.getDefaultValues()).isEmpty();
-  }
-
-  private boolean isValidEntity(final SchemaAttributesRequired sa) {
-    return !isEmpty(sa.getDefaultEntityTypeId()) && !isEmpty(sa.getDefaultEntityId());
-  }
-
   private Collection<DocumentAttributeRecord> createDefaultValues(
       final Map<String, AttributeRecord> attributeRecordMap, final SchemaAttributesRequired r,
       final DocumentArtifact document, final String username) {
@@ -204,5 +180,29 @@ public class SchemaRequiredDefaultValueKeyGenerator {
 
 
     return r;
+  }
+
+  private AttributeDataType findDataType(final SchemaAttributesRequired r,
+      final Map<String, AttributeRecord> attributeRecordMap) {
+    AttributeDataType dataType = null;
+    AttributeRecord ar = attributeRecordMap.get(r.getAttributeKey());
+    if (ar != null) {
+      dataType = ar.getDataType();
+    } else {
+      AttributeKeyReserved attributeKeyReserved = AttributeKeyReserved.find(r.getAttributeKey());
+      if (attributeKeyReserved != null) {
+        dataType = attributeKeyReserved.getDataType();
+      }
+    }
+
+    return dataType;
+  }
+
+  private boolean hasDefaultValue(final SchemaAttributesRequired r) {
+    return r.getDefaultValue() != null || !notNull(r.getDefaultValues()).isEmpty();
+  }
+
+  private boolean isValidEntity(final SchemaAttributesRequired sa) {
+    return !isEmpty(sa.getDefaultEntityTypeId()) && !isEmpty(sa.getDefaultEntityId());
   }
 }

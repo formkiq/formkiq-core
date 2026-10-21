@@ -93,18 +93,18 @@ public class AttributeServiceDynamodb implements AttributeService, DbKeys {
   @Override
   public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
       final String key, final AttributeDataType dataType, final AttributeType type,
-      final String validationRegex) {
-    AttributeRecord a = new AttributeRecordBuilder().key(key).dataType(dataType).type(type)
-        .validationRegex(validationRegex).build();
-    addAttribute(validationAccess, siteId, a, false);
+      final boolean allowReservedAttributeKey) {
+    AttributeRecord a = new AttributeRecordBuilder().key(key).dataType(dataType).type(type).build();
+    addAttribute(validationAccess, siteId, a, allowReservedAttributeKey);
   }
 
   @Override
   public void addAttribute(final AttributeValidationAccess validationAccess, final String siteId,
       final String key, final AttributeDataType dataType, final AttributeType type,
-      final boolean allowReservedAttributeKey) {
-    AttributeRecord a = new AttributeRecordBuilder().key(key).dataType(dataType).type(type).build();
-    addAttribute(validationAccess, siteId, a, allowReservedAttributeKey);
+      final String validationRegex) {
+    AttributeRecord a = new AttributeRecordBuilder().key(key).dataType(dataType).type(type)
+        .validationRegex(validationRegex).build();
+    addAttribute(validationAccess, siteId, a, false);
   }
 
   @Override

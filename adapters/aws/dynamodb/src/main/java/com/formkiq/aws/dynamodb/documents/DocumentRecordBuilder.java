@@ -425,18 +425,6 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     }
   }
 
-  /**
-   * Set Default Values.
-   *
-   * @param record {@link DocumentRecord}
-   * @return DocumentRecordBuilder
-   */
-  public DocumentRecordBuilder setDefaultValues(final DocumentRecord record) {
-    defaultValues = record;
-    insertedDate = record.insertedDate();
-    return this;
-  }
-
   private void setDefaults() {
     if (insertedDate == null) {
       insertedDate = new Date();
@@ -451,6 +439,18 @@ public class DocumentRecordBuilder implements DynamoDbEntityBuilder<DocumentReco
     }
 
     setDeepLinkContentType();
+  }
+
+  /**
+   * Set Default Values.
+   *
+   * @param record {@link DocumentRecord}
+   * @return DocumentRecordBuilder
+   */
+  public DocumentRecordBuilder setDefaultValues(final DocumentRecord record) {
+    defaultValues = record;
+    insertedDate = record.insertedDate();
+    return this;
   }
 
   public DocumentRecordBuilder timeToLive(final String ttl) {

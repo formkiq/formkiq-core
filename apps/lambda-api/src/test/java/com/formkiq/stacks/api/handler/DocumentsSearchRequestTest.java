@@ -344,6 +344,49 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
   }
 
   /**
+   * Search for folder.
+   *
+   * @throws Exception an error has occurred
+   */
+  @Test
+  public void testFoldernameSearch() throws Exception {
+
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+
+      new AddDocumentRequestBuilder().content().path("myfile").submitOk(client, siteId);
+      new AddDocumentRequestBuilder().content().path("dir1/dir2/mysomefile").submitOk(client,
+          siteId);
+      new AddDocumentRequestBuilder().content().path("test/dir.txt").submitOk(client, siteId);
+
+      SearchDocumentRequestBuilder dsq = new SearchDocumentRequestBuilder()
+          .query(new DocumentSearch().folder(new DocumentSearchFolder().beginsWith("dir")));
+
+      // when
+      DocumentSearchResponse response = dsq.submitOk(client, siteId).response();
+
+      // then
+      List<SearchResultDocument> documents = notNull(response.getDocuments());
+      assertEquals(2, documents.size());
+
+      assertEquals("dir1", documents.get(0).getPath());
+      assertEquals(Boolean.TRUE, documents.get(0).getFolder());
+
+      assertEquals("dir2", documents.get(1).getPath());
+      assertEquals(Boolean.TRUE, documents.get(1).getFolder());
+
+      // when
+      response = dsq.projection("COUNT").submitOk(client, siteId).response();
+
+      // then
+      assertEquals(2, response.getCount());
+      assertNotTruncated(response);
+      assertTrue(notNull(response.getDocuments()).isEmpty());
+    }
+  }
+
+  /**
    * Search for folder with paging.
    *
    * @throws Exception an error has occurred
@@ -384,49 +427,6 @@ public class DocumentsSearchRequestTest extends AbstractApiClientRequestTest {
       assertEquals("myfold_10,myfold_11,myfold_12,myfold_13,myfold_14",
           documents.stream().map(SearchResultDocument::getPath).collect(Collectors.joining(",")));
       assertNull(response.getNext());
-    }
-  }
-
-  /**
-   * Search for folder.
-   *
-   * @throws Exception an error has occurred
-   */
-  @Test
-  public void testFoldernameSearch() throws Exception {
-
-    for (String siteId : Arrays.asList(null, ID.uuid())) {
-      // given
-      setBearerToken(siteId);
-
-      new AddDocumentRequestBuilder().content().path("myfile").submitOk(client, siteId);
-      new AddDocumentRequestBuilder().content().path("dir1/dir2/mysomefile").submitOk(client,
-          siteId);
-      new AddDocumentRequestBuilder().content().path("test/dir.txt").submitOk(client, siteId);
-
-      SearchDocumentRequestBuilder dsq = new SearchDocumentRequestBuilder()
-          .query(new DocumentSearch().folder(new DocumentSearchFolder().beginsWith("dir")));
-
-      // when
-      DocumentSearchResponse response = dsq.submitOk(client, siteId).response();
-
-      // then
-      List<SearchResultDocument> documents = notNull(response.getDocuments());
-      assertEquals(2, documents.size());
-
-      assertEquals("dir1", documents.get(0).getPath());
-      assertEquals(Boolean.TRUE, documents.get(0).getFolder());
-
-      assertEquals("dir2", documents.get(1).getPath());
-      assertEquals(Boolean.TRUE, documents.get(1).getFolder());
-
-      // when
-      response = dsq.projection("COUNT").submitOk(client, siteId).response();
-
-      // then
-      assertEquals(2, response.getCount());
-      assertNotTruncated(response);
-      assertTrue(notNull(response.getDocuments()).isEmpty());
     }
   }
 

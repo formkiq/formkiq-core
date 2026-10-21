@@ -47,17 +47,6 @@ public class SetUserOperationRequestBuilder implements HttpRequestBuilder<SetRes
   }
 
   /**
-   * Set userOperation.
-   *
-   * @param value String
-   * @return this builder
-   */
-  public SetUserOperationRequestBuilder withUserOperation(final String value) {
-    this.userOperation = value;
-    return this;
-  }
-
-  /**
    * Set username.
    *
    * @param value String
@@ -65,6 +54,17 @@ public class SetUserOperationRequestBuilder implements HttpRequestBuilder<SetRes
    */
   public SetUserOperationRequestBuilder withUsername(final String value) {
     this.username = value;
+    return this;
+  }
+
+  /**
+   * Set userOperation.
+   *
+   * @param value String
+   * @return this builder
+   */
+  public SetUserOperationRequestBuilder withUserOperation(final String value) {
+    this.userOperation = value;
     return this;
   }
 }

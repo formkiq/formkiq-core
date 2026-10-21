@@ -41,8 +41,53 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /** Tests nested path resolution, comparison types, operator boundaries, and invalid filters. */
 class JsonAttributeSearchPredicateTest {
 
+  private static Stream<Arguments> boundComparisons() {
+    return Stream.of(Arguments.of("{\"path\":\"$.value\",\"gt\":2}", "{\"value\":2}", false),
+        Arguments.of("{\"path\":\"$.value\",\"gte\":2}", "{\"value\":2}", true),
+        Arguments.of("{\"path\":\"$.value\",\"lt\":2}", "{\"value\":2}", false),
+        Arguments.of("{\"path\":\"$.value\",\"lte\":2}", "{\"value\":2}", true),
+        Arguments.of("{\"path\":\"$.value\",\"gte\":1,\"lte\":3}", "{\"value\":2}", true),
+        Arguments.of("{\"path\":\"$.value\",\"gte\":1,\"lte\":3}", "{\"value\":\"2\"}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"2\",\"gt\":2}", "{\"value\":2}", false),
+        Arguments.of("{\"path\":\"$.value\",\"gte\":2,\"lte\":2}", "{\"value\":2}", true));
+  }
+
   private static Stream<Arguments> comparisons() {
     return Stream.concat(Stream.concat(scalarComparisons(), boundComparisons()), pathComparisons());
+  }
+
+  private static Stream<String> invalidFilters() {
+    return Stream.of("{}", "{\"path\":\"$.value\"}", "{\"path\":\"$.value\",\"eqOr\":[]}",
+        "{\"path\":\"$.value\",\"eqOr\":[null]}", "{\"path\":\"$.value\",\"eq\":null}",
+        "{\"path\":null,\"eq\":\"Acme\"}", "{\"path\":\"$\",\"eq\":\"Acme\"}",
+        "{\"path\":\"value\",\"eq\":\"Acme\"}", "{\"path\":\"$..value\",\"eq\":\"Acme\"}",
+        "{\"path\":\"$.*\",\"eq\":\"Acme\"}", "{\"path\":\"$.value[-1]\",\"eq\":\"Acme\"}",
+        "{\"path\":\"$.value[01]\",\"eq\":\"Acme\"}", "{\"path\":\"$.value[0:2]\",\"eq\":\"Acme\"}",
+        "{\"path\":\"$['']\",\"eq\":\"Acme\"}", "{\"path\":\"$.value[0]junk\",\"eq\":\"Acme\"}");
+  }
+
+  private static Stream<Arguments> pathComparisons() {
+    return Stream.of(
+        Arguments.of("{\"path\":\"$.customer.name\",\"eq\":\"Acme\"}",
+            "{\"customer\":{\"name\":\"Acme\"}}", true),
+        Arguments.of("{\"path\":\"$.customer.name\",\"eq\":\"Acme\"}", "{\"name\":\"Acme\"}",
+            false),
+        Arguments.of("{\"path\":\"$.items[0].quantity\",\"gte\":2}",
+            "{\"items\":[{\"quantity\":2}]}", true),
+        Arguments.of("{\"path\":\"$.items[1].quantity\",\"gte\":2}",
+            "{\"items\":[{\"quantity\":2}]}", false),
+        Arguments.of("{\"path\":\"$['customer.name']\",\"eq\":\"Acme\"}",
+            "{\"customer.name\":\"Acme\"}", true),
+        Arguments.of("{\"path\":\"$[\\\"customer.name\\\"]\",\"eq\":\"Acme\"}",
+            "{\"customer.name\":\"Acme\"}", true),
+        Arguments.of("{\"path\":\"$['it\\\\'s']\",\"eq\":\"Acme\"}", "{\"it's\":\"Acme\"}", true),
+        Arguments.of("{\"path\":\"$['back\\\\\\\\slash']\",\"eq\":\"Acme\"}",
+            "{\"back\\\\slash\":\"Acme\"}", true),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"Acme\"}", "{\"value\":null}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"Acme\"}", "{\"value\":{}}", false),
+        Arguments.of("{\"path\":\"$.value\",\"eq\":\"Acme\"}", "{\"value\":[]}", false),
+        Arguments.of("{\"path\":\"$.value[0]\",\"eq\":\"Acme\"}", "{\"value\":\"Acme\"}", false),
+        Arguments.of("{\"path\":\"$.value.name\",\"eq\":\"Acme\"}", "{\"value\":\"Acme\"}", false));
   }
 
   private static Stream<Arguments> scalarComparisons() {
@@ -73,51 +118,6 @@ class JsonAttributeSearchPredicateTest {
             "{\"value\":true}", false),
         Arguments.of("{\"path\":\"$.value\",\"beginsWith\":\"Ac\"}", "{\"value\":\"Acme\"}", true),
         Arguments.of("{\"path\":\"$.value\",\"beginsWith\":\"2\"}", "{\"value\":2}", false));
-  }
-
-  private static Stream<Arguments> boundComparisons() {
-    return Stream.of(Arguments.of("{\"path\":\"$.value\",\"gt\":2}", "{\"value\":2}", false),
-        Arguments.of("{\"path\":\"$.value\",\"gte\":2}", "{\"value\":2}", true),
-        Arguments.of("{\"path\":\"$.value\",\"lt\":2}", "{\"value\":2}", false),
-        Arguments.of("{\"path\":\"$.value\",\"lte\":2}", "{\"value\":2}", true),
-        Arguments.of("{\"path\":\"$.value\",\"gte\":1,\"lte\":3}", "{\"value\":2}", true),
-        Arguments.of("{\"path\":\"$.value\",\"gte\":1,\"lte\":3}", "{\"value\":\"2\"}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":\"2\",\"gt\":2}", "{\"value\":2}", false),
-        Arguments.of("{\"path\":\"$.value\",\"gte\":2,\"lte\":2}", "{\"value\":2}", true));
-  }
-
-  private static Stream<Arguments> pathComparisons() {
-    return Stream.of(
-        Arguments.of("{\"path\":\"$.customer.name\",\"eq\":\"Acme\"}",
-            "{\"customer\":{\"name\":\"Acme\"}}", true),
-        Arguments.of("{\"path\":\"$.customer.name\",\"eq\":\"Acme\"}", "{\"name\":\"Acme\"}",
-            false),
-        Arguments.of("{\"path\":\"$.items[0].quantity\",\"gte\":2}",
-            "{\"items\":[{\"quantity\":2}]}", true),
-        Arguments.of("{\"path\":\"$.items[1].quantity\",\"gte\":2}",
-            "{\"items\":[{\"quantity\":2}]}", false),
-        Arguments.of("{\"path\":\"$['customer.name']\",\"eq\":\"Acme\"}",
-            "{\"customer.name\":\"Acme\"}", true),
-        Arguments.of("{\"path\":\"$[\\\"customer.name\\\"]\",\"eq\":\"Acme\"}",
-            "{\"customer.name\":\"Acme\"}", true),
-        Arguments.of("{\"path\":\"$['it\\\\'s']\",\"eq\":\"Acme\"}", "{\"it's\":\"Acme\"}", true),
-        Arguments.of("{\"path\":\"$['back\\\\\\\\slash']\",\"eq\":\"Acme\"}",
-            "{\"back\\\\slash\":\"Acme\"}", true),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":\"Acme\"}", "{\"value\":null}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":\"Acme\"}", "{\"value\":{}}", false),
-        Arguments.of("{\"path\":\"$.value\",\"eq\":\"Acme\"}", "{\"value\":[]}", false),
-        Arguments.of("{\"path\":\"$.value[0]\",\"eq\":\"Acme\"}", "{\"value\":\"Acme\"}", false),
-        Arguments.of("{\"path\":\"$.value.name\",\"eq\":\"Acme\"}", "{\"value\":\"Acme\"}", false));
-  }
-
-  private static Stream<String> invalidFilters() {
-    return Stream.of("{}", "{\"path\":\"$.value\"}", "{\"path\":\"$.value\",\"eqOr\":[]}",
-        "{\"path\":\"$.value\",\"eqOr\":[null]}", "{\"path\":\"$.value\",\"eq\":null}",
-        "{\"path\":null,\"eq\":\"Acme\"}", "{\"path\":\"$\",\"eq\":\"Acme\"}",
-        "{\"path\":\"value\",\"eq\":\"Acme\"}", "{\"path\":\"$..value\",\"eq\":\"Acme\"}",
-        "{\"path\":\"$.*\",\"eq\":\"Acme\"}", "{\"path\":\"$.value[-1]\",\"eq\":\"Acme\"}",
-        "{\"path\":\"$.value[01]\",\"eq\":\"Acme\"}", "{\"path\":\"$.value[0:2]\",\"eq\":\"Acme\"}",
-        "{\"path\":\"$['']\",\"eq\":\"Acme\"}", "{\"path\":\"$.value[0]junk\",\"eq\":\"Acme\"}");
   }
 
   @ParameterizedTest

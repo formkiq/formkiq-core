@@ -29,15 +29,6 @@ package com.formkiq.aws.secretsmanager;
 public interface SecretsManagerService {
 
   /**
-   * Put a Secret {@link String} in Secrets Manager.
-   *
-   * @param name {@link String}
-   * @param value {@link String}
-   * @return {@link String}
-   */
-  String createSecret(String name, String value);
-
-  /**
    * Put a Secret byte[] in Secrets Manager.
    *
    * @param name {@link String}
@@ -45,6 +36,15 @@ public interface SecretsManagerService {
    * @return {@link String}
    */
   String createSecret(String name, byte[] value);
+
+  /**
+   * Put a Secret {@link String} in Secrets Manager.
+   *
+   * @param name {@link String}
+   * @param value {@link String}
+   * @return {@link String}
+   */
+  String createSecret(String name, String value);
 
   /**
    * Returns whether a Secret exists by ARN.

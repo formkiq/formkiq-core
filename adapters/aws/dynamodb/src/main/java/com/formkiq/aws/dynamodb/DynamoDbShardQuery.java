@@ -100,6 +100,19 @@ public interface DynamoDbShardQuery {
    * Find the first record to match {@link QueryRequest}.
    *
    * @param db {@link DynamoDbService}
+   * @param siteId Site Identifier
+   * @param nextToken Next Token
+   * @param limit int
+   * @return QueryResult
+   */
+  default QueryResult query(DynamoDbService db, String siteId, String nextToken, int limit) {
+    return query(db, db.getTableName(), siteId, nextToken, limit);
+  }
+
+  /**
+   * Find the first record to match {@link QueryRequest}.
+   *
+   * @param db {@link DynamoDbService}
    * @param tableName DynamoDb Table Name.
    * @param siteId Site Identifier
    * @param nextToken Next Token
@@ -128,18 +141,5 @@ public interface DynamoDbShardQuery {
     rb.items(list, limit);
     rb.lastEvaluatedKeyLastItem(GSI2, true);
     return rb.build();
-  }
-
-  /**
-   * Find the first record to match {@link QueryRequest}.
-   *
-   * @param db {@link DynamoDbService}
-   * @param siteId Site Identifier
-   * @param nextToken Next Token
-   * @param limit int
-   * @return QueryResult
-   */
-  default QueryResult query(DynamoDbService db, String siteId, String nextToken, int limit) {
-    return query(db, db.getTableName(), siteId, nextToken, limit);
   }
 }

@@ -118,12 +118,12 @@ class NotificationActionTest {
     }
 
     @Override
-    public String createSecret(final String name, final String value) {
+    public String createSecret(final String name, final byte[] value) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public String createSecret(final String name, final byte[] value) {
+    public String createSecret(final String name, final String value) {
       throw new UnsupportedOperationException();
     }
 

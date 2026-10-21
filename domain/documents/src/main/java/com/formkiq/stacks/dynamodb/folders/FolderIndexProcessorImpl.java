@@ -609,6 +609,38 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
     }
   }
 
+  // Update document paths for every file under a moved folder.
+  private List<FolderMoveDocument> moveFiles(final String siteId, final String folderDocumentId,
+      final String sourcePath, final String targetPath) {
+
+    final int limit = 100;
+    String nextToken = null;
+    Map<String, String> sourceFolderPaths = new HashMap<>();
+    sourceFolderPaths.put(folderDocumentId, new StringToFolder().apply(sourcePath));
+    Map<String, String> targetFolderPaths = new HashMap<>();
+    targetFolderPaths.put(folderDocumentId, new StringToFolder().apply(targetPath));
+    List<FolderMoveDocument> movedDocuments = new ArrayList<>();
+
+    WriteRequestBuilder writeRequestBuilder = new WriteRequestBuilder();
+    GetAllFolderAndFilesQuery query = new GetAllFolderAndFilesQuery(folderDocumentId);
+
+    do {
+
+      QueryResult result = query.query(db, documentTableName, siteId, nextToken, limit);
+
+      for (Map<String, AttributeValue> item : result.items()) {
+        moveFile(writeRequestBuilder, siteId, sourceFolderPaths, targetFolderPaths, movedDocuments,
+            item);
+      }
+
+      nextToken = result.toNextToken();
+
+    } while (nextToken != null);
+
+    writeRequestBuilder.transactWriteItems(this.dbClient);
+    return movedDocuments;
+  }
+
   /**
    * Move File to Folder.
    * 
@@ -668,38 +700,6 @@ public class FolderIndexProcessorImpl implements FolderIndexProcessor, DbKeys {
       this.db.updateValues(fromS(target.pk(siteId)), fromS(target.sk()),
           Map.of("lastModifiedDate", fromS(lastModifiedDate)));
     }
-  }
-
-  // Update document paths for every file under a moved folder.
-  private List<FolderMoveDocument> moveFiles(final String siteId, final String folderDocumentId,
-      final String sourcePath, final String targetPath) {
-
-    final int limit = 100;
-    String nextToken = null;
-    Map<String, String> sourceFolderPaths = new HashMap<>();
-    sourceFolderPaths.put(folderDocumentId, new StringToFolder().apply(sourcePath));
-    Map<String, String> targetFolderPaths = new HashMap<>();
-    targetFolderPaths.put(folderDocumentId, new StringToFolder().apply(targetPath));
-    List<FolderMoveDocument> movedDocuments = new ArrayList<>();
-
-    WriteRequestBuilder writeRequestBuilder = new WriteRequestBuilder();
-    GetAllFolderAndFilesQuery query = new GetAllFolderAndFilesQuery(folderDocumentId);
-
-    do {
-
-      QueryResult result = query.query(db, documentTableName, siteId, nextToken, limit);
-
-      for (Map<String, AttributeValue> item : result.items()) {
-        moveFile(writeRequestBuilder, siteId, sourceFolderPaths, targetFolderPaths, movedDocuments,
-            item);
-      }
-
-      nextToken = result.toNextToken();
-
-    } while (nextToken != null);
-
-    writeRequestBuilder.transactWriteItems(this.dbClient);
-    return movedDocuments;
   }
 
   @Override
