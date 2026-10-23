@@ -76,6 +76,8 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
     private String dateValue;
     /** Inserted Date. */
     private Date insertedDate;
+    /** Last modification date. */
+    private Date lastModifiedDate;
 
     /**
      * Set Boolean Value.
@@ -104,6 +106,7 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       r.setNumberValue(numberValue);
       r.dateValue = dateValue;
       r.setInsertedDate(insertedDate);
+      r.setLastModifiedDate(lastModifiedDate);
       return r;
     }
 
@@ -149,6 +152,17 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
      */
     public Builder key(final String attributeKey) {
       this.key = attributeKey;
+      return this;
+    }
+
+    /**
+     * Set the last modification date.
+     *
+     * @param date {@link Date}
+     * @return Builder
+     */
+    public Builder lastModifiedDate(final Date date) {
+      this.lastModifiedDate = date != null ? new Date(date.getTime()) : null;
       return this;
     }
 
@@ -230,6 +244,9 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
 
   /** Inserted Date. */
   private Date insertedDate;
+
+  /** Last modification date. */
+  private Date lastModifiedDate;
 
   /** Attribute Document Id. */
   private String userId;
@@ -341,6 +358,11 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
       map.put("inserteddate", fromS(df.format(this.insertedDate)));
     }
 
+    if (this.lastModifiedDate != null) {
+      SimpleDateFormat df = DateUtil.getIsoDateFormatter();
+      map.put("lastModifiedDate", fromS(df.format(this.lastModifiedDate)));
+    }
+
     return map;
   }
 
@@ -419,6 +441,8 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
         }
       }
 
+      record.setLastModifiedDate(DynamoDbTypes.toDate(attrs.get("lastModifiedDate")));
+
     }
 
     return record;
@@ -449,6 +473,15 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
    */
   public String getKey() {
     return this.key;
+  }
+
+  /**
+   * Get the last modification date.
+   *
+   * @return {@link Date}
+   */
+  public Date getLastModifiedDate() {
+    return this.lastModifiedDate != null ? new Date(this.lastModifiedDate.getTime()) : null;
   }
 
   /**
@@ -600,6 +633,17 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
    */
   public DocumentAttributeRecord setKey(final String attributeKey) {
     this.key = attributeKey;
+    return this;
+  }
+
+  /**
+   * Set the last modification date.
+   *
+   * @param date {@link Date}
+   * @return {@link DocumentAttributeRecord}
+   */
+  public DocumentAttributeRecord setLastModifiedDate(final Date date) {
+    this.lastModifiedDate = date != null ? new Date(date.getTime()) : null;
     return this;
   }
 

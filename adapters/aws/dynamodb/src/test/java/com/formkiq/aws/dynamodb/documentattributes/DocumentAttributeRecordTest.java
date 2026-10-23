@@ -208,4 +208,27 @@ public class DocumentAttributeRecordTest {
     assertEquals("#", record.skGsi1());
     assertEquals(record.buildKey(null), restored.buildKey(null));
   }
+
+  /** Attribute timestamps retain their distinct values when stored and read. */
+  @Test
+  void testTimestampRoundTrip() {
+    // given
+    Date insertedDate = Date.from(Instant.parse("2026-10-20T12:00:00Z"));
+    Date lastModifiedDate = Date.from(Instant.parse("2026-10-20T13:00:00Z"));
+    DocumentAttributeRecord record = DocumentAttributeRecord.builder()
+        .document(DocumentArtifact.of(ID.uuid(), null)).key("security").stringValue("confidential")
+        .userId("joesmith").insertedDate(insertedDate).lastModifiedDate(lastModifiedDate).build()
+        .updateValueType();
+
+    // when
+    Map<String, AttributeValue> attributes = record.getAttributes(null);
+    DocumentAttributeRecord restored =
+        new DocumentAttributeRecord().getFromAttributes(null, attributes);
+
+    // then
+    assertEquals("2026-10-20T12:00:00+0000", attributes.get("inserteddate").s());
+    assertEquals("2026-10-20T13:00:00+0000", attributes.get("lastModifiedDate").s());
+    assertEquals(insertedDate, restored.getInsertedDate());
+    assertEquals(lastModifiedDate, restored.getLastModifiedDate());
+  }
 }
