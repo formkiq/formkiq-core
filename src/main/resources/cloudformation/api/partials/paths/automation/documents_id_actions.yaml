@@ -58,6 +58,7 @@ paths:
         | LLMPROMPT | modelId | Override the LLM Prompt Entity model id for this action |
         | DATA_CLASSIFICATION | llmPromptEntityName | LLM Prompt Entity Name |
         | METADATA_EXTRACTION | llmPromptEntityName | LLM Prompt Entity Name |
+        | DELETE | deleteType | Deletion mode. CONTENT_ONLY removes the current S3 object while preserving document metadata. | SOFT_DELETE, HARD_DELETE, PURGE, CONTENT_ONLY |
         | CHECKSUM    | checksumType    | Checksum algorithm to calculate and persist for the document | SHA1, SHA256, or SHA512 |
         | FULLTEXT    | characterMax    | Maximum number of characters to add to Fulltext destination | -1 |
         | DOCUMENTTAGGING    | engine    | Tagging Engine to use | chatgpt |
@@ -211,11 +212,18 @@ components:
     #@overlay/match missing_ok=True
     DeleteType:
       type: "string"
-      description: "DELETE: Type of delete to perform"
+      description: |-
+        DELETE action deletion mode.
+
+        CONTENT_ONLY removes the current S3 object while preserving document metadata,
+        attributes, tags, malware scan results, and workflow history. Existing S3 versions
+        are retained. Use this mode in a workflow when infected content must be removed
+        while retaining its metadata and scan results.
       enum:
         - SOFT_DELETE
         - HARD_DELETE
         - PURGE
+        - CONTENT_ONLY
 
     #@overlay/match missing_ok=True
     DocumentAction:

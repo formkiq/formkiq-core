@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentRecordBuilder;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
@@ -242,12 +243,11 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
   public void testDelete01() throws Exception {
     for (ApiClient client : getApiClients(null)) {
       // given
-      DocumentsApi api = new DocumentsApi(client);
       String documentId = ID.uuid();
 
       // when
       try {
-        api.deleteDocument(documentId, null, null, Boolean.FALSE);
+        new DeleteDocumentRequestBuilder(documentId).softDelete(false).submitOk(client, null);
         fail();
       } catch (ApiException e) {
         // then
@@ -596,7 +596,7 @@ public class DocumentsRequestTest extends AbstractAwsIntegrationTest {
       throws ApiException {
 
     DocumentsApi api = new DocumentsApi(client);
-    api.deleteDocument(documentId, null, null, Boolean.FALSE);
+    new DeleteDocumentRequestBuilder(documentId).softDelete(false).submitOk(client, null);
 
     try {
       api.getDocument(documentId, null, null, null);

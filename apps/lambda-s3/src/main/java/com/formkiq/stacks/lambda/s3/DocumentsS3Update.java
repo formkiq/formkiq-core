@@ -578,8 +578,6 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
       String siteId = parts.siteId();
       String documentId = parts.documentId();
       String artifactId = parts.artifactId();
-      DocumentArtifact document = DocumentArtifact.of(documentId, artifactId);
-
       boolean moduleOcr = serviceCache.hasModule("ocr");
       boolean moduleFulltext = serviceCache.hasModule("opensearch");
       boolean moduleTypesense = serviceCache.hasModule("typesense");
@@ -588,8 +586,14 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
 
         HttpService http = serviceCache.getExtension(HttpService.class);
 
-        Optional<Map<String, String>> parameters =
-            siteId != null ? Optional.of(Map.of("siteId", siteId)) : Optional.empty();
+        Map<String, String> query = new HashMap<>();
+        if (siteId != null) {
+          query.put("siteId", siteId);
+        }
+        if (artifactId != null) {
+          query.put("artifactId", artifactId);
+        }
+        Optional<Map<String, String>> parameters = Optional.of(query);
 
         if (moduleOcr) {
 
@@ -609,11 +613,7 @@ public class DocumentsS3Update implements RequestHandler<Map<String, Object>, Vo
         }
       }
 
-      DocumentRecord item = service.findDocument(siteId, document);
-      if (item != null) {
-        service.deleteDocument(siteId, document, false);
-      }
-
+      // S3 removal deletes content only. Metadata deletion is owned by the document API.
       DocumentEvent event = new DocumentEvent().siteId(getSiteIdName(siteId)).documentId(documentId)
           .artifactId(artifactId).type(DELETE);
       sendSnsMessage(event);

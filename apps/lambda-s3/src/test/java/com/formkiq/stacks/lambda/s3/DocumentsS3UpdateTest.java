@@ -651,7 +651,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Delete Document Request - S3 File not exists. S3 Main document file was deleted.
+   * S3 object removal preserves the document metadata and tags.
    *
    * @throws Exception Exception
    */
@@ -679,7 +679,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentRecord item = handleRequest(siteId, documentId, map);
 
       // then
-      assertNull(item);
+      assertNotNull(item);
       assertCreateDocumentSnsMessage(siteId, "delete");
     }
   }
@@ -962,7 +962,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
   }
 
   /**
-   * Delete Document Request - OCR / Fulltext (200).
+   * S3 object removal preserves metadata while cleaning up OCR and fulltext.
    *
    * @throws Exception Exception
    */
@@ -985,7 +985,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentRecord item = handleRequest(siteId, BUCKET_KEY, map);
 
       // then
-      assertNull(item);
+      assertNotNull(item);
       assertCreateDocumentSnsMessage(siteId, "delete");
     }
   }
@@ -1141,6 +1141,39 @@ public class DocumentsS3UpdateTest implements DbKeys {
     handleRequest(null, BUCKET_KEY, map);
 
     // then
+  }
+
+  /** S3 deletion preserves metadata and tags, including on duplicate removal events. */
+  @Test
+  public void testS3DeletionPreservesMetadata() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      for (String artifactId : Arrays.asList(null, ID.uuid())) {
+        // given
+        DocumentArtifact document = DocumentArtifact.of(ID.uuid(), artifactId);
+        DocumentRecord item = DocumentRecord.builder().document(document).path("infected.txt")
+            .contentType("text/plain").userId("joe").build(siteId);
+        var tags = DocumentTagRecord.builder().document(document).tagKey("CLAMAV_SCAN_STATUS")
+            .tagValue("INFECTED").type(DocumentTagType.SYSTEMDEFINED).build(siteId);
+        service.saveDocument(siteId, new DocumentRecordSet(item, null, tags, null),
+            new SaveDocumentOptions());
+        String key = SiteIdKeyGenerator.createS3Key(siteId, document);
+        Map<String, Object> event =
+            loadFileAsMap(this, "/objectremove-event1.json", BUCKET_KEY, key);
+
+        // when
+        handler.handleRequest(event, null);
+        handler.handleRequest(event, null);
+        login();
+        DocumentRecord retained = service.findDocument(siteId, document);
+
+        // then
+        assertNotNull(retained);
+        assertEquals(item.path(), retained.path());
+        var retainedTags = service.findDocumentTags(siteId, document, null, MAX_RESULTS);
+        assertTrue(retainedTags.getResults().stream().anyMatch(
+            tag -> "CLAMAV_SCAN_STATUS".equals(tag.getKey()) && "INFECTED".equals(tag.getValue())));
+      }
+    }
   }
 
   /**

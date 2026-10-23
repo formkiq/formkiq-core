@@ -796,7 +796,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
   @Test
   public void testDeleteAction01() {
     for (String siteId : Arrays.asList(null, ID.uuid())) {
-      for (String deleteType : Arrays.asList("SOFT_DELETE", "HARD_DELETE", "PURGE")) {
+      for (String deleteType : Arrays.asList("SOFT_DELETE", "HARD_DELETE", "PURGE", "CONTENT_ONLY",
+          " content_only ")) {
         // given
         DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
         String s3Key =
@@ -829,8 +830,10 @@ public class DocumentActionsProcessorTest implements DbKeys {
               lastRequest.getPath().getValue());
         } else {
           assertEquals("/documents/" + document.documentId(), lastRequest.getPath().getValue());
-          assertEquals(Boolean.toString("SOFT_DELETE".equals(deleteType)),
-              lastRequest.getFirstQueryStringParameter("softDelete"));
+          assertEquals(deleteType.trim().toUpperCase(java.util.Locale.ROOT),
+              lastRequest.getFirstQueryStringParameter("deleteType"));
+          assertEquals("", lastRequest.getFirstQueryStringParameter("softDelete"));
+          assertEquals("", lastRequest.getFirstQueryStringParameter("contentOnly"));
         }
 
         if (siteId != null) {

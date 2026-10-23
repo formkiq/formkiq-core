@@ -23,10 +23,10 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.client.api.DocumentSearchApi;
 import com.formkiq.client.api.DocumentTagsApi;
-import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.api.SystemManagementApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
@@ -401,10 +401,9 @@ public class DocumentsSearchRequestTest extends AbstractAwsIntegrationTest {
             .contains("some/thing/else/intelligent Documents"));
 
         // given
-        DocumentsApi docApi = new DocumentsApi(client);
 
         // when
-        docApi.deleteDocument(documentId, null, null, Boolean.FALSE);
+        new DeleteDocumentRequestBuilder(documentId).softDelete(false).submitOk(client, null);
 
         // then
         while (o.isPresent()) {

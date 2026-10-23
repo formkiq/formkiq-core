@@ -392,7 +392,7 @@ public enum ActionType {
   private static final List<String> VALID_CHECKSUM_TYPES = List.of("SHA1", "SHA256", "SHA512");
   /** Valid delete types for delete action. */
   private static final List<String> VALID_DELETE_TYPES =
-      List.of("SOFT_DELETE", "HARD_DELETE", "PURGE");
+      List.of("SOFT_DELETE", "HARD_DELETE", "PURGE", "CONTENT_ONLY");
 
   private static boolean isMissingValue(final Map<String, Object> parameters, final String key) {
     return parameters == null || !parameters.containsKey(key)

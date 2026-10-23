@@ -40,6 +40,7 @@ import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
 import com.formkiq.aws.dynamodb.base64.Pagination;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.aws.dynamodb.documents.DocumentRecord;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
@@ -82,8 +83,35 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public class DocumentIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
+  private ApiRequestHandlerResponse buildResponse(final String documentId,
+      final DocumentDeleteType deleteType) {
+    String suffix = switch (deleteType) {
+      case SOFT_DELETE -> " soft";
+      case CONTENT_ONLY -> " content-only";
+      case HARD_DELETE -> "";
+    };
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "'" + documentId + "' object" + suffix + " deleted").build();
+  }
+
+  private DocumentDeleteType getDeleteType(final ApiGatewayRequestEvent event) {
+    String deleteType = event.getQueryStringParameter("deleteType");
+    if (deleteType != null) {
+      try {
+        return DocumentDeleteType.fromString(deleteType);
+      } catch (IllegalArgumentException e) {
+        throw new BadException("deleteType must be one of SOFT_DELETE, HARD_DELETE, CONTENT_ONLY");
+      }
+    }
+
+    return "true".equals(event.getQueryStringParameter("softDelete"))
+        ? DocumentDeleteType.SOFT_DELETE
+        : DocumentDeleteType.HARD_DELETE;
+  }
+
   /** {@link DocumentEntityValidator}. */
   private final DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
+
   /** {@link DocumentValidator}. */
   private final DocumentValidator documentValidator = new DocumentValidatorImpl();
 
@@ -115,7 +143,8 @@ public class DocumentIdRequestHandler
     awsservice.getLogger()
         .debug("deleting object " + documentId + " from bucket '" + documentBucket + "'");
 
-    boolean softDelete = "true".equals(event.getQueryStringParameter("softDelete"));
+    DocumentDeleteType deleteType = getDeleteType(event);
+    boolean softDelete = deleteType == DocumentDeleteType.SOFT_DELETE;
 
     DocumentService service = awsservice.getExtension(DocumentService.class);
 
@@ -123,19 +152,23 @@ public class DocumentIdRequestHandler
 
       service.validateCanDeleteDocument(siteId, document);
 
+      boolean objectDeleted = false;
+
       if (!softDelete) {
-        S3Service s3Service = awsservice.getExtension(S3Service.class);
+        objectDeleted = deleteS3Object(awsservice, siteId, document);
+      }
 
-        String s3Key = SiteIdKeyGenerator.createS3Key(siteId, documentId, artifactId);
-        S3ObjectMetadata md = s3Service.getObjectMetadata(documentBucket, s3Key, null);
-
-        if (md.isObjectExists()) {
-          s3Service.deleteObject(documentBucket, s3Key, null);
+      if (deleteType == DocumentDeleteType.CONTENT_ONLY) {
+        if (!objectDeleted) {
+          throw new NotFoundException(
+              "Document content for " + document.documentId() + " not found.");
         }
+
+        return buildResponse(document.documentId(), deleteType);
       }
 
       if (!service.deleteDocument(siteId, document, softDelete)) {
-        throw new NotFoundException("Document " + documentId + " not found.");
+        throw new NotFoundException("Document " + document.documentId() + " not found.");
       }
 
       if (softDelete) {
@@ -145,9 +178,7 @@ public class DocumentIdRequestHandler
         documentEventService.publish(awsservice.getLogger(), docEve);
       }
 
-      return ApiRequestHandlerResponse.builder().ok()
-          .body("message", "'" + documentId + "' object" + (softDelete ? " soft" : "") + " deleted")
-          .build();
+      return buildResponse(documentId, deleteType);
 
     } catch (S3Exception e) {
 
@@ -157,6 +188,21 @@ public class DocumentIdRequestHandler
 
       throw e;
     }
+  }
+
+  private boolean deleteS3Object(final AwsServiceCache services, final String siteId,
+      final DocumentArtifact document) {
+    S3Service s3Service = services.getExtension(S3Service.class);
+    String bucket = services.environment("DOCUMENTS_S3_BUCKET");
+    String s3Key = SiteIdKeyGenerator.createS3Key(siteId, document);
+    S3ObjectMetadata metadata = s3Service.getObjectMetadata(bucket, s3Key, null);
+
+    if (metadata.isObjectExists()) {
+      s3Service.deleteObject(bucket, s3Key, null);
+      return true;
+    }
+
+    return false;
   }
 
   @Override
