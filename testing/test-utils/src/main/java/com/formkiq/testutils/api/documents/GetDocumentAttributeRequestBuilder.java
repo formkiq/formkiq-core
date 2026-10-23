@@ -66,9 +66,17 @@ public class GetDocumentAttributeRequestBuilder
     this(DocumentArtifact.of(documentId, null), attributeKey);
   }
 
-  private DocumentAttribute getAttribute(final ApiClient apiClient, final String siteId)
+  /**
+   * Get the document attribute.
+   *
+   * @param apiClient {@link ApiClient}
+   * @param siteId site identifier
+   * @return {@link DocumentAttribute}
+   * @throws ApiException if the request fails
+   */
+  public DocumentAttribute getAttribute(final ApiClient apiClient, final String siteId)
       throws ApiException {
-    return submit(apiClient, siteId).throwIfError().response().getAttribute();
+    return submitOk(apiClient, siteId).response().getAttribute();
   }
 
   /**

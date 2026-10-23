@@ -1443,6 +1443,13 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
     }).toList();
   }
 
+  private Map<String, AttributeValue> getDocumentAttributeValueData(
+      final DocumentAttributeRecord attribute) {
+    Map<String, AttributeValue> values = attribute.getDataAttributes();
+    values.keySet().removeAll(Set.of("inserteddate", "lastModifiedDate", "userId"));
+    return values;
+  }
+
   private EntityRecord getEntityRecord(final String siteId, final DocumentAttributeRecord dar) {
     var entityKeyValue = DocumentAttributeEntityKeyValue.fromString(dar.getStringValue());
     return new FindEntityById().find(dbService, siteId, entityKeyValue);
@@ -1473,9 +1480,7 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
       compositeKeysToBeDeleted =
           Objects.concat(compositeKeysToBeDeleted, listBuilder.getCompositeKeysToBeDeleted());
 
-      // reset inserted date to match
-      Date now = new Date();
-      toSave.forEach(t -> t.setInsertedDate(now));
+      updateDocumentAttributeTimestamps(toSave, listBuilder.getPreviousAllAttributes());
 
       Collection<DocumentAttributeRecord> toBeDeleted =
           concat(listBuilder.getToBeDeletedAttributes(), compositeKeysToBeDeleted).stream()
@@ -2250,6 +2255,29 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
         attribute.setValueType(DocumentAttributeValueType.WATERMARK);
       }
     });
+  }
+
+  private void updateDocumentAttributeTimestamps(
+      final Collection<DocumentAttributeRecord> attributes,
+      final Collection<DocumentAttributeRecord> previousAttributes) {
+    Map<String, DocumentAttributeRecord> previousByKey = previousAttributes.stream()
+        .collect(Collectors.toMap(DynamodbRecordKeyPredicate::key, Function.identity()));
+    Date now = new Date();
+
+    for (DocumentAttributeRecord attribute : attributes) {
+      DocumentAttributeRecord previous =
+          previousByKey.get(DynamodbRecordKeyPredicate.key(attribute));
+      Date insertedDate = previous != null ? previous.getInsertedDate() : now;
+      Date lastModifiedDate = now;
+
+      if (previous != null && getDocumentAttributeValueData(previous)
+          .equals(getDocumentAttributeValueData(attribute))) {
+        lastModifiedDate =
+            previous.getLastModifiedDate() != null ? previous.getLastModifiedDate() : insertedDate;
+      }
+
+      attribute.setInsertedDate(insertedDate).setLastModifiedDate(lastModifiedDate);
+    }
   }
 
   private void updateDocumentHasArtifacts(final String siteId, final String documentId,

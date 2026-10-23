@@ -25,20 +25,38 @@ package com.formkiq.stacks.api.handler;
 
 import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.DocumentAttribute;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import static com.formkiq.aws.dynamodb.objects.Objects.formatDouble;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Assertions for document attribute responses. */
 final class DocumentAttributeAssertions {
   static void assertBooleanAttribute(final DocumentAttribute attribute, final String key,
       final Boolean expected) {
     assertValues(attribute, key, new DocumentAttribute().booleanValue(expected));
+  }
+
+  static void assertCreatedBetween(final DocumentAttribute attribute, final Instant started,
+      final Instant finished) {
+    assertTimestampBetween(attribute.getInsertedDate(), started, finished);
+    assertEquals(attribute.getInsertedDate(), attribute.getLastModifiedDate());
+  }
+
+  static void assertInsertionAdvanced(final DocumentAttribute before,
+      final DocumentAttribute after) {
+    assertTrue(
+        parseTimestamp(after.getInsertedDate()).isAfter(parseTimestamp(before.getInsertedDate())),
+        "Insertion timestamp must advance");
   }
 
   static void assertJsonAttribute(final DocumentAttribute attribute, final String key,
@@ -49,6 +67,16 @@ final class DocumentAttributeAssertions {
 
   static void assertKeyOnlyAttribute(final DocumentAttribute attribute, final String key) {
     assertValues(attribute, key, new DocumentAttribute());
+  }
+
+  static void assertModifiedAfter(final DocumentAttribute before, final DocumentAttribute after) {
+    assertTrue(parseTimestamp(after.getLastModifiedDate()).isAfter(
+        parseTimestamp(before.getLastModifiedDate())), "Modification timestamp must advance");
+  }
+
+  static void assertModifiedBetween(final DocumentAttribute attribute, final Instant started,
+      final Instant finished) {
+    assertTimestampBetween(attribute.getLastModifiedDate(), started, finished);
   }
 
   static void assertNumberAttribute(final DocumentAttribute attribute, final String key,
@@ -62,6 +90,14 @@ final class DocumentAttributeAssertions {
         new DocumentAttribute().numberValues(expected.stream().map(BigDecimal::new).toList()));
   }
 
+  static void assertSameTimestamps(final DocumentAttribute expected,
+      final DocumentAttribute actual) {
+    assertNotNull(expected.getInsertedDate());
+    assertNotNull(expected.getLastModifiedDate());
+    assertEquals(expected.getInsertedDate(), actual.getInsertedDate());
+    assertEquals(expected.getLastModifiedDate(), actual.getLastModifiedDate());
+  }
+
   static void assertStringAttribute(final DocumentAttribute attribute, final String key,
       final String expected) {
     assertValues(attribute, key, new DocumentAttribute().stringValue(expected));
@@ -70,6 +106,13 @@ final class DocumentAttributeAssertions {
   static void assertStringsAttribute(final DocumentAttribute attribute, final String key,
       final List<String> expected) {
     assertValues(attribute, key, new DocumentAttribute().stringValues(expected));
+  }
+
+  private static void assertTimestampBetween(final String timestamp, final Instant started,
+      final Instant finished) {
+    Instant instant = parseTimestamp(timestamp);
+    assertFalse(instant.isBefore(started), "Timestamp must not precede the request");
+    assertFalse(instant.isAfter(finished), "Timestamp must not follow the request");
   }
 
   private static void assertValues(final DocumentAttribute attribute, final String key,
@@ -101,6 +144,12 @@ final class DocumentAttributeAssertions {
     assertNotNull(attributes);
     return attributes.stream().filter(attribute -> key.equals(attribute.getKey())).findFirst()
         .orElseThrow(() -> new AssertionError("Missing attribute: " + key));
+  }
+
+  private static Instant parseTimestamp(final String timestamp) {
+    assertNotNull(timestamp, "Missing attribute timestamp");
+    return assertDoesNotThrow(() -> DateUtil.getIsoDateFormatter().parse(timestamp).toInstant(),
+        "Invalid attribute timestamp: " + timestamp);
   }
 
   private DocumentAttributeAssertions() {}

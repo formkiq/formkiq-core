@@ -11288,7 +11288,12 @@ components:
             type: string
         insertedDate:
           type: string
-          description: Inserted Timestamp
+          readOnly: true
+          description: Earliest insertion timestamp across the attribute's current values. Adding a value preserves this timestamp; removing values recomputes it from the remaining values. May be absent for older records.
+        lastModifiedDate:
+          type: string
+          readOnly: true
+          description: Latest modification timestamp across the attribute's current values. Removing values recomputes this timestamp from the remaining values; it does not track the time of removal. For older values without a modification timestamp, their insertion timestamp is used when available. May be absent when no timestamp is available.
         userId:
           type: string
           description: User who added attribute

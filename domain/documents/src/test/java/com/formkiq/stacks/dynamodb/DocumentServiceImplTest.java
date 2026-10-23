@@ -39,12 +39,14 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -86,6 +88,7 @@ import com.formkiq.aws.s3.S3Service;
 import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
+import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.aws.dynamodb.attributes.AttributeType;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
@@ -1923,6 +1926,50 @@ public class DocumentServiceImplTest implements DbKeys {
       assertEquals(1, results.size());
       assertEquals("category2", results.getFirst().getKey());
       assertEquals("[abc2, xyz2]", results.getFirst().getValues().toString());
+    }
+  }
+
+  /** Replacing values preserves retained timestamps and initializes newly persisted values. */
+  @Test
+  public void testReplaceDocumentAttributeValuesPreservesTimestamps() {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      createAttributeString(siteId, "myattr");
+      DocumentRecord item = createDocument(siteId, ID.uuid(), ZonedDateTime.now());
+      service.saveDocument(siteId, item, new SaveDocumentOptions());
+      final DocumentArtifact document = DocumentArtifact.of(item.documentId(), null);
+      DocumentAttributeRecord removed = createDocumentAttribute(document).setStringValue("111")
+          .setInsertedDate(Date.from(Instant.parse("2020-01-01T12:00:00Z")))
+          .setLastModifiedDate(Date.from(Instant.parse("2020-01-01T12:00:00Z")));
+      final DocumentAttributeRecord original = createDocumentAttribute(document)
+          .setStringValue("222").setInsertedDate(Date.from(Instant.parse("2020-01-01T13:00:00Z")))
+          .setLastModifiedDate(Date.from(Instant.parse("2020-01-01T14:00:00Z")));
+      db.putItems(List.of(removed.getAttributes(siteId), original.getAttributes(siteId)));
+      List<DocumentAttributeRecord> replacement =
+          List.of(createDocumentAttribute(document).setStringValue("222"),
+              createDocumentAttribute(document).setStringValue("333"));
+
+      // when
+      final Instant replacementStarted = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+      service.saveDocumentAttributes(siteId, document, replacement, AttributeValidationType.FULL,
+          AttributeValidationAccess.SET_ITEM);
+      final Instant replacementFinished = Instant.now();
+      List<DocumentAttributeRecord> stored =
+          service.findDocumentAttribute(siteId, document, "myattr");
+
+      // then
+      assertEquals(List.of("222", "333"),
+          stored.stream().map(DocumentAttributeRecord::getStringValue).toList());
+      DocumentAttributeRecord retained = stored.getFirst();
+      assertEquals(original.getInsertedDate(), retained.getInsertedDate());
+      assertEquals(original.getLastModifiedDate(), retained.getLastModifiedDate());
+      DocumentAttributeRecord added = stored.getLast();
+      assertNotNull(added.getInsertedDate());
+      assertNotNull(added.getLastModifiedDate());
+      assertEquals(added.getInsertedDate(), added.getLastModifiedDate());
+      assertFalse(added.getInsertedDate().toInstant().isBefore(replacementStarted));
+      assertFalse(added.getInsertedDate().toInstant().isAfter(replacementFinished));
+      assertTrue(added.getLastModifiedDate().after(retained.getLastModifiedDate()));
     }
   }
 
