@@ -27,6 +27,7 @@ import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.model.DeleteResponse;
+import com.formkiq.client.model.DocumentDeleteType;
 import com.formkiq.testutils.api.ApiHttpResponse;
 import com.formkiq.testutils.api.HttpRequestBuilder;
 
@@ -39,6 +40,8 @@ public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteRe
   private final String id;
   /** Artifact Id. */
   private String artifactId;
+  /** Deletion mode. */
+  private DocumentDeleteType deleteType;
   /** Soft Delete. */
   private Boolean softDelete;
 
@@ -62,6 +65,17 @@ public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteRe
   }
 
   /**
+   * Select the document deletion mode.
+   *
+   * @param value deletion mode
+   * @return this builder
+   */
+  public DeleteDocumentRequestBuilder deleteType(final DocumentDeleteType value) {
+    this.deleteType = value;
+    return this;
+  }
+
+  /**
    * Whether to soft delete document.
    *
    * @param documentSoftDelete {@link Boolean}
@@ -75,6 +89,6 @@ public class DeleteDocumentRequestBuilder implements HttpRequestBuilder<DeleteRe
   @Override
   public ApiHttpResponse<DeleteResponse> submit(final ApiClient apiClient, final String siteId) {
     return executeApiCall(() -> new DocumentsApi(apiClient).deleteDocument(this.id, siteId,
-        this.artifactId, softDelete));
+        this.artifactId, this.softDelete, this.deleteType));
   }
 }

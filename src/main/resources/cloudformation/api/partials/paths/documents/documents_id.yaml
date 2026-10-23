@@ -102,15 +102,23 @@ paths:
       operationId: DeleteDocument
       summary: Delete document
       description: |-
-        Delete a document's details, i.e., metadata, contents, etc
+        Select the deletion behavior using deleteType (case-insensitive; surrounding whitespace is ignored):
 
-        SoftDelete:
+        - SOFT_DELETE temporarily hides the document's metadata, attributes, and associated records
+          from normal API requests. Restore the document using PUT /documents/{documentId}/restore,
+          or list soft-deleted documents using GET /documents?softDeleted=true.
+        - HARD_DELETE deletes the document's metadata and current contents.
+        - CONTENT_ONLY removes the current S3 object while retaining document metadata,
+          attributes, tags, processing results, and workflow history. Existing S3 versions are retained.
+          Returns 404 when the current content does not exist, including repeated content deletion.
 
-        The SoftDelete parameter allows for the temporary removal of a document's metadata, attributes, etc from being retrieved from all API requests.
+        When no deletion option is supplied, the document's metadata and current contents are deleted.
 
-        The document can be permanently deleted by calling the DELETE /documents/{documentId} with softDelete=false or restored using the PUT /documents/{documentId}/restore.
+        The deprecated softDelete parameter remains supported for backward compatibility.
+        Without deleteType, softDelete=true selects SOFT_DELETE.
+        If softDelete is false or omitted, HARD_DELETE is used.
 
-        Only the GET /documents?softDeleted=true will return all the soft deleted documents.
+        When deleteType is supplied, it takes precedence and softDelete is ignored.
       x-formkiq-required-permission: DELETE_DOCUMENTS
       tags:
         - Documents
@@ -120,12 +128,42 @@ paths:
         - $ref: '#/components/parameters/artifactIdParam'
         - name: "softDelete"
           in: "query"
-          description: "Whether to soft delete document"
+          deprecated: true
+          description: |-
+            Legacy deletion flag. Set true to soft delete the document, equivalent to
+            deleteType=SOFT_DELETE. Existing requests remain supported.
+            Ignored when deleteType is supplied.
           schema:
             type: "boolean"
+        - name: "deleteType"
+          in: "query"
+          description: |-
+            Case-insensitive deletion mode; surrounding whitespace is ignored.
+            Defaults to HARD_DELETE when no deletion option is supplied.
+            Takes precedence over the deprecated softDelete parameter when both are supplied.
+          schema:
+            $ref: '#/components/schemas/DocumentDeleteType'
       responses:
         '200':
           $ref: '#/components/responses/200CorsDeleteResponse'
+        '400':
+          description: Invalid deletion mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+        '404':
+          description: |-
+            Document or content not found. Content-only deletion returns this status when the current
+            S3 object is absent, including repeated deletion, with the message
+            "Document content for {documentId} not found."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -133,6 +171,20 @@ paths:
 
 components:
   schemas:
+    #@overlay/match missing_ok=True
+    DocumentDeleteType:
+      type: string
+      description: |-
+        Deletion mode for DELETE /documents/{documentId}.
+        SOFT_DELETE temporarily hides the document until restored.
+        HARD_DELETE deletes document metadata and current contents.
+        CONTENT_ONLY deletes the current S3 object while preserving document metadata and associated
+        records. Existing S3 versions are retained; this mode does not purge historical content.
+      enum:
+        - SOFT_DELETE
+        - HARD_DELETE
+        - CONTENT_ONLY
+
     #@overlay/match missing_ok=True
     GetDocumentResponse:
       required:

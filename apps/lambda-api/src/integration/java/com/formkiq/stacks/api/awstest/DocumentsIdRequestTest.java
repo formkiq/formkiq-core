@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentUploadRequestBuilder;
@@ -209,7 +210,7 @@ public class DocumentsIdRequestTest extends AbstractAwsIntegrationTest {
       String documentId = response.getDocumentId();
 
       // when
-      api.deleteDocument(documentId, siteId, null, Boolean.TRUE);
+      new DeleteDocumentRequestBuilder(documentId).softDelete(true).submitOk(client, siteId);
 
       // then
       List<Document> softDeletedDocuments = notNull(new GetDocumentsRequestBuilder().deleted(true)

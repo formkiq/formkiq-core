@@ -35,6 +35,7 @@ import com.formkiq.validation.ValidationException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -67,16 +68,16 @@ public class DeleteAction implements DocumentAction {
       final DocumentArtifact document, final List<Action> actions, final Action action)
       throws IOException, ValidationException {
 
-    String deleteType = (String) action.parameters().get("deleteType");
-    boolean softDelete = "SOFT_DELETE".equalsIgnoreCase(deleteType);
-    boolean purge = "PURGE".equalsIgnoreCase(deleteType);
+    String deleteType =
+        ((String) action.parameters().get("deleteType")).trim().toUpperCase(Locale.ROOT);
+    boolean purge = "PURGE".equals(deleteType);
 
     if (purge) {
       this.http.sendRequest(siteId, "DELETE", "/documents/" + document.documentId() + "/purge", "",
           getParameters(document));
     } else {
       Map<String, String> parameters = getParameters(document);
-      parameters.put("softDelete", Boolean.toString(softDelete));
+      parameters.put("deleteType", deleteType);
       this.http.sendRequest(siteId, "DELETE", "/documents/" + document.documentId(), "",
           parameters);
     }
