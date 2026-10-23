@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -51,6 +52,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.formkiq.aws.dynamodb.DbKeys;
+import com.formkiq.aws.dynamodb.SiteIdKeyGenerator;
+import com.formkiq.aws.s3.S3Service;
+import static com.formkiq.testutils.aws.TestServices.BUCKET_NAME;
 import com.formkiq.aws.dynamodb.DynamoDbKey;
 import com.formkiq.aws.dynamodb.ID;
 import com.formkiq.aws.dynamodb.documents.DocumentArtifact;
@@ -67,6 +71,12 @@ import com.formkiq.client.model.AttributeValueType;
 import com.formkiq.client.model.AttributeSchemaCompositeKey;
 import com.formkiq.client.model.ChecksumType;
 import com.formkiq.client.model.DocumentAction;
+import com.formkiq.client.model.DocumentDeleteType;
+import com.formkiq.aws.dynamodb.ApiAuthorization;
+import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
+import com.formkiq.aws.services.lambda.exceptions.BadException;
+import com.formkiq.stacks.api.handler.documents.DocumentIdRequestHandler;
+import org.junit.jupiter.api.function.Executable;
 import com.formkiq.client.model.DocumentAttribute;
 import com.formkiq.client.model.DocumentResourceType;
 import com.formkiq.client.model.DocumentSearch;
@@ -333,6 +343,199 @@ public class DocumentsIdRequestTest extends AbstractApiClientRequestTest {
       String childDocumentId = children.getFirst().getDocumentId();
       assertDocumentDateIndexExists(siteId, childDocumentId);
       assertDocumentDateIndexDoesNotExist(siteId, document.documentId(), childDocumentId);
+    }
+  }
+
+  /** Content-only deletion of an unknown document returns not found. */
+  @Test
+  public void testContentOnlyDeleteMissingDocument() throws Exception {
+    // given
+    setBearerToken((String) null);
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+
+    // when
+    var response = new DeleteDocumentRequestBuilder(document)
+        .deleteType(DocumentDeleteType.CONTENT_ONLY).submitError(this.client, null);
+
+    // then
+    assertEquals(404, response.exception().getCode());
+  }
+
+  /** Content-only artifact deletion retains both artifact and parent metadata. */
+  @Test
+  public void testContentOnlyDeletePreservesArtifactMetadata() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      DocumentArtifact artifact = createDocumentAndArtifact(siteId, "parent.txt", "artifact.txt");
+      DocumentArtifact parent = DocumentArtifact.of(artifact.documentId(), null);
+      final var before =
+          new GetDocumentRequestBuilder(artifact).submitOk(this.client, siteId).response();
+      S3Service s3 = getAwsServices().getExtension(S3Service.class);
+
+      // when
+      new DeleteDocumentRequestBuilder(artifact).deleteType(DocumentDeleteType.CONTENT_ONLY)
+          .submitOk(this.client, siteId);
+
+      // then
+      assertFalse(s3.exists(BUCKET_NAME, SiteIdKeyGenerator.createS3Key(siteId, artifact)));
+      assertTrue(s3.exists(BUCKET_NAME, SiteIdKeyGenerator.createS3Key(siteId, parent)));
+      var after = new GetDocumentRequestBuilder(artifact).submitOk(this.client, siteId).response();
+      assertEquals(before.getPath(), after.getPath());
+      assertEquals(before.getMetadata(), after.getMetadata());
+      new GetDocumentRequestBuilder(parent).submitOk(this.client, siteId);
+    }
+  }
+
+  /** Content-only deletion preserves metadata and returns 404 when repeated. */
+  @Test
+  public void testContentOnlyDeletePreservesMetadata() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      String attributeKey = "reference" + ID.uuid();
+      addAttribute(siteId, attributeKey);
+      String documentId = new AddDocumentRequestBuilder().path("infected.txt").content("content")
+          .contentType("text/plain").addMetadata("customerReference", "123")
+          .addAttribute(attributeKey, "retained").addTag("category", "infected")
+          .submitOk(this.client, siteId).response().getDocumentId();
+      DocumentArtifact document = DocumentArtifact.of(documentId, null);
+      S3Service s3 = getAwsServices().getExtension(S3Service.class);
+      String key = SiteIdKeyGenerator.createS3Key(siteId, document);
+      assertTrue(s3.exists(BUCKET_NAME, key));
+      final var before =
+          new GetDocumentRequestBuilder(document).submitOk(this.client, siteId).response();
+
+      // when
+      new DeleteDocumentRequestBuilder(document).deleteType(DocumentDeleteType.CONTENT_ONLY)
+          .submitOk(this.client, siteId);
+
+      // then
+      assertFalse(s3.exists(BUCKET_NAME, key));
+
+      // when
+      var repeated = new DeleteDocumentRequestBuilder(document)
+          .deleteType(DocumentDeleteType.CONTENT_ONLY).submitError(this.client, siteId);
+
+      // then
+      assertEquals(404, repeated.exception().getCode());
+      assertEquals("{\"message\":\"Document content for " + documentId + " not found.\"}",
+          repeated.exception().getResponseBody());
+      var after = new GetDocumentRequestBuilder(document).submitOk(this.client, siteId).response();
+      assertEquals(before.getPath(), after.getPath());
+      assertEquals(before.getMetadata(), after.getMetadata());
+      var attribute = new GetDocumentAttributeRequestBuilder(documentId, attributeKey)
+          .submitOk(this.client, siteId).response().getAttribute();
+      assertNotNull(attribute);
+      assertEquals("retained", attribute.getStringValue());
+      var tag = new GetDocumentTagRequestBuilder(documentId, "category")
+          .submitOk(this.client, siteId).response();
+      assertNotNull(tag);
+      assertEquals("infected", tag.getValue());
+      assertEquals(404, new GetDocumentContentRequestBuilder(document)
+          .submitError(this.client, siteId).exception().getCode());
+
+      // when
+      new DeleteDocumentRequestBuilder(document).submitOk(this.client, siteId);
+
+      // then
+      assertDocumentNotFound(this.client, siteId, document);
+    }
+  }
+
+  /** Explicit deletion modes take precedence over either value of the legacy softDelete flag. */
+  @Test
+  public void testDeleteTypeOverridesSoftDelete() throws Exception {
+    for (DocumentDeleteType deleteType : DocumentDeleteType.values()) {
+      for (boolean softDelete : List.of(true, false)) {
+        // given
+        setBearerToken((String) null);
+        DocumentArtifact document = new AddDocumentRequestBuilder().path("test.txt")
+            .content("content").getDocument(this.client, null);
+        S3Service s3 = getAwsServices().getExtension(S3Service.class);
+        String key = SiteIdKeyGenerator.createS3Key(null, document);
+
+        // when
+        new DeleteDocumentRequestBuilder(document).deleteType(deleteType).softDelete(softDelete)
+            .submitOk(this.client, null);
+
+        // then
+        assertEquals(deleteType == DocumentDeleteType.SOFT_DELETE, s3.exists(BUCKET_NAME, key));
+        if (deleteType == DocumentDeleteType.CONTENT_ONLY) {
+          new GetDocumentRequestBuilder(document).submitOk(this.client, null);
+        } else {
+          assertDocumentNotFound(this.client, null, document);
+        }
+        assertEquals(deleteType == DocumentDeleteType.SOFT_DELETE, getSoftDeletedDocuments(null)
+            .stream().anyMatch(d -> document.documentId().equals(d.getDocumentId())));
+      }
+    }
+  }
+
+  /** Invalid deletion modes must fail before deleting content or metadata. */
+  @Test
+  public void testDeleteTypeRejectsInvalidMode() throws Exception {
+    for (String deleteType : List.of("PURGE", "INVALID", "", "SOFT")) {
+      // given
+      setBearerToken((String) null);
+      DocumentArtifact document =
+          new AddDocumentRequestBuilder().content("content").getDocument(this.client, null);
+      ApiGatewayRequestEvent event = new ApiGatewayRequestEvent();
+      event.setPathParameters(Map.of("documentId", document.documentId()));
+      event.addQueryParameter("deleteType", deleteType);
+      var services = getAwsServices();
+
+      // when
+      Executable executable =
+          () -> new DocumentIdRequestHandler().delete(event, new ApiAuthorization(), services);
+
+      // then
+      BadException exception = assertThrows(BadException.class, executable);
+      assertEquals("deleteType must be one of SOFT_DELETE, HARD_DELETE, CONTENT_ONLY",
+          exception.getMessage());
+      assertTrue(services.getExtension(S3Service.class).exists(BUCKET_NAME,
+          SiteIdKeyGenerator.createS3Key(null, document)));
+      new GetDocumentRequestBuilder(document).submitOk(this.client, null);
+    }
+  }
+
+  /** Explicit soft deletion preserves content for restore and hard deletion removes it. */
+  @Test
+  public void testDeleteTypeSoftDeleteAndHardDelete() throws Exception {
+    for (String siteId : Arrays.asList(null, ID.uuid())) {
+      // given
+      setBearerToken(siteId);
+      DocumentArtifact document =
+          new AddDocumentRequestBuilder().content("content").getDocument(this.client, siteId);
+      S3Service s3 = getAwsServices().getExtension(S3Service.class);
+      String key = SiteIdKeyGenerator.createS3Key(siteId, document);
+
+      // when
+      new DeleteDocumentRequestBuilder(document).deleteType(DocumentDeleteType.SOFT_DELETE)
+          .submitOk(this.client, siteId);
+
+      // then
+      assertTrue(s3.exists(BUCKET_NAME, key));
+      assertDocumentNotFound(this.client, siteId, document);
+      assertEquals(List.of(document.documentId()),
+          getSoftDeletedDocuments(siteId).stream().map(Document::getDocumentId).toList());
+
+      // when
+      new SetDocumentRestoreRequestBuilder().withDocumentId(document.documentId())
+          .withArtifactId(document.artifactId()).submitOk(this.client, siteId);
+
+      // then
+      new GetDocumentRequestBuilder(document).submitOk(this.client, siteId);
+      assertTrue(s3.exists(BUCKET_NAME, key));
+
+      // when
+      new DeleteDocumentRequestBuilder(document).deleteType(DocumentDeleteType.HARD_DELETE)
+          .submitOk(this.client, siteId);
+
+      // then
+      assertFalse(s3.exists(BUCKET_NAME, key));
+      assertDocumentNotFound(this.client, siteId, document);
+      assertTrue(getSoftDeletedDocuments(siteId).isEmpty());
     }
   }
 

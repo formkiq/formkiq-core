@@ -23,6 +23,7 @@
  */
 package com.formkiq.stacks.api.awstest;
 
+import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
 import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
@@ -242,7 +243,7 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
         assertNotNull(list.get(0).getDocumentId());
 
       } finally {
-        api.deleteDocument(documentId, siteId, null, Boolean.FALSE);
+        new DeleteDocumentRequestBuilder(documentId).softDelete(false).submitOk(apiClient, siteId);
       }
     }
   }

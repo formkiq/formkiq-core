@@ -283,13 +283,39 @@ class ActionsValidatorTest {
   }
 
   @Test
+  void testValidationContentOnlyDelete() {
+    // given
+    DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
+    Action action = new ActionBuilder().type(ActionType.DELETE).userId("joe")
+        .parameters(Map.of("deleteType", "CONTENT_ONLY")).document(document).indexUlid()
+        .build((String) null);
+    ValidationBuilder vb = new ValidationBuilder();
+
+    // when
+    validator.validation(vb, null, null, action, null, null);
+
+    // then
+    assertEquals(0, vb.getErrors().size());
+  }
+
+  @Test
   void testValidationDeleteInvalidDeleteType() {
+    // given
     DocumentArtifact document = DocumentArtifact.of(ID.uuid(), null);
     Action action = new ActionBuilder().type(ActionType.DELETE).userId("joe")
         .parameters(Map.of("deleteType", "ARCHIVE")).document(document).indexUlid()
         .build((String) null);
-    testTemplate(action, "parameters.deleteType",
-        "action 'deleteType' parameter must be one of [SOFT_DELETE, HARD_DELETE, PURGE]");
+    ValidationBuilder vb = new ValidationBuilder();
+
+    // when
+    validator.validation(vb, null, null, action, null, null);
+
+    // then
+    assertEquals(1, vb.getErrors().size());
+    ValidationError error = vb.getErrors().iterator().next();
+    assertEquals("parameters.deleteType", error.key());
+    assertEquals("action 'deleteType' parameter must be one of "
+        + "[SOFT_DELETE, HARD_DELETE, PURGE, CONTENT_ONLY]", error.error());
   }
 
   @Test
