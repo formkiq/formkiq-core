@@ -70,6 +70,8 @@ public final class TestServices {
   public static final String BUCKET_NAME = "testbucket";
   /** Default LocalStack Port. */
   private static final int DEFAULT_LOCALSTACK_PORT = 4566;
+  /** Maximum LocalStack startup attempts. */
+  private static final int LOCALSTACK_STARTUP_ATTEMPTS = 3;
   /** App Environment. */
   public static final String FORMKIQ_APP_ENVIRONMENT = "test";
   /** {@link LocalStackContainer}. */
@@ -445,9 +447,12 @@ public final class TestServices {
   public static synchronized void startLocalStack() {
 
     if (localstack == null && isPortAvailable()) {
-      localstack = new LocalStackContainer(LOCALSTACK_IMAGE).withServices(Service.S3, Service.SQS,
-          Service.SSM, Service.SNS, LocalStackContainer.EnabledService.named("events"));
-      localstack.start();
+      LocalStackContainer container = new LocalStackContainer(LOCALSTACK_IMAGE)
+          .withServices(Service.S3, Service.SQS, Service.SSM, Service.SNS,
+              LocalStackContainer.EnabledService.named("events"))
+          .withStartupAttempts(LOCALSTACK_STARTUP_ATTEMPTS);
+      container.start();
+      localstack = container;
     }
   }
 
