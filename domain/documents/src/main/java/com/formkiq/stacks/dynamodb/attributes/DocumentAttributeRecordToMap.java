@@ -37,12 +37,14 @@ import com.formkiq.aws.dynamodb.entity.EntityDocumentAttributeEntityKeyValueGet;
 import com.formkiq.aws.dynamodb.entity.EntityRecord;
 import com.formkiq.aws.dynamodb.entity.GetPresetEntity;
 import com.formkiq.aws.dynamodb.entity.PresetEntity;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -249,6 +251,8 @@ public class DocumentAttributeRecordToMap implements
 
         last = a;
       }
+
+      updateTimestamps(lastValues, a);
     }
 
     return c;
@@ -306,6 +310,26 @@ public class DocumentAttributeRecordToMap implements
           }));
 
       values.put("attributes", attributes);
+    }
+  }
+
+  private void updateTimestamps(final Map<String, Object> values,
+      final DocumentAttributeRecord attribute) {
+    Date insertedDate = attribute.getInsertedDate();
+    Date earliestInsertedDate = DynamoDbTypes.toDate((String) values.get("insertedDate"));
+    if (insertedDate != null
+        && (earliestInsertedDate == null || insertedDate.before(earliestInsertedDate))) {
+      values.put("insertedDate", DateUtil.getIsoDateFormatter().format(insertedDate));
+    }
+
+    Date lastModifiedDate = attribute.getLastModifiedDate();
+    if (lastModifiedDate == null) {
+      lastModifiedDate = insertedDate;
+    }
+    Date latestModifiedDate = DynamoDbTypes.toDate((String) values.get("lastModifiedDate"));
+    if (lastModifiedDate != null
+        && (latestModifiedDate == null || lastModifiedDate.after(latestModifiedDate))) {
+      values.put("lastModifiedDate", DateUtil.getIsoDateFormatter().format(lastModifiedDate));
     }
   }
 
