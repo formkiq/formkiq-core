@@ -200,6 +200,7 @@ public class DocumentExternalSystemExport implements DocumentExternalSystem {
       l.remove("key");
       l.remove("userId");
       l.remove("insertedDate");
+      l.remove("lastModifiedDate");
     });
 
     return map;
