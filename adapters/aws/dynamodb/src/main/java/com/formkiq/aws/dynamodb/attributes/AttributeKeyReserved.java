@@ -55,6 +55,8 @@ public enum AttributeKeyReserved {
   ESIGNATURE_DOCUSIGN_ENVELOPE_ID("EsignatureDocusignEnvelopeId"),
   /** Esignature Docusign Status. */
   ESIGNATURE_DOCUSIGN_STATUS("EsignatureDocusignStatus"),
+  /** Append-only, envelope-scoped signing evidence on related dossiers. */
+  ESIGNATURE_DOCUSIGN_DOSSIER_STATES("EsignatureDocusignDossierStates"),
   /** Retention Policy. */
   RETENTION_POLICY("RetentionPolicy", AttributeType.GOVERNANCE, AttributeDataType.ENTITY, null),
   /** Retention Period In Days. */

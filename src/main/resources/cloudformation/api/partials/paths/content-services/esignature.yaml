@@ -645,6 +645,9 @@ components:
         emailSubject:
           type: "string"
           description: "The subject line of the email message that is sent to all recipients"
+        dossierId:
+          type: "string"
+          description: "Optional owning agreement dossier. Must already reference this signing source. Correlates callback evidence without changing a parent agreement signing status."
         environment:
           $ref: "#/components/schemas/DocusignEnvironment"
         status:
@@ -1690,6 +1693,9 @@ components:
         envelopeId:
           type: "string"
           description: "Docusign Envelope Identifier"
+        warning:
+          type: "string"
+          description: "Optional dossier synchronization warning. The envelope was accepted; retain envelopeId and do not resend the package."
 
     #@overlay/match missing_ok=True
     AddDocusignRecipientViewRequest:

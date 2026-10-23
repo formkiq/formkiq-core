@@ -2129,7 +2129,8 @@ public final class DocumentServiceImpl implements DocumentService, DbKeys {
           previousAttributes.stream().filter(a -> attributeKeys.contains(a.getKey())).toList();
     }
 
-    return attributesToBeDeleted;
+    // Signing callbacks append independent evidence; stale metadata snapshots cannot remove it.
+    return SigningEvidencePreservation.deletions(attributesToBeDeleted);
   }
 
   private boolean isSetAccess(final AttributeValidationAccess validationAccess) {

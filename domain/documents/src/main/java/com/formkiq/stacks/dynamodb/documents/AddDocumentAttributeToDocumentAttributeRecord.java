@@ -38,6 +38,7 @@ import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordBuilder;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationException;
+import com.formkiq.stacks.dynamodb.SigningEvidencePreservation;
 
 import java.time.DateTimeException;
 import java.time.ZoneOffset;
@@ -94,6 +95,7 @@ public class AddDocumentAttributeToDocumentAttributeRecord
 
   private void addDocumentAttributeStandard(final AddDocumentAttributeStandard a,
       final Collection<DocumentAttributeRecord> c, final boolean isUsed) {
+    SigningEvidencePreservation.validateClientAttribute(a.key());
     if (!notNull(a.jsonValue()).isEmpty()) {
       validateJsonValueExclusive(a);
       DocumentAttributeRecord record = new DocumentAttributeRecord().setDocument(fromDocument)
