@@ -29,7 +29,7 @@ Parameters:
   ConsoleVersion:
     Type: String
     Description: Version of FormKiQ console to deploy
-    Default: v4.3.4
+    Default: v4.3.5
 
   CognitoConfigBucket:
     Type: String
