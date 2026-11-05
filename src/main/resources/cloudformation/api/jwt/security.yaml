@@ -5,7 +5,7 @@ ApiAuthorization:
     type: jwt
     jwtConfiguration:
       issuer:
-        Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+        Fn::Sub: https://cognito-idp.${AWS::Region}.${AWS::URLSuffix}/${CognitoUserPool}
       audience:
         - Fn::Sub: "${CognitoUserPoolClient}"
     identitySource: "$request.header.Authorization"

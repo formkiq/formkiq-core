@@ -193,8 +193,8 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
-              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}"
-              - Fn::Sub: "arn:aws:s3:::${DocumentsStageS3Bucket}/*"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${DocumentsStageS3Bucket}"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${DocumentsStageS3Bucket}/*"
             Condition:
               Bool:
                 aws:SecureTransport: "false"
@@ -294,8 +294,8 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
-              - Fn::Sub: "arn:aws:s3:::${DocumentsS3Buckets}"
-              - Fn::Sub: "arn:aws:s3:::${DocumentsS3Buckets}/*"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${DocumentsS3Buckets}"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${DocumentsS3Buckets}/*"
             Condition:
               Bool:
                 aws:SecureTransport: "false"
