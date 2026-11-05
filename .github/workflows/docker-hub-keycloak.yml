@@ -45,4 +45,4 @@ jobs:
           context: ./apps/netty-server/keycloak/
           file: ./apps/netty-server/keycloak/Dockerfile
           push: true
-          tags: "formkiq/keycloak:26.6.2"
+          tags: "formkiq/keycloak:26.8.2"

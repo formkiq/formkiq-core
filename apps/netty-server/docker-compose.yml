@@ -100,7 +100,7 @@ services:
     working_dir: /home/dynamodblocal
 
   keycloak:
-    image: docker.io/formkiq/keycloak:26.6.2
+    image: docker.io/formkiq/keycloak:26.8.2
     command: "start-dev --db=dev-file --http-port=8081"
     #command: export --dir /opt/keycloak/data/import/ --realm formkiq --users realm_file #To export data comment line above and uncomment this line
     environment:
@@ -116,4 +116,5 @@ services:
     ports:
       - 8081:8081
     volumes:
+      # Keep the existing data directory when upgrading Keycloak.
       - ~/.formkiq/keycloak-data-26.6.2:/opt/keycloak/data
