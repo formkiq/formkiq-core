@@ -455,8 +455,8 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
-              - Fn::Sub: "arn:aws:s3:::${WebUiConsole}"
-              - Fn::Sub: "arn:aws:s3:::${WebUiConsole}/*"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${WebUiConsole}"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${WebUiConsole}/*"
             Condition:
               Bool:
                 aws:SecureTransport: "false"
@@ -466,13 +466,13 @@ Resources:
               Service: cloudfront.amazonaws.com
             Action: s3:GetObject
             Resource:
-              Fn::Sub: 'arn:aws:s3:::${WebUiConsole}/*'
+              Fn::Sub: 'arn:${AWS::Partition}:s3:::${WebUiConsole}/*'
             Condition:
               StringEquals:
                 AWS:SourceArn:
                   Fn::Join:
                     - ""
-                    - - "arn:aws:cloudfront::"
+                    - - Fn::Sub: "arn:${AWS::Partition}:cloudfront::"
                       - Ref: AWS::AccountId
                       - ":distribution/"
                       - Ref: CloudFrontDistribution

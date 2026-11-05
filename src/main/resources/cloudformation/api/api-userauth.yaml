@@ -61,4 +61,4 @@ Outputs:
             - ''
             - - 'https://'
               - Ref: CertificateStackNameUserAuthApiDomain
-        - Fn::Sub: "https://${AuthApi}.execute-api.${AWS::Region}.amazonaws.com"
+        - Fn::Sub: "https://${AuthApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"

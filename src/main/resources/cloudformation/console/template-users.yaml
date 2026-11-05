@@ -309,7 +309,7 @@ Resources:
             - ''
             - - "cognito-idp."
               - Fn::Sub: "${AWS::Region}"
-              - ".amazonaws.com/"
+              - Fn::Sub: ".${AWS::URLSuffix}/"
               - Ref: CognitoUserPool
               - ":"
               - Ref: CognitoUserPoolClient

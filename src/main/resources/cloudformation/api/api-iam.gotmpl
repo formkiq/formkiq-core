@@ -57,4 +57,4 @@ Outputs:
             - ''
             - - 'https://'
               - Ref: CertificateStackNameIamApiDomain
-        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.amazonaws.com"
+        - Fn::Sub: "https://${DocumentsIamApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
