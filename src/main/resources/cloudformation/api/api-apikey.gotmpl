@@ -233,4 +233,4 @@ Outputs:
             - ''
             - - 'https://'
               - Ref: CertificateStackNameKeyApiDomain
-        - Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.amazonaws.com"
+        - Fn::Sub: "https://${DocumentsKeyApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"

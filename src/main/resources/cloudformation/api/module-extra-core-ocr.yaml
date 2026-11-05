@@ -25,8 +25,8 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
-              - Fn::Sub: "arn:aws:s3:::${OcrBucket}"
-              - Fn::Sub: "arn:aws:s3:::${OcrBucket}/*"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${OcrBucket}"
+              - Fn::Sub: "arn:${AWS::Partition}:s3:::${OcrBucket}/*"
             Condition:
               Bool:
                 aws:SecureTransport: "false"
