@@ -52,7 +52,7 @@ jobs:
       TRIVY_ARTIFACT_SCAN_DIR: build/trivy-artifacts
       TRIVY_REPORT_DIR: build/reports/trivy
       TRIVY_FAIL_SEVERITIES: HIGH,CRITICAL
-      TRIVY_SOURCE_SKIP_DIRS: archived,apps/netty-server,testing,build,**/build
+      TRIVY_SOURCE_SKIP_DIRS: apps/netty-server,testing,build,**/build
       TRIVY_SEVERITY: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
       TRIVY_SKIP_VERSION_CHECK: true
       TRIVY_UPLOAD_CODE_SCANNING: ${{ vars.TRIVY_UPLOAD_CODE_SCANNING == 'true' }}

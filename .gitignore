@@ -9,11 +9,9 @@ bin
 .nyc_output
 lambda-cognito-user-signup/src/coverage
 lambda-dlq/src/coverage
-module-email-notify/src/coverage
 node_modules
 *.tmp
 !console/src/test/resources/test.zip
-websocket-api/src/coverage
 .settings
 
 codex-patches
