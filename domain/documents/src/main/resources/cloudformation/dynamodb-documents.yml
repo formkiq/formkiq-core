@@ -110,6 +110,9 @@ Resources:
         Application: "FormKiQ Core"
         AppEnvironment: !Sub "${AppEnvironment}"
       
+  #! Cache holds expiring workflow state; losing pagination, idempotency, and
+  #! in-flight upload context is accepted. Historical recovery is not required.
+  #! trivy:ignore:AVD-AWS-0024
   Cache:
     Type: AWS::DynamoDB::Table
     DeletionPolicy: Retain

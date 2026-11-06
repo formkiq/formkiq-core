@@ -538,8 +538,9 @@ Resources:
         - IpProtocol: tcp
           FromPort: 2049
           ToPort: 2049
-          CidrIp: 0.0.0.0/0
-          Description: Allow NFS traffic to the Typesense EFS mount targets
+          SourceSecurityGroupId:
+            Ref: FargateSecurityGroup
+          Description: Allow NFS traffic from the Typesense Fargate tasks
       Tags:
         - Key: Application
           Value: FormKiQ
