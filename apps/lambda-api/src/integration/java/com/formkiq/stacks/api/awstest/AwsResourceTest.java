@@ -54,7 +54,6 @@ import com.formkiq.aws.cognito.CognitoIdentityConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoIdentityProviderConnectionBuilder;
 import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.cognito.CognitoIdentityService;
-import com.formkiq.client.api.DocumentsApi;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.Document;
@@ -212,7 +211,6 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
     for (ApiClient apiClient : getApiClients(null)) {
       // given
       String siteId = null;
-      DocumentsApi api = new DocumentsApi(apiClient);
       final String documentId = addDocument(apiClient, siteId, "test.txt",
           "content".getBytes(StandardCharsets.UTF_8), "text/plain", null);
 

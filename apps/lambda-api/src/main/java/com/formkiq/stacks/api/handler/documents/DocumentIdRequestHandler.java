@@ -83,32 +83,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 public class DocumentIdRequestHandler
     implements ApiGatewayRequestHandler, ApiGatewayRequestEventUtil {
 
-  private ApiRequestHandlerResponse buildResponse(final String documentId,
-      final DocumentDeleteType deleteType) {
-    String suffix = switch (deleteType) {
-      case SOFT_DELETE -> " soft";
-      case CONTENT_ONLY -> " content-only";
-      case HARD_DELETE -> "";
-    };
-    return ApiRequestHandlerResponse.builder().ok()
-        .body("message", "'" + documentId + "' object" + suffix + " deleted").build();
-  }
-
-  private DocumentDeleteType getDeleteType(final ApiGatewayRequestEvent event) {
-    String deleteType = event.getQueryStringParameter("deleteType");
-    if (deleteType != null) {
-      try {
-        return DocumentDeleteType.fromString(deleteType);
-      } catch (IllegalArgumentException e) {
-        throw new BadException("deleteType must be one of SOFT_DELETE, HARD_DELETE, CONTENT_ONLY");
-      }
-    }
-
-    return "true".equals(event.getQueryStringParameter("softDelete"))
-        ? DocumentDeleteType.SOFT_DELETE
-        : DocumentDeleteType.HARD_DELETE;
-  }
-
   /** {@link DocumentEntityValidator}. */
   private final DocumentEntityValidator documentEntityValidator = new DocumentEntityValidatorImpl();
 
@@ -120,6 +94,17 @@ public class DocumentIdRequestHandler
    *
    */
   public DocumentIdRequestHandler() {}
+
+  private ApiRequestHandlerResponse buildResponse(final String documentId,
+      final DocumentDeleteType deleteType) {
+    String suffix = switch (deleteType) {
+      case SOFT_DELETE -> " soft";
+      case CONTENT_ONLY -> " content-only";
+      case HARD_DELETE -> "";
+    };
+    return ApiRequestHandlerResponse.builder().ok()
+        .body("message", "'" + documentId + "' object" + suffix + " deleted").build();
+  }
 
   private List<Action> createActions(final String siteId,
       final com.formkiq.stacks.dynamodb.documents.AddDocumentRequest request,
@@ -244,6 +229,21 @@ public class DocumentIdRequestHandler
       final ApiAuthorization authorization, final String siteId) {
     boolean isAdmin = authorization.isAdminOrGovern(siteId);
     return isAdmin ? AttributeValidationAccess.ADMIN_UPDATE : AttributeValidationAccess.UPDATE;
+  }
+
+  private DocumentDeleteType getDeleteType(final ApiGatewayRequestEvent event) {
+    String deleteType = event.getQueryStringParameter("deleteType");
+    if (deleteType != null) {
+      try {
+        return DocumentDeleteType.fromString(deleteType);
+      } catch (IllegalArgumentException e) {
+        throw new BadException("deleteType must be one of SOFT_DELETE, HARD_DELETE, CONTENT_ONLY");
+      }
+    }
+
+    return "true".equals(event.getQueryStringParameter("softDelete"))
+        ? DocumentDeleteType.SOFT_DELETE
+        : DocumentDeleteType.HARD_DELETE;
   }
 
   @Override
