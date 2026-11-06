@@ -833,46 +833,6 @@ public class DocumentAttributesRequestTest extends AbstractAttributesRequestTest
   }
 
   /**
-   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue} rejects JSON.
-   *
-   * @param siteId site identifier; null selects the default site
-   * @throws ApiException an error has occurred
-   */
-  @ParameterizedTest(name = "{displayName} [siteId={0}]")
-  @MethodSource("sites")
-  public void testDeleteDocumentAttributeValueJson(final String siteId) throws ApiException {
-    // given
-    setBearerToken(siteId);
-    String key = "invoiceDetails";
-    Map<String, Object> jsonValue = Map.of("approved", true, "customer", Map.of("name", "Acme"));
-    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(this.client, siteId);
-    DocumentArtifact document =
-        new AddDocumentRequestBuilder().content("test").getDocument(this.client, siteId);
-    new AddDocumentAttributeRequestBuilder(document).addJsonAttribute(key, jsonValue)
-        .submitOk(this.client, siteId);
-
-    for (String value : List.of("Acme", "missing",
-        "{\"approved\":true,\"customer\":{\"name\":\"Acme\"}}")) {
-
-      // when
-      var response = new DeleteDocumentAttributeValueRequestBuilder(document, key, value)
-          .submit(this.client, siteId);
-
-      // then
-      assertApiError(response, ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(),
-          "{\"errors\":[{\"key\":\"" + key
-              + "\",\"error\":\"JSON attributes must be deleted by attribute key.\"}]}");
-
-      // when
-      DocumentAttribute attribute =
-          new GetDocumentAttributeRequestBuilder(document, key).getAttribute(this.client, siteId);
-
-      // then
-      assertJsonAttribute(attribute, key, jsonValue);
-    }
-  }
-
-  /**
    * DELETE /documents/{documentId}/attributes/{attributeKey}.
    *
    * @param siteId site identifier; null selects the default site
@@ -951,6 +911,46 @@ public class DocumentAttributesRequestTest extends AbstractAttributesRequestTest
     assertEquals("strings", attributes.get(1).getKey());
     assertTrue(Objects.requireNonNull(attributes.get(1).getStringValues()).isEmpty());
     assertEquals("xyz", attributes.get(1).getStringValue());
+  }
+
+  /**
+   * DELETE /documents/{documentId}/attributes/{attributeKey}/{attributeValue} rejects JSON.
+   *
+   * @param siteId site identifier; null selects the default site
+   * @throws ApiException an error has occurred
+   */
+  @ParameterizedTest(name = "{displayName} [siteId={0}]")
+  @MethodSource("sites")
+  public void testDeleteDocumentAttributeValueJson(final String siteId) throws ApiException {
+    // given
+    setBearerToken(siteId);
+    String key = "invoiceDetails";
+    Map<String, Object> jsonValue = Map.of("approved", true, "customer", Map.of("name", "Acme"));
+    new AddAttributeRequestBuilder().keyAsJson(key).submitOk(this.client, siteId);
+    DocumentArtifact document =
+        new AddDocumentRequestBuilder().content("test").getDocument(this.client, siteId);
+    new AddDocumentAttributeRequestBuilder(document).addJsonAttribute(key, jsonValue)
+        .submitOk(this.client, siteId);
+
+    for (String value : List.of("Acme", "missing",
+        "{\"approved\":true,\"customer\":{\"name\":\"Acme\"}}")) {
+
+      // when
+      var response = new DeleteDocumentAttributeValueRequestBuilder(document, key, value)
+          .submit(this.client, siteId);
+
+      // then
+      assertApiError(response, ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(),
+          "{\"errors\":[{\"key\":\"" + key
+              + "\",\"error\":\"JSON attributes must be deleted by attribute key.\"}]}");
+
+      // when
+      DocumentAttribute attribute =
+          new GetDocumentAttributeRequestBuilder(document, key).getAttribute(this.client, siteId);
+
+      // then
+      assertJsonAttribute(attribute, key, jsonValue);
+    }
   }
 
   /**
@@ -1260,36 +1260,6 @@ public class DocumentAttributesRequestTest extends AbstractAttributesRequestTest
   }
 
   /**
-   * PUT /documents/{documentId}/attributes/{attributeKey} with artifactId.
-   *
-   * @param siteId site identifier; null selects the default site
-   * @throws ApiException ApiException
-   */
-  @ParameterizedTest(name = "{displayName} [siteId={0}]")
-  @MethodSource("sites")
-  public void testReplaceArtifactAttributeValue(final String siteId) throws ApiException {
-    // given
-    setBearerToken(siteId);
-    addAttribute(siteId, "c0", null, null);
-
-    String documentId = addDocument(siteId);
-    DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
-
-    addDocumentAttribute(siteId, artifact,
-        new AddDocumentAttribute(new AddDocumentAttributeStandard().key("c0").stringValue("111")));
-
-    // when
-    SetResponse response = new SetDocumentAttributeValueRequestBuilder(artifact).setKey("c0")
-        .stringValue("123").submitOk(client, siteId).response();
-
-    // then
-    assertEquals("Updated attribute 'c0' on document '" + documentId + "'", response.getMessage());
-    List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, artifact);
-    assertEquals(1, documentAttributes.size());
-    assertStringAttribute(documentAttributes.getFirst(), "c0", "123");
-  }
-
-  /**
    * PUT /documents/{documentId}/attributes with artifactId.
    *
    * @param siteId site identifier; null selects the default site
@@ -1318,6 +1288,36 @@ public class DocumentAttributesRequestTest extends AbstractAttributesRequestTest
     List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, artifact);
     assertEquals(1, documentAttributes.size());
     assertStringAttribute(documentAttributes.getFirst(), "strings", "123");
+  }
+
+  /**
+   * PUT /documents/{documentId}/attributes/{attributeKey} with artifactId.
+   *
+   * @param siteId site identifier; null selects the default site
+   * @throws ApiException ApiException
+   */
+  @ParameterizedTest(name = "{displayName} [siteId={0}]")
+  @MethodSource("sites")
+  public void testReplaceArtifactAttributeValue(final String siteId) throws ApiException {
+    // given
+    setBearerToken(siteId);
+    addAttribute(siteId, "c0", null, null);
+
+    String documentId = addDocument(siteId);
+    DocumentArtifact artifact = saveArtifactDocument(siteId, documentId);
+
+    addDocumentAttribute(siteId, artifact,
+        new AddDocumentAttribute(new AddDocumentAttributeStandard().key("c0").stringValue("111")));
+
+    // when
+    SetResponse response = new SetDocumentAttributeValueRequestBuilder(artifact).setKey("c0")
+        .stringValue("123").submitOk(client, siteId).response();
+
+    // then
+    assertEquals("Updated attribute 'c0' on document '" + documentId + "'", response.getMessage());
+    List<DocumentAttribute> documentAttributes = getDocumentAttributes(siteId, artifact);
+    assertEquals(1, documentAttributes.size());
+    assertStringAttribute(documentAttributes.getFirst(), "c0", "123");
   }
 
   /**
