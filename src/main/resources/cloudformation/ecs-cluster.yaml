@@ -9,9 +9,13 @@ Parameters:
     Description: The Application Environment
     AllowedPattern: ".+"
 
-  TypesenseApiKey:
+  TypesenseApiKeySecretArn:
     Type: String
-    Description: TypeSense API Key
+    Description: >
+      ARN of a Secrets Manager secret in this account and Region whose plaintext
+      SecretString is the Typesense API key. Leave empty to disable Typesense.
+    Default: ""
+    AllowedPattern: '^$|^arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+$'
 
   VpcStackName:
     Type: String
@@ -29,16 +33,16 @@ Conditions:
         - Ref: VpcStackName
         - ''
 
-  HasTypesenseApiKey:
+  HasTypesenseApiKeySecretArn:
     Fn::Not:
       - Fn::Equals: 
-        - Ref: TypesenseApiKey
+        - Ref: TypesenseApiKeySecretArn
         - ''
         
   CreateResources: 
     Fn::And:
       - Condition: HasVpcStackName
-      - Condition: HasTypesenseApiKey
+      - Condition: HasTypesenseApiKeySecretArn
 
 Resources:
 

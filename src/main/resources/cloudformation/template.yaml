@@ -82,11 +82,13 @@ Parameters:
       Some services such as Typesense, and OpenSearch require a VPC. Only required if you are using any of these services; otherwise, this can remain empty.
     Default: ""
 
-  TypesenseApiKey:
+  TypesenseApiKeySecretArn:
     Type: String
     Description: >
-      Optional: API Key to access the [Typesense](https://typesense.org) server. Typesense is used to provide full text search support for document metadata. The API Key can be any random string of characters. To enable Typesense, the `VpcStackName` also needs to be set.
+      ARN of a Secrets Manager secret in this account and Region whose plaintext
+      SecretString is the Typesense API key. Leave empty to disable Typesense.
     Default: ""
+    AllowedPattern: '^$|^arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+$'
 
   TypesenseMemory:
     Type: String
@@ -172,12 +174,6 @@ Parameters:
 
 Conditions:
 
-  HasTypesenseApiKey:
-    Fn::Not:
-      - Fn::Equals: 
-        - Ref: TypesenseApiKey
-        - ''
-
   IsGovCloud:
     Fn::Or:
       - Fn::Equals:
@@ -239,8 +235,8 @@ Resources:
       Parameters:
         EnableDeletionProtection:
           Ref: EnableDeletionProtection
-        TypesenseApiKey:
-          Ref: TypesenseApiKey
+        TypesenseApiKeySecretArn:
+          Ref: TypesenseApiKeySecretArn
         LogRetentionInDays:
           Ref: LogRetentionInDays
         LogFormat:
@@ -474,8 +470,8 @@ Resources:
           Fn::GetAtt: 
           - Cognito
           - Outputs.CognitoUserPoolClientId
-        TypesenseApiKey:
-          Ref: TypesenseApiKey
+        TypesenseApiKeySecretArn:
+          Ref: TypesenseApiKeySecretArn
         TypesenseApiEndpoint:
           Fn::GetAtt:
           - TypeSenseService
@@ -569,8 +565,8 @@ Resources:
       Parameters:
         AppEnvironment: 
           Ref: AppEnvironment
-        TypesenseApiKey:
-          Ref: TypesenseApiKey
+        TypesenseApiKeySecretArn:
+          Ref: TypesenseApiKeySecretArn
         VpcStackName:
           Ref: VpcStackName
         CapacityProvider:
@@ -590,8 +586,8 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.FormKiQType
-        TypesenseApiKey:
-          Ref: TypesenseApiKey
+        TypesenseApiKeySecretArn:
+          Ref: TypesenseApiKeySecretArn
         VpcStackName:
           Ref: VpcStackName
         ECSCluster: 
@@ -624,22 +620,6 @@ Resources:
           Fn::GetAtt:
             - Config
             - Outputs.LambdaArchitecture
-
-  TypesenseApiKeyParameter:
-    Type: AWS::SSM::Parameter
-    Condition: HasTypesenseApiKey
-    Properties:
-      Description: "Typesense API Key"
-      Name: 
-        Fn::Sub: "/formkiq/${AppEnvironment}/typesense/ApiKey"
-      Type: String
-      Value:      
-        Ref: TypesenseApiKey
-      Tags:
-        Application: 
-          Fn::Sub: "FormKiQ"
-        AppEnvironment: 
-          Fn::Sub: "${AppEnvironment}"
 
   Monitoring:
     Type: AWS::Serverless::Application

@@ -223,20 +223,13 @@ public class DocumentActionsProcessor implements RequestHandler<AwsEvent, Void>,
 
     String typeSenseHost =
         ssmService.getParameterValue("/formkiq/" + appEnvironment + "/api/TypesenseEndpoint");
-    String typeSenseApiKey =
-        ssmService.getParameterValue("/formkiq/" + appEnvironment + "/typesense/ApiKey");
 
     if (isEmpty(typeSenseHost)) {
       typeSenseHost = awsServiceCache.environment("TYPESENSE_HOST");
     }
 
-    if (isEmpty(typeSenseApiKey)) {
-      typeSenseApiKey = awsServiceCache.environment("TYPESENSE_API_KEY");
-    }
-
-    if (!isEmpty(typeSenseHost) && !isEmpty(typeSenseApiKey)) {
+    if (!isEmpty(typeSenseHost) && TypeSenseServiceExtension.isConfigured(awsServiceCache)) {
       awsServiceCache.environment().put("TYPESENSE_HOST", typeSenseHost);
-      awsServiceCache.environment().put("TYPESENSE_API_KEY", typeSenseApiKey);
       awsServiceCache.register(TypeSenseService.class, new TypeSenseServiceExtension());
     }
 

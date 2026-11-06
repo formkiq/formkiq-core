@@ -45,9 +45,13 @@ Parameters:
     Type: String
     Description: FormKiQ VPC Stack Name 
     
-  TypesenseApiKey:
+  TypesenseApiKeySecretArn:
     Type: String
-    Description: TypeSense API Key
+    Description: >
+      ARN of a Secrets Manager secret in this account and Region whose plaintext
+      SecretString is the Typesense API key. Leave empty to disable Typesense.
+    Default: ""
+    AllowedPattern: '^$|^arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+$'
 
   DocumentEventsBus:
     Type: String
@@ -120,16 +124,16 @@ Conditions:
         - Ref: VpcStackName
         - ''
 
-  HasTypesenseApiKey:
+  HasTypesenseApiKeySecretArn:
     Fn::Not:
       - Fn::Equals: 
-        - Ref: TypesenseApiKey
+        - Ref: TypesenseApiKeySecretArn
         - ''
         
   CreateTypesenseResources: 
     Fn::And:
       - Condition: HasVpcStackName
-      - Condition: HasTypesenseApiKey
+      - Condition: HasTypesenseApiKeySecretArn
 
   IsLogFormatJSON: 
     Fn::Equals:
@@ -420,6 +424,8 @@ Resources:
           OPERATIONAL_MODE:
             Ref: OperationalMode
           CHATGPT_API_COMPLETIONS_URL: "https://api.openai.com/v1/chat/completions"
+          TYPESENSE_API_KEY_SECRET_ARN:
+            Ref: TypesenseApiKeySecretArn
           MODULE_typesense:
             Fn::If:
             - CreateTypesenseResources
@@ -514,6 +520,8 @@ Resources:
           DOCUMENT_VERSIONS_PLUGIN: "com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
+          TYPESENSE_API_KEY_SECRET_ARN:
+            Ref: TypesenseApiKeySecretArn
           MODULE_typesense:
             Fn::If:
             - CreateTypesenseResources
@@ -623,6 +631,8 @@ Resources:
             Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-documents-${AWS::AccountId}"
           DOCUMENT_SYNC_TABLE: 
             Ref: DocumentSyncs
+          TYPESENSE_API_KEY_SECRET_ARN:
+            Ref: TypesenseApiKeySecretArn
           MODULE_typesense:
             Fn::If:
             - CreateTypesenseResources
@@ -948,6 +958,26 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
+          - Fn::If:
+            - CreateTypesenseResources
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource:
+                Ref: TypesenseApiKeySecretArn
+            - Ref: AWS::NoValue
+          - Fn::If:
+            - CreateTypesenseResources
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource:
+                Fn::Sub: "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+              Condition:
+                StringEquals:
+                  kms:ViaService:
+                    Fn::Sub: "secretsmanager.${AWS::Region}.${AWS::URLSuffix}"
+                  kms:EncryptionContext:SecretARN:
+                    Ref: TypesenseApiKeySecretArn
+            - Ref: AWS::NoValue
           - Effect: Allow
             Action:
             - logs:CreateLogGroup

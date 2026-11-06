@@ -40,10 +40,14 @@ Parameters:
     Description: The type of FormKiQ installation
     Type: String
 
-  TypesenseApiKey:
+  TypesenseApiKeySecretArn:
     Type: String
-    Description: TypeSense API Key
-    
+    Description: >
+      ARN of a Secrets Manager secret in this account and Region whose plaintext
+      SecretString is the Typesense API key. Leave empty to disable Typesense.
+    Default: ""
+    AllowedPattern: '^$|^arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+$'
+
   TypesenseMemory:
     Type: String
     Description: The amount of memory used by Typesense Fargate Container function (GB)
@@ -119,16 +123,16 @@ Conditions:
         - Ref: VpcStackName
         - ''
 
-  HasTypesenseApiKey:
+  HasTypesenseApiKeySecretArn:
     Fn::Not:
       - Fn::Equals: 
-        - Ref: TypesenseApiKey
+        - Ref: TypesenseApiKeySecretArn
         - ''
         
   CreateResources: 
     Fn::And:
       - Condition: HasVpcStackName
-      - Condition: HasTypesenseApiKey
+      - Condition: HasTypesenseApiKeySecretArn
 
   NotCreateResources: 
     Fn::Not:
@@ -192,8 +196,8 @@ Resources:
               - ApiGateway
               - ApiEndpoint
             - ""
-          TYPESENSE_API_KEY:
-            Ref: TypesenseApiKey
+          TYPESENSE_API_KEY_SECRET_ARN:
+            Ref: TypesenseApiKeySecretArn
       Role: 
         Fn::GetAtt:
         - TypesenseLambdaRole
@@ -307,6 +311,20 @@ Resources:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
+            Action: secretsmanager:GetSecretValue
+            Resource:
+              Ref: TypesenseApiKeySecretArn
+          - Effect: Allow
+            Action: kms:Decrypt
+            Resource:
+              Fn::Sub: "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+            Condition:
+              StringEquals:
+                kms:ViaService:
+                  Fn::Sub: "secretsmanager.${AWS::Region}.${AWS::URLSuffix}"
+                kms:EncryptionContext:SecretARN:
+                  Ref: TypesenseApiKeySecretArn
+          - Effect: Allow
             Action:
             - logs:CreateLogGroup
             - logs:CreateLogStream
@@ -413,9 +431,9 @@ Resources:
         Ref: TypesenseMemory
       NetworkMode: awsvpc
       TaskRoleArn:
-        Ref: TaskRole
+        Fn::GetAtt: [TaskRole, Arn]
       ExecutionRoleArn: 
-        Ref: ExecutionRole
+        Fn::GetAtt: [ExecutionRole, Arn]
       RequiresCompatibilities: 
         - FARGATE
       Volumes:
@@ -432,9 +450,10 @@ Resources:
           Environment:
             - Name: TYPESENSE_DATA_DIR
               Value: /data
+          Secrets:
             - Name: TYPESENSE_API_KEY
-              Value: 
-                Ref: TypesenseApiKey
+              ValueFrom:
+                Ref: TypesenseApiKeySecretArn
           MountPoints:
             - SourceVolume: Typesense
               ContainerPath: '/data'
@@ -509,6 +528,20 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource:
+                Ref: TypesenseApiKeySecretArn
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource:
+                Fn::Sub: "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+              Condition:
+                StringEquals:
+                  kms:ViaService:
+                    Fn::Sub: "secretsmanager.${AWS::Region}.${AWS::URLSuffix}"
+                  kms:EncryptionContext:SecretARN:
+                    Ref: TypesenseApiKeySecretArn
             - Effect: Allow
               Action:
               - logs:CreateLogGroup

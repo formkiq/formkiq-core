@@ -96,6 +96,32 @@ Default local login:
 - Username: `admin@me.com`
 - Password: `password`
 
+### Configure Typesense on AWS
+
+Create a Secrets Manager secret in the same AWS account and Region as FormKiQ.
+Choose **Other type of secret**, select **Plaintext**, and store only the Typesense
+API key as the secret's `SecretString`, without a JSON object or surrounding quotes.
+Provide its full ARN as the CloudFormation parameter `TypesenseApiKeySecretArn`,
+along with `VpcStackName`. An empty ARN disables Typesense.
+
+`TypesenseApiKey` is no longer a supported CloudFormation parameter. When upgrading,
+create the secret with your existing Typesense key, remove the old parameter from
+deployment overrides, and supply `TypesenseApiKeySecretArn`. The stack update removes
+the old `/formkiq/<environment>/typesense/ApiKey` SSM parameter. Keep the secret available
+throughout deployment and rollback; FormKiQ does not create or delete this secret.
+
+The ECS task receives the key through its `Secrets` configuration. API, indexing,
+and document-action Lambdas receive the ARN and retrieve the key at runtime. IAM
+permissions allow reads of that secret and KMS decryption for its encryption context.
+For a customer managed KMS key, its key policy must also permit these execution roles.
+
+Updating the secret does not automatically refresh running tasks or cached Lambda
+clients. Coordinate key changes with an ECS service deployment and recycling the
+Typesense-consuming Lambda execution environments. The current single-task Typesense
+service can have a brief search interruption during deployment. Existing task revisions
+may retain the previous plaintext key, so rotate it after migration and validation.
+Local Docker development continues to use its local `TYPESENSE_API_KEY` setting.
+
 ### Common API flow
 1. Log in with `POST /login`.
 2. Upload or create a document with `POST /documents`.

@@ -23,6 +23,9 @@
  */
 package com.formkiq.module.typesense;
 
+import static com.formkiq.strings.Strings.isEmptyWithTrim;
+
+import com.formkiq.aws.secretsmanager.SecretsManagerService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -33,6 +36,18 @@ import software.amazon.awssdk.auth.credentials.AwsCredentials;
  *
  */
 public class TypeSenseServiceExtension implements AwsServiceExtension<TypeSenseService> {
+
+  /**
+   * Whether an API key source is configured.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   * @return boolean
+   */
+  public static boolean isConfigured(final AwsServiceCache serviceCache) {
+    String secretArn = serviceCache.environment("TYPESENSE_API_KEY_SECRET_ARN");
+    String localKey = serviceCache.environment("TYPESENSE_API_KEY");
+    return !isEmptyWithTrim(secretArn) || !isEmptyWithTrim(localKey);
+  }
 
   /** {@link TypeSenseService}. */
   private TypeSenseService service;
@@ -47,9 +62,18 @@ public class TypeSenseServiceExtension implements AwsServiceExtension<TypeSenseS
   public TypeSenseService loadService(final AwsServiceCache awsServiceCache) {
 
     if (this.service == null) {
+      String secretArn = awsServiceCache.environment("TYPESENSE_API_KEY_SECRET_ARN");
+      String apiKey = awsServiceCache.environment("TYPESENSE_API_KEY");
+      if (!isEmptyWithTrim(secretArn)) {
+        apiKey = awsServiceCache.getExtension(SecretsManagerService.class)
+            .loadSecretStringByArn(secretArn);
+      }
+      if (isEmptyWithTrim(apiKey)) {
+        throw new IllegalStateException("Typesense API key is missing or empty");
+      }
       AwsCredentials credentials = awsServiceCache.getExtension(AwsCredentials.class);
-      this.service = new TypeSenseServiceImpl(awsServiceCache.environment("TYPESENSE_HOST"),
-          awsServiceCache.environment("TYPESENSE_API_KEY"), awsServiceCache.region(), credentials);
+      this.service = new TypeSenseServiceImpl(awsServiceCache.environment("TYPESENSE_HOST"), apiKey,
+          awsServiceCache.region(), credentials);
     }
 
     return this.service;
