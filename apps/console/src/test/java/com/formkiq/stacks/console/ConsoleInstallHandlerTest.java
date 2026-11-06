@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +55,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.formkiq.aws.s3.S3Service;
@@ -149,6 +155,22 @@ public class ConsoleInstallHandlerTest {
     connection = new HttpUrlConnectionRecorder(URI.create("http://localhost").toURL());
     serviceCache.environment().remove("COGNITO_SINGLE_SIGN_ON_URL");
     createHandler();
+  }
+
+  private void createFinalizeHandler(final List<String> invalidatedIndexes) {
+    this.handler = new ConsoleInstallHandler(serviceCache) {
+      @Override
+      protected HttpURLConnection getConnection(final String responseUrl) {
+        return ConsoleInstallHandlerTest.this.getConnection();
+      }
+
+      @Override
+      protected void invalidateCloudFront(final String distributionId,
+          final LambdaLogger lambdaLogger) {
+        invalidatedIndexes
+            .add(s3.getContentAsString(CONSOLE_BUCKET, "0.1/modules/index.json", null));
+      }
+    };
   }
 
   private void createHandler() {
@@ -320,6 +342,108 @@ public class ConsoleInstallHandlerTest {
 
     assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
     assertTrue(connection.contains("\"Data\":{\"Message\":\"Request Create was successful!\""));
+  }
+
+  /**
+   * Verify the resource BRAND selects an exact module ID before invalidation.
+   *
+   * @param requestType CloudFormation request type
+   * @throws IOException IOException
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"Create", "Update"})
+  public void testFinalizeFiltersBrands(final String requestType) throws IOException {
+    // given
+    final String key = "0.1/modules/index.json";
+    JSONObject original = writeModuleIndex();
+    List<String> invalidatedIndexes = new ArrayList<>();
+    createFinalizeHandler(invalidatedIndexes);
+    Map<String, Object> input = createInput(requestType);
+    input.put("ResourceProperties",
+        Map.of("Action", "Finalize", "DistributionId", "E123", "BRAND", "smart"));
+    JSONObject expected = new JSONObject(original.toString());
+    expected.put("modules", new JSONArray().put(original.getJSONArray("modules").getJSONObject(0))
+        .put(original.getJSONArray("modules").getJSONObject(2)));
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+    assertEquals(1, invalidatedIndexes.size());
+    assertTrue(expected.similar(new JSONObject(invalidatedIndexes.get(0))));
+    assertTrue(expected.similar(new JSONObject(s3.getContentAsString(CONSOLE_BUCKET, key, null))));
+    assertEquals("application/json",
+        s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getContentType());
+    assertEquals("no-store", s3.getObjectMetadata(CONSOLE_BUCKET, key, null).getCacheControl());
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertEquals(2, invalidatedIndexes.size());
+    assertTrue(expected.similar(new JSONObject(invalidatedIndexes.get(1))));
+  }
+
+  /**
+   * Verify an invalid index fails finalization without replacing the index or invalidating.
+   *
+   * @param index Invalid discovery document
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"invalid json", "{}", "{\"modules\":[{}]}"})
+  public void testFinalizeInvalidModuleIndex(final String index) {
+    // given
+    String key = "0.1/modules/index.json";
+    s3.putObject(CONSOLE_BUCKET, key, index.getBytes(StandardCharsets.UTF_8), "application/json");
+    List<String> invalidatedIndexes = new ArrayList<>();
+    createFinalizeHandler(invalidatedIndexes);
+    Map<String, Object> input = createInput("Update");
+    input.put("ResourceProperties",
+        Map.of("Action", "Finalize", "DistributionId", "E123", "BRAND", "smart"));
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertTrue(connection.contains("\"Status\":\"FAILED\""));
+    assertFalse(connection.contains("\"Status\":\"SUCCESS\""));
+    assertTrue(invalidatedIndexes.isEmpty());
+    assertEquals(index, s3.getContentAsString(CONSOLE_BUCKET, key, null));
+  }
+
+  /**
+   * Verify missing, blank, and unmatched brands remove only branding entries.
+   *
+   * @param brand Selected brand
+   * @throws IOException IOException
+   */
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = {"", " ", "unknown"})
+  public void testFinalizeWithoutMatchingBrand(final String brand) throws IOException {
+    // given
+    final JSONObject original = writeModuleIndex();
+    List<String> invalidatedIndexes = new ArrayList<>();
+    createFinalizeHandler(invalidatedIndexes);
+    Map<String, Object> properties = new HashMap<>();
+    properties.put("Action", "Finalize");
+    properties.put("DistributionId", "E123");
+    if (brand != null) {
+      properties.put("BRAND", brand);
+    }
+    Map<String, Object> input = createInput("Update");
+    input.put("ResourceProperties", properties);
+    JSONObject expected = new JSONObject(original.toString());
+    expected.put("modules", new JSONArray().put(original.getJSONArray("modules").getJSONObject(2)));
+
+    // when
+    this.handler.handleRequest(input, this.context);
+
+    // then
+    assertTrue(connection.contains("\"Status\":\"SUCCESS\""));
+    assertEquals(1, invalidatedIndexes.size());
+    assertTrue(expected.similar(new JSONObject(invalidatedIndexes.get(0))));
   }
 
   /**
@@ -626,6 +750,7 @@ public class ConsoleInstallHandlerTest {
   @Test
   public void testHandleRequestFinalize() {
     // given
+    s3.deleteObject(CONSOLE_BUCKET, "0.1/modules/index.json", null);
     List<String> invalidatedDistributions = new ArrayList<>();
     this.handler = new ConsoleInstallHandler(serviceCache) {
 
@@ -726,5 +851,13 @@ public class ConsoleInstallHandlerTest {
     assertEquals("", connection.getRequestProperty("Content-Type"));
     assertEquals("" + contentLength, connection.getRequestProperty("Content-Length"));
     assertEquals("PUT", connection.getRequestMethod());
+  }
+
+  private JSONObject writeModuleIndex() throws IOException {
+    try (InputStream stream = getClass().getResourceAsStream("/modules-index.json")) {
+      byte[] content = stream.readAllBytes();
+      s3.putObject(CONSOLE_BUCKET, "0.1/modules/index.json", content, "application/json");
+      return new JSONObject(new String(content, StandardCharsets.UTF_8));
+    }
   }
 }
