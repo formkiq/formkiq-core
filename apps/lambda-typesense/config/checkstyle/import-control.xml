@@ -13,6 +13,7 @@
 			<allow pkg="com.formkiq.module.lambdaservices" />
 			<allow pkg="com.amazonaws.services.lambda.runtime" />
 			<allow pkg="com.formkiq.aws.dynamodb" />
+			<allow pkg="com.formkiq.aws.secretsmanager" />
 			<allow pkg="com.formkiq.graalvm.annotations" />
 			<allow pkg="com.google.gson" />
 

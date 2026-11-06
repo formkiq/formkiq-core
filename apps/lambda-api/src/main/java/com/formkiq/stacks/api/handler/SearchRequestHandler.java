@@ -43,7 +43,7 @@ import com.formkiq.aws.services.lambda.exceptions.BadException;
 import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.typesense.TypeSenseService;
-import com.formkiq.module.typesense.TypeSenseServiceImpl;
+import com.formkiq.module.typesense.TypeSenseServiceExtension;
 import com.formkiq.stacks.api.QueryRequestValidator;
 import com.formkiq.stacks.dynamodb.DocumentSearchResult;
 import com.formkiq.stacks.dynamodb.DocumentSearchResultToMap;
@@ -54,8 +54,6 @@ import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.validation.ValidationBuilder;
 import com.formkiq.validation.ValidationError;
 import com.formkiq.validation.ValidationException;
-import software.amazon.awssdk.auth.credentials.AwsCredentials;
-import software.amazon.awssdk.regions.Region;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -264,16 +262,12 @@ public class SearchRequestHandler implements ApiGatewayRequestHandler, ApiGatewa
     if (!isEmpty(text)) {
 
       if (isEmpty(awsservice.environment("TYPESENSE_HOST"))
-          || isEmpty(awsservice.environment("TYPESENSE_API_KEY"))) {
+          || !TypeSenseServiceExtension.isConfigured(awsservice)) {
         throw new BadException("Typesense Fulltext search is not Enabled");
       }
 
-      Region region = Region.of(awsservice.environment("AWS_REGION"));
-
-      AwsCredentials awsCredentials = awsservice.getExtension(AwsCredentials.class);
       DocumentService docService = awsservice.getExtension(DocumentService.class);
-      TypeSenseService ts = new TypeSenseServiceImpl(awsservice.environment("TYPESENSE_HOST"),
-          awsservice.environment("TYPESENSE_API_KEY"), region, awsCredentials);
+      TypeSenseService ts = awsservice.getExtension(TypeSenseService.class);
 
       List<String> documentIds = ts.searchFulltext(siteId, text, limit);
       List<DocumentArtifact> documents =

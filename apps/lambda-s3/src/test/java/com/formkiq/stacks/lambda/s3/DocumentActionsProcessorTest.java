@@ -64,6 +64,8 @@ import com.formkiq.aws.dynamodb.actions.ActionStatus;
 import com.formkiq.aws.dynamodb.actions.ActionType;
 import com.formkiq.module.actions.services.ActionsService;
 import com.formkiq.module.actions.services.ActionsServiceExtension;
+import com.formkiq.aws.secretsmanager.SecretsManagerAwsServiceRegistry;
+import com.formkiq.aws.secretsmanager.SecretsManagerServiceImpl;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
@@ -238,6 +240,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
   private static final List<String> VALID_IMAGE_FORMATS =
       List.of("bmp", "gif", "jpeg", "png", "tif");
 
+  /** ARN of the Typesense test API key secret. */
+  private static String typesenseApiKeySecretArn;
+
   private static void addKeyValueOcrMock() {
     mockServer
         .when(request().withMethod("GET")
@@ -328,7 +333,9 @@ public class DocumentActionsProcessorTest implements DbKeys {
     String typeSenseHost = "http://localhost:" + typesenseExtension.getFirstMappedPort();
     ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/api/TypesenseEndpoint",
         typeSenseHost);
-    ssmService.putParameter("/formkiq/" + APP_ENVIRONMENT + "/typesense/ApiKey", API_KEY);
+    typesenseApiKeySecretArn =
+        new SecretsManagerServiceImpl(TestServices.getSecretsManagerConnection(null))
+            .createSecret("typesense-test-" + java.util.UUID.randomUUID(), API_KEY);
 
     typesense = new TypeSenseServiceImpl(typeSenseHost, API_KEY, Region.US_EAST_1, CREDENTIALS);
 
@@ -355,6 +362,7 @@ public class DocumentActionsProcessorTest implements DbKeys {
     env.put("DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE);
     env.put("DOCUMENT_VERSIONS_TABLE", DOCUMENTS_VERSION_TABLE);
     env.put("APP_ENVIRONMENT", APP_ENVIRONMENT);
+    env.put("TYPESENSE_API_KEY_SECRET_ARN", typesenseApiKeySecretArn);
     env.put("DOCUMENTS_S3_BUCKET", BUCKET_NAME);
     env.put("MODULE_" + module, "true");
     env.put("SNS_DOCUMENT_EVENT", snsDocumentEventTopicArn);
@@ -476,7 +484,8 @@ public class DocumentActionsProcessorTest implements DbKeys {
         new AwsServiceCacheBuilder(env, TestServices.getEndpointMap(), credentialsProvider)
             .addService(new DynamoDbAwsServiceRegistry(), new S3AwsServiceRegistry(),
                 new SnsAwsServiceRegistry(), new SsmAwsServiceRegistry(),
-                new SesAwsServiceRegistry(), new EventBridgeAwsServiceRegistry())
+                new SecretsManagerAwsServiceRegistry(), new SesAwsServiceRegistry(),
+                new EventBridgeAwsServiceRegistry())
             .build();
 
     processor = new DocumentActionsProcessor(serviceCache);

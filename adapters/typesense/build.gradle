@@ -2,8 +2,10 @@
 description = "Typesense"
 
 dependencies {
+  implementation project(':adapters:aws:secrets-manager')
   implementation project(':libs:http-sigv4')
   implementation project(':libs:lambda-services')
+  implementation project(':libs:strings')
 
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher

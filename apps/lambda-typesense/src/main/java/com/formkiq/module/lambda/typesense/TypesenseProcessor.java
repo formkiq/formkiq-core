@@ -42,6 +42,9 @@ import com.formkiq.aws.dynamodb.ApiAuthorization;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.DynamoDbServiceExtension;
+import com.formkiq.aws.secretsmanager.SecretsManagerAwsServiceRegistry;
+import com.formkiq.aws.secretsmanager.SecretsManagerService;
+import com.formkiq.aws.secretsmanager.SecretsManagerServiceExtension;
 import com.formkiq.aws.dynamodb.model.DocumentMapToDocument;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
@@ -72,7 +75,8 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
     if (System.getenv().containsKey("AWS_REGION")) {
       serviceCache = new AwsServiceCacheBuilder(System.getenv(), Map.of(),
           EnvironmentVariableCredentialsProvider.create())
-          .addService(new DynamoDbAwsServiceRegistry()).build();
+          .addService(new DynamoDbAwsServiceRegistry(), new SecretsManagerAwsServiceRegistry())
+          .build();
 
       initialize(serviceCache);
     }
@@ -85,6 +89,7 @@ public class TypesenseProcessor implements RequestHandler<Map<String, Object>, V
    */
   public static void initialize(final AwsServiceCache awsServices) {
 
+    awsServices.register(SecretsManagerService.class, new SecretsManagerServiceExtension());
     awsServices.register(TypeSenseService.class, new TypeSenseServiceExtension());
     awsServices.register(DynamoDbService.class, new DynamoDbServiceExtension());
     awsServices.register(DocumentSyncService.class, new DocumentSyncServiceExtension());
