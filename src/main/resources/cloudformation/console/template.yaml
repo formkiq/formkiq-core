@@ -484,6 +484,7 @@ Resources:
       Handler: com.formkiq.stacks.console.ConsoleInstallHandler
       Description: Lambda function that Installs the FormKiQ Console
       Runtime: java25
+      Tracing: Active
       Architectures:
         - Ref: LambdaArchitecture
       Timeout: 900
@@ -586,6 +587,8 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: /service-role/
+      ManagedPolicyArns:
+        - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:
         -
           PolicyName:

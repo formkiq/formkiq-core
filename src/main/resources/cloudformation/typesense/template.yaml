@@ -397,6 +397,7 @@ Resources:
           FromPort: 8108
           ToPort: 8108
           IpProtocol: tcp
+          Description: Allow Typesense API requests from the API Gateway VPC link
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -538,6 +539,7 @@ Resources:
           FromPort: 2049
           ToPort: 2049
           CidrIp: 0.0.0.0/0
+          Description: Allow NFS traffic to the Typesense EFS mount targets
       Tags:
         - Key: Application
           Value: FormKiQ

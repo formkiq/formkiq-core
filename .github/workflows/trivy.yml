@@ -116,6 +116,7 @@ jobs:
       - name: Scan built Java artifacts
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: v0.76.2
           scan-type: rootfs
           scan-ref: ${{ env.TRIVY_ARTIFACT_SCAN_DIR }}
           scanners: vuln
