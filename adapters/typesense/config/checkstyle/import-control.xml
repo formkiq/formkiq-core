@@ -6,6 +6,9 @@
 <import-control pkg="com.formkiq.module">
 
 	<subpackage name="typesense">
+
+        <allow pkg="com.formkiq.aws.secretsmanager" />
+        <allow pkg="com.formkiq.strings" />
 		<allow pkg="java.io" />
 		<allow pkg="java.util" />
 

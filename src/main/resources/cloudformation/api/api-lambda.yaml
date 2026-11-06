@@ -63,9 +63,13 @@ Parameters:
     Type: String
     Default: "cognito"
 
-  TypesenseApiKey:
+  TypesenseApiKeySecretArn:
     Type: String
-    Description: TypeSense API Key
+    Description: >
+      ARN of a Secrets Manager secret in this account and Region whose plaintext
+      SecretString is the Typesense API key. Leave empty to disable Typesense.
+    Default: ""
+    AllowedPattern: '^$|^arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+$'
 
   TypesenseApiEndpoint:
     Type: String
@@ -157,16 +161,16 @@ Conditions:
         - Ref: VpcStackName
         - ''
 
-  HasTypesenseApiKey:
+  HasTypesenseApiKeySecretArn:
     Fn::Not:
       - Fn::Equals: 
-        - Ref: TypesenseApiKey
+        - Ref: TypesenseApiKeySecretArn
         - ''
         
   CreateTypesenseResources: 
     Fn::And:
       - Condition: HasVpcStackName
-      - Condition: HasTypesenseApiKey
+      - Condition: HasTypesenseApiKeySecretArn
 
   IsLogFormatJSON: 
     Fn::Equals:
@@ -277,8 +281,8 @@ Resources:
             Ref: DocumentSyncsTableName
           TYPESENSE_HOST:
             Ref: TypesenseApiEndpoint
-          TYPESENSE_API_KEY:
-            Ref: TypesenseApiKey
+          TYPESENSE_API_KEY_SECRET_ARN:
+            Ref: TypesenseApiKeySecretArn
           OCR_S3_BUCKET:
             Ref: OcrBucket
           OCR_SQS_QUEUE_URL:
@@ -343,6 +347,26 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
+            - Fn::If:
+              - CreateTypesenseResources
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource:
+                  Ref: TypesenseApiKeySecretArn
+              - Ref: AWS::NoValue
+            - Fn::If:
+              - CreateTypesenseResources
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource:
+                  Fn::Sub: "arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+                Condition:
+                  StringEquals:
+                    kms:ViaService:
+                      Fn::Sub: "secretsmanager.${AWS::Region}.${AWS::URLSuffix}"
+                    kms:EncryptionContext:SecretARN:
+                      Ref: TypesenseApiKeySecretArn
+              - Ref: AWS::NoValue
             - Effect: Allow
               Action:
               - logs:CreateLogGroup

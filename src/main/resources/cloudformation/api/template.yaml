@@ -105,10 +105,14 @@ Parameters:
     Type: String
     Default: "cognito"
 
-  TypesenseApiKey:
+  TypesenseApiKeySecretArn:
     Type: String
-    Description: TypeSense API Key
-    
+    Description: >
+      ARN of a Secrets Manager secret in this account and Region whose plaintext
+      SecretString is the Typesense API key. Leave empty to disable Typesense.
+    Default: ""
+    AllowedPattern: '^$|^arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+$'
+
   TypesenseApiEndpoint:
     Type: String
     Description: TypeSense API Endpoint
@@ -291,8 +295,8 @@ Resources:
           Ref: CognitoUserPoolClient
         UserAuthentication:
           Ref: UserAuthentication
-        TypesenseApiKey:
-          Ref: TypesenseApiKey
+        TypesenseApiKeySecretArn:
+          Ref: TypesenseApiKeySecretArn
         TypesenseApiEndpoint:
           Ref: TypesenseApiEndpoint
         DocumentsTableName:

@@ -51,6 +51,9 @@ import com.formkiq.aws.dynamodb.DynamoDbConnectionBuilder;
 import com.formkiq.aws.dynamodb.model.DocumentSyncServiceType;
 import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
+import com.formkiq.aws.secretsmanager.SecretsManagerAwsServiceRegistry;
+import com.formkiq.aws.secretsmanager.SecretsManagerServiceImpl;
+import com.formkiq.testutils.aws.LocalStackExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
@@ -76,6 +79,7 @@ import software.amazon.awssdk.utils.IoUtils;
  *
  */
 @ExtendWith(DynamoDbExtension.class)
+@ExtendWith(LocalStackExtension.class)
 class TypesenseProcessorTest {
 
   /** {@link TypesenseExtension}. */
@@ -99,17 +103,20 @@ class TypesenseProcessorTest {
     DynamoDbConnectionBuilder dbConnection = DynamoDbTestServices.getDynamoDbConnection();
     DynamoDbService db = new DynamoDbServiceImpl(dbConnection, DOCUMENTS_TABLE);
 
+    String secretArn = new SecretsManagerServiceImpl(TestServices.getSecretsManagerConnection(null))
+        .createSecret("typesense-processor-" + java.util.UUID.randomUUID(), API_KEY);
     Map<String, String> map = Map.of("AWS_REGION", "us-east-1", "DOCUMENTS_TABLE", DOCUMENTS_TABLE,
         "DOCUMENT_SYNC_TABLE", DOCUMENT_SYNCS_TABLE, "TYPESENSE_HOST",
-        "http://localhost:" + typesenseExtension.getFirstMappedPort(), "TYPESENSE_API_KEY",
-        API_KEY);
+        "http://localhost:" + typesenseExtension.getFirstMappedPort(),
+        "TYPESENSE_API_KEY_SECRET_ARN", secretArn);
 
     AwsCredentials creds = AwsBasicCredentials.create("aaa", "bbb");
     StaticCredentialsProvider credentialsProvider = StaticCredentialsProvider.create(creds);
 
     AwsServiceCache serviceCache =
         new AwsServiceCacheBuilder(map, TestServices.getEndpointMap(), credentialsProvider)
-            .addService(new DynamoDbAwsServiceRegistry()).build();
+            .addService(new DynamoDbAwsServiceRegistry(), new SecretsManagerAwsServiceRegistry())
+            .build();
 
     processor = new TypesenseProcessor(serviceCache);
 
