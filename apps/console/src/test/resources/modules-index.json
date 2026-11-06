@@ -1,0 +1,28 @@
+{
+  "manifestVersion": 1,
+  "modules": [
+    {
+      "moduleId": "brand-smart",
+      "kind": "brand",
+      "theme": "smart",
+      "brandFile": "brand.json",
+      "dependsOn": ["contract-management"]
+    },
+    {
+      "moduleId": "brand-uqam",
+      "kind": "brand",
+      "theme": "uqam"
+    },
+    {
+      "moduleId": "contract-management",
+      "kind": "solution",
+      "remoteEntry": "remoteEntry.js",
+      "settings": [{ "key": "ingestion", "defaultValue": false }]
+    },
+    {
+      "moduleId": "brand-smart-europe",
+      "kind": "brand",
+      "theme": "smart-europe"
+    }
+  ]
+}

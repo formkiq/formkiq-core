@@ -54,6 +54,7 @@ import com.formkiq.aws.s3.S3ServiceExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.stacks.dynamodb.config.ConfigServiceExtension;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -282,6 +283,32 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
         .replace("<", "&lt;").replace(">", "&gt;");
   }
 
+  private void filterConsoleModuleBrands(final Map<String, Object> input, final LambdaLogger logger,
+      final S3Service s3) {
+    String bucket = serviceCache.environment("CONSOLE_BUCKET");
+    String key = serviceCache.environment("CONSOLE_VERSION") + "/modules/index.json";
+    if (!s3.exists(bucket, key)) {
+      logger.log("skipping Console module branding filter: " + key + " does not exist");
+      return;
+    }
+
+    String brand = getResourceProperty(input, "BRAND");
+    String brandModuleId = isBlank(brand) ? "" : "brand-" + brand;
+    JSONObject index = new JSONObject(s3.getContentAsString(bucket, key, null));
+    JSONArray modules = index.getJSONArray("modules");
+    JSONArray filteredModules = new JSONArray();
+    for (int i = 0; i < modules.length(); i++) {
+      JSONObject module = modules.getJSONObject(i);
+      String moduleId = module.getString("moduleId");
+      if (!moduleId.startsWith("brand-") || moduleId.equals(brandModuleId)) {
+        filteredModules.put(module);
+      }
+    }
+    index.put("modules", filteredModules);
+    s3.putObject(bucket, key, index.toString().getBytes(StandardCharsets.UTF_8), "application/json",
+        CACHE_CONTROL_NO_STORE, null);
+  }
+
   private void finalizeConsole(final Map<String, Object> input, final LambdaLogger logger,
       final S3Service s3) throws IOException {
     installDriveLoginPage(input, logger, s3);
@@ -292,6 +319,7 @@ public class ConsoleInstallHandler implements RequestHandler<Map<String, Object>
     if (isBlank(distributionId)) {
       throw new IllegalArgumentException("Finalize action requires DistributionId");
     }
+    filterConsoleModuleBrands(input, logger, s3);
     invalidateCloudFront(distributionId, logger);
   }
 
