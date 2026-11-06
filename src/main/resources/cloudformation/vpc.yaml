@@ -238,7 +238,7 @@ Resources:
               Ref: 'AWS::Region'
       CidrBlock:
         Ref: PublicSubnet1Cidr
-      MapPublicIpOnLaunch: true
+      MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: 
@@ -259,7 +259,7 @@ Resources:
               Ref: 'AWS::Region'
       CidrBlock:
         Ref: PublicSubnet2Cidr
-      MapPublicIpOnLaunch: true
+      MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: 
@@ -279,7 +279,7 @@ Resources:
               Ref: 'AWS::Region'
       CidrBlock:
         Ref: PublicSubnet3Cidr
-      MapPublicIpOnLaunch: true
+      MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           Value: 

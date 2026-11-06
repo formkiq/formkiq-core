@@ -32,11 +32,15 @@ Resources:
         Ref: BastionHostInstanceProfile
       KeyName: 
         Ref: KeyPairName
-      SecurityGroupIds:
-        - Ref: BastionSecurityGroup
-      SubnetId:
-        Fn::ImportValue:
-          Fn::Sub: '${VpcStackName}-PublicSubnet1'
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          GroupSet:
+            - Ref: BastionSecurityGroup
+          SubnetId:
+            Fn::ImportValue:
+              Fn::Sub: '${VpcStackName}-PublicSubnet1'
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
