@@ -22,6 +22,14 @@ misconfigurations:
       FormKiQ Core does not supply customer-managed key encryption options for
       CloudWatch log groups. These options are available in the paid editions.
       This is an accepted Core edition limitation.
+  - id: AVD-AWS-0025
+    paths:
+      - domain/documents/src/main/resources/cloudformation/dynamodb-documents.yml
+      - src/main/resources/cloudformation/storage/template.yaml
+    statement: >-
+      FormKiQ Core does not supply customer-managed key encryption options for
+      DynamoDB tables. These options are available in the paid editions.
+      This is an accepted Core edition limitation.
   - id: AVD-AWS-0095
     paths:
       - src/main/resources/cloudformation/monitoring.yaml

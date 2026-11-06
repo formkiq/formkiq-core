@@ -667,6 +667,14 @@ Resources:
   VpcFlowLogsBucket:
     Condition: IsFlowLogToS3AndEnabled
     Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
 
   VpcFlowLogsBucketPolicy:
     Condition: IsFlowLogToS3AndEnabled

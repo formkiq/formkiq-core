@@ -169,6 +169,9 @@ Resources:
               Bool:
                 aws:SecureTransport: "false"
 
+  #! Staged uploads and temporary files are disposable. Versioning is intentionally
+  #! disabled so deleting staging data does not retain historical versions.
+  #! trivy:ignore:AVD-AWS-0090
   DocumentsStageS3Bucket:
     Type: AWS::S3::Bucket
     DependsOn:

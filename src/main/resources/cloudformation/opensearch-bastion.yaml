@@ -25,6 +25,9 @@ Resources:
       InstanceType: t3.micro
       ImageId:
         Ref: LatestAmiId
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpTokens: required
       IamInstanceProfile: 
         Ref: BastionHostInstanceProfile
       KeyName: 
