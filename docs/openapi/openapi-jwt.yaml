@@ -4400,6 +4400,84 @@ paths:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
         $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
+  /esignature/docusign/{documentId}/envelopes/{envelopeId}/auditEvents:
+    get:
+      operationId: GetDocusignEnvelopeAuditEvents
+      summary: Get DocuSign envelope audit events
+      description: Retrieves the audit history recorded by DocuSign for an associated envelope; available as an Add-On Module. Requires read access to the selected document or artifact and validates its stored envelope association before contacting DocuSign. Calls GET /restapi/v2.1/accounts/{accountId}/envelopes/{envelopeId}/audit_events, resolving the account, base URI, and OAuth token through the site's existing integration. Returns DocuSign's JSON unchanged, including auditEvents, paymentEvents, and any additional fields, without a FormKiQ wrapper. Includes reminder and resend events when recorded by DocuSign; this history does not guarantee that every reminder is recorded or confirm inbox delivery. Reminder and resend webhook subscriptions are separate from this operation.
+      externalDocs:
+        description: DocuSign Envelopes list audit events API
+        url: https://developers.docusign.com/docs/esign-rest-api/reference/envelopes/envelopes/listauditevents/
+      x-formkiq-required-permission: READ_E_SIGNATURE
+      tags:
+      - E-Signature
+      parameters:
+      - $ref: '#/components/parameters/siteIdParam'
+      - $ref: '#/components/parameters/documentIdParam'
+      - $ref: '#/components/parameters/artifactIdParam'
+      - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+      - name: environment
+        in: query
+        required: false
+        description: DocuSign environment. Defaults to the site's docusignEnvironment; required when the site has no default. Must match the environment in which the envelope was created.
+        schema:
+          $ref: '#/components/schemas/DocusignEnvironment'
+      responses:
+        "200":
+          description: DocuSign envelope audit history returned unchanged
+          headers:
+            Access-Control-Allow-Origin:
+              $ref: '#/components/headers/AccessControlAllowOrigin'
+            Access-Control-Allow-Methods:
+              $ref: '#/components/headers/AccessControlAllowMethods'
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/AccessControlAllowHeaders'
+            Cache-Control:
+              description: Prevents caching of the envelope audit history
+              schema:
+                type: string
+                enum:
+                - no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDocusignEnvelopeAuditEventsResponse'
+              example:
+                auditEvents:
+                - eventFields:
+                  - name: logTime
+                    value: "2026-01-15T12:00:00Z"
+                  - name: Action
+                    value: Sent
+                paymentEvents: []
+        "400":
+          description: Invalid parameters or missing DocuSign configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorsResponse'
+        "401":
+          description: Authentication required
+        "403":
+          description: Read access to the selected document or artifact is denied
+        "404":
+          description: Document, artifact, or associated DocuSign envelope not found
+        "429":
+          description: DocuSign rate limit exceeded
+          headers:
+            Retry-After:
+              description: Seconds to wait before another lookup
+              schema:
+                type: integer
+                minimum: 0
+        "502":
+          description: DocuSign authentication failure, upstream error, or invalid response
+        "504":
+          description: DocuSign request timed out
+      security:
+      - ApiAuthorization: []
+      x-amazon-apigateway-integration:
+        $ref: '#/components/x-amazon-apigateway-integrations/esignatureLambdaApi200'
   /esignature/docusign/{documentId}/envelopes/{envelopeId}/reminders:
     post:
       operationId: AddDocusignEnvelopeReminders
@@ -13978,6 +14056,70 @@ components:
           format: date-time
         recipients:
           $ref: '#/components/schemas/DocusignEnvelopeRecipients'
+    GetDocusignEnvelopeAuditEventsResponse:
+      type: object
+      additionalProperties: true
+      description: DocuSign's envelope audit events response returned unchanged. Additional fields at every level are preserved. Optional collections and fields are returned only when supplied by DocuSign; no events are synthesized.
+      properties:
+        auditEvents:
+          type: array
+          description: Envelope audit events recorded by DocuSign
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeAuditEvent'
+        paymentEvents:
+          type: array
+          description: Payment events returned by DocuSign, when present
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopePaymentEvent'
+    DocusignEnvelopeAuditEvent:
+      type: object
+      additionalProperties: true
+      description: Audit event with provider-defined event fields
+      properties:
+        eventFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocusignEnvelopeAuditEventField'
+    DocusignEnvelopeAuditEventField:
+      type: object
+      additionalProperties: true
+      description: Field names and values are returned as supplied by DocuSign
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+        originalValue:
+          type: string
+        errorDetails:
+          type: object
+          additionalProperties: true
+          properties:
+            errorCode:
+              type: string
+            message:
+              type: string
+    DocusignEnvelopePaymentEvent:
+      type: object
+      additionalProperties: true
+      description: Payment event fields supplied by DocuSign
+      properties:
+        accountId:
+          type: string
+        action:
+          type: string
+        actorDisplayName:
+          type: string
+        eventDescription:
+          type: string
+        eventType:
+          type: string
+        responsibleActor:
+          type: string
+        status:
+          type: string
+        timestamp:
+          type: string
     DocusignEnvelopeRecipients:
       type: object
       additionalProperties: true
@@ -18624,7 +18766,7 @@ components:
           audience:
           - Fn::Sub: ${CognitoUserPoolClient}
           issuer:
-            Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
+            Fn::Sub: https://cognito-idp.${AWS::Region}.${AWS::URLSuffix}/${CognitoUserPool}
         type: jwt
   x-amazon-apigateway-integrations:
     lambdaApi200:
