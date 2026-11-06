@@ -129,6 +129,7 @@ jobs:
         run: |
           trivy fs . \
             --scanners secret,misconfig,license \
+            --ignorefile .trivyignore.yaml \
             --skip-dirs "${TRIVY_SOURCE_SKIP_DIRS}" \
             --severity "${TRIVY_SEVERITY}" \
             --ignore-unfixed \

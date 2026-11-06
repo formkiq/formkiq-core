@@ -310,6 +310,7 @@ Resources:
       CodeUri: ../storage/lambda-s3-graalvm.zip
       Handler: com.formkiq.stacks.lambda.s3.cognito.CustomMessageHandler
       Runtime: provided.al2023
+      Tracing: Active
       Architectures:
         - Ref: LambdaArchitecture
       Description: Lambda function that processes Cognito Custom Email Messages
@@ -395,6 +396,8 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: /service-role/
+      ManagedPolicyArns:
+        - Fn::Sub: "arn:${AWS::Partition}:iam::aws:policy/AWSXRayDaemonWriteAccess"
       Policies:
         - PolicyName:
             Fn::Sub: "${AWS::StackName}-CognitoCustomMessageRole"

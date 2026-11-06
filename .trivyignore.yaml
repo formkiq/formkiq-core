@@ -1,0 +1,66 @@
+# Document accepted Core edition limitations, optional deployment settings, and
+# build-only container usage. Scope exceptions to the relevant source files.
+misconfigurations:
+  - id: AVD-AWS-0011
+    paths:
+      - src/main/resources/cloudformation/console/template.yaml
+    statement: >-
+      WAF is optional for the console CloudFront distribution. Deployments can
+      supply a WebACL ARN through WAFWebACLId; HasWAF then sets WebACLId on the
+      distribution. Leaving the parameter empty intentionally disables WAF.
+  - id: AVD-AWS-0017
+    paths:
+      - src/main/resources/cloudformation/api/api-lambda.yaml
+      - src/main/resources/cloudformation/api/template-ocr.yaml
+      - src/main/resources/cloudformation/api/template.yaml
+      - src/main/resources/cloudformation/cognito/template.yaml
+      - src/main/resources/cloudformation/console/template.yaml
+      - src/main/resources/cloudformation/storage/template.yaml
+      - src/main/resources/cloudformation/typesense/template.yaml
+      - src/main/resources/cloudformation/vpc.yaml
+    statement: >-
+      FormKiQ Core does not supply customer-managed key encryption options for
+      CloudWatch log groups. These options are available in the paid editions.
+      This is an accepted Core edition limitation.
+  - id: AVD-AWS-0095
+    paths:
+      - src/main/resources/cloudformation/monitoring.yaml
+      - src/main/resources/cloudformation/storage/template.yaml
+    statement: >-
+      FormKiQ Core does not supply SNS encryption options. Configurable encryption
+      is available in the paid editions. This is an accepted Core edition limitation.
+  - id: AVD-AWS-0096
+    paths:
+      - integrationTests.yaml
+      - src/main/resources/cloudformation/api/module-extra-core-ocr.yaml
+      - src/main/resources/cloudformation/module-documentevent.yaml
+      - src/main/resources/cloudformation/storage/template.yaml
+    statement: >-
+      FormKiQ Core does not supply SQS encryption options. Configurable encryption
+      is available in the paid editions. This is an accepted Core edition limitation.
+  - id: AVD-AWS-0132
+    paths:
+      - src/main/resources/cloudformation/api/module-extra-core-ocr.yaml
+      - src/main/resources/cloudformation/cognito/template.yaml
+      - src/main/resources/cloudformation/console/template.yaml
+      - src/main/resources/cloudformation/storage/template.yaml
+      - src/main/resources/cloudformation/vpc.yaml
+    statement: >-
+      FormKiQ Core does not supply S3 customer-managed key encryption options.
+      These options are available in the paid editions. This is an accepted Core
+      edition limitation.
+  - id: AVD-DS-0002
+    paths:
+      - apps/lambda-s3/Dockerfile
+    statement: >-
+      This image is used only during the build to compile the native Lambda and
+      export graalvm.zip to the bind-mounted output directory. It is not deployed
+      as a runtime container; Lambda deploys the resulting ZIP. Accept root usage
+      for this build-only artifact exporter to preserve output mount compatibility.
+  - id: AVD-DS-0026
+    paths:
+      - apps/lambda-s3/Dockerfile
+    statement: >-
+      This build-only container copies graalvm.zip to the output directory and
+      exits. It does not run a persistent service, so a periodic Docker healthcheck
+      is not applicable.
