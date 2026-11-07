@@ -37,7 +37,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
@@ -134,7 +134,7 @@ jobs:
           cat "${SUMMARY}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload Schemathesis reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: schemathesis-reports

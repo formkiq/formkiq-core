@@ -50,11 +50,11 @@ jobs:
           gomplate --version
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ !((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_name == 'master' || github.ref_name == 'main' || startsWith(github.ref_name, 'v'))) }}
       - name: Cache Cognito ZIP
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: build/aws-cognito-v${{ env.AWS_COGNITO_VERSION }}.zip
           key: cognito-${{ runner.os }}-v${{ env.AWS_COGNITO_VERSION }}
@@ -67,14 +67,14 @@ jobs:
             && (github.ref_name == 'master' ||  github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
         run: ./gradlew assembleAwsCloud assembleNettyServer --scan --no-daemon --console=plain
       - name: Upload test reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-reports
           path: "**/build/reports/*"
           retention-days: 5
       - name: Set AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           role-session-name: formkiq-core-gradle
