@@ -846,10 +846,47 @@ Resources:
       VpcId:
         Ref: Vpc
 
+  VpcFlowLogsKmsKey:
+    Condition: IsFlowLogToS3AndEnabled
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting VPC flow logs in S3
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnableIAMUserPermissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: AllowFlowLogsDelivery
+            Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:DescribeKey
+            Resource: "*"
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
+
   VpcFlowLogsBucket:
     Condition: IsFlowLogToS3AndEnabled
     Type: AWS::S3::Bucket
     Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !GetAtt VpcFlowLogsKmsKey.Arn
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -870,16 +907,31 @@ Resources:
           - Sid: "AWSFlowLogsWrite"
             Effect: Allow
             Principal:
-              Service: vpc-flow-logs.amazonaws.com
+              Service: delivery.logs.amazonaws.com
             Action: "s3:PutObject"
             Resource:
-              Fn::Sub: "${VpcFlowLogsBucket.Arn}/*"
+              Fn::Sub: "${VpcFlowLogsBucket.Arn}/AWSLogs/${AWS::AccountId}/*"
             Condition:
               StringEquals:
                 "s3:x-amz-acl": "bucket-owner-full-control"
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
+          - Sid: AWSFlowLogsAclCheck
+            Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !GetAtt VpcFlowLogsBucket.Arn
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
 
   VpcFlowLogS3:
     Condition: IsFlowLogToS3AndEnabled
+    DependsOn: VpcFlowLogsBucketPolicy
     Type: AWS::EC2::FlowLog
     Properties:
       LogDestination: !GetAtt VpcFlowLogsBucket.Arn
