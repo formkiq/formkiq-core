@@ -6,6 +6,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - Storage
     
 Parameters:
+  S3AccessLogsBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      Optional existing S3 bucket for server access logs, in the same account and
+      Region. Must use SSE-S3 and allow S3 log delivery. Leave empty to disable.
+
   EnableS3TransferAcceleration:
     Type: String
     Default: "false"
@@ -88,6 +95,10 @@ Parameters:
       Controls the runtime operational behavior of the FormKiQ environment.
 
 Conditions:
+
+  HasS3AccessLogsBucket:
+    Fn::Not:
+      - Fn::Equals: [{Ref: S3AccessLogsBucketName}, ""]
 
   UseS3TransferAcceleration:
     Fn::Equals: [{Ref: EnableS3TransferAcceleration}, "true"]
@@ -211,6 +222,12 @@ Resources:
     DependsOn:
     - StagingS3Create
     Properties:
+      LoggingConfiguration:
+        Fn::If:
+          - HasS3AccessLogsBucket
+          - DestinationBucketName: {Ref: S3AccessLogsBucketName}
+            LogFilePrefix: /documents-staging
+          - Ref: AWS::NoValue
       BucketName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-staging-${AWS::AccountId}"
       BucketEncryption: 
@@ -309,6 +326,12 @@ Resources:
     DependsOn:
     - DocumentsUpdateObjectPermission
     Properties:
+      LoggingConfiguration:
+        Fn::If:
+          - HasS3AccessLogsBucket
+          - DestinationBucketName: {Ref: S3AccessLogsBucketName}
+            LogFilePrefix: /documents
+          - Ref: AWS::NoValue
       AccelerateConfiguration:
         Fn::If:
           - UseS3TransferAcceleration

@@ -130,6 +130,7 @@ jobs:
         run: |
           trivy fs . \
             --scanners secret,misconfig,license \
+            --cf-params .github/trivy-cloudformation-parameters.json \
             --ignorefile .trivyignore.yaml \
             --skip-dirs "${TRIVY_SOURCE_SKIP_DIRS}" \
             --severity "${TRIVY_SEVERITY}" \

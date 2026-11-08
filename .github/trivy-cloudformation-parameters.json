@@ -1,0 +1,6 @@
+[
+  {
+    "ParameterKey": "S3AccessLogsBucketName",
+    "ParameterValue": "formkiq-trivy-access-logs"
+  }
+]

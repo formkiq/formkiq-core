@@ -5,9 +5,23 @@
 ---
 Parameters:
   #@overlay/match missing_ok=True
+  S3AccessLogsBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      Optional existing S3 bucket for server access logs, in the same account and
+      Region. Must use SSE-S3 and allow S3 log delivery. Leave empty to disable.
+
+  #@overlay/match missing_ok=True
   DocumentsDeadLetterQueueArn:
     Type: String
     Description: Documents Dead Letter Queue Arn
+
+Conditions:
+  #@overlay/match missing_ok=True
+  HasS3AccessLogsBucket:
+    Fn::Not:
+      - Fn::Equals: [{Ref: S3AccessLogsBucketName}, ""]
 
 Resources:
 
@@ -35,6 +49,12 @@ Resources:
   OcrBucket:
     Type: AWS::S3::Bucket
     Properties:
+      LoggingConfiguration:
+        Fn::If:
+          - HasS3AccessLogsBucket
+          - DestinationBucketName: {Ref: S3AccessLogsBucketName}
+            LogFilePrefix: /documents-ocr/
+          - Ref: AWS::NoValue
       BucketName: 
         Fn::Sub: "formkiq-${FormKiQType}-${AppEnvironment}-ocr-${AWS::AccountId}"
       BucketEncryption:
