@@ -7,6 +7,14 @@ Description: FormKiQ Core - Console
 
 Parameters:
 
+  CloudFrontAccessLogsBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      Optional existing S3 bucket name for CloudFront standard access logs (legacy).
+      Must have ACLs enabled and permit CloudFront log delivery. The deployment
+      role needs s3:GetBucketAcl and s3:PutBucketAcl. Leave empty to disable.
+
   S3AccessLogsBucketName:
     Type: String
     Default: ""
@@ -149,6 +157,10 @@ Parameters:
       - arm64
 
 Conditions:
+
+  HasCloudFrontAccessLogsBucket:
+    Fn::Not:
+      - Fn::Equals: [{Ref: CloudFrontAccessLogsBucketName}, ""]
 
   HasS3AccessLogsBucket:
     Fn::Not:
@@ -343,6 +355,14 @@ Resources:
       - ConsoleInstallerRef
     Properties:
       DistributionConfig:
+        Logging:
+          Fn::If:
+            - HasCloudFrontAccessLogsBucket
+            - Bucket:
+                Fn::Sub: "${CloudFrontAccessLogsBucketName}.s3.${AWS::URLSuffix}"
+              IncludeCookies: false
+              Prefix: /cloudfront
+            - Ref: AWS::NoValue
         Comment:
           Fn::Sub: "FormKiQ ${AppEnvironment} - Web UI (${ConsoleVersion})"
         Origins:
