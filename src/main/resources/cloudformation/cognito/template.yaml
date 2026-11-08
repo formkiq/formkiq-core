@@ -4,6 +4,13 @@ Description: FormKiQ - Cognito
 
 Parameters:
 
+  S3AccessLogsBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      Optional existing S3 bucket for server access logs, in the same account and
+      Region. Must use SSE-S3 and allow S3 log delivery. Leave empty to disable.
+
   AppEnvironment:
     Type: String
     Description: Unique Application Environment Identifier, IE dev/staging/prod
@@ -162,6 +169,10 @@ Parameters:
       - arm64
 
 Conditions:
+
+  HasS3AccessLogsBucket:
+    Fn::Not:
+      - Fn::Equals: [{Ref: S3AccessLogsBucketName}, ""]
 
   HasDomainCertificate:
     Fn::Not:
@@ -350,6 +361,12 @@ Resources:
   CognitoConfig:
     Type: AWS::S3::Bucket
     Properties:
+      LoggingConfiguration:
+        Fn::If:
+          - HasS3AccessLogsBucket
+          - DestinationBucketName: {Ref: S3AccessLogsBucketName}
+            LogFilePrefix: /cognito
+          - Ref: AWS::NoValue
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
