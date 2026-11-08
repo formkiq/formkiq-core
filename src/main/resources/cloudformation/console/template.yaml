@@ -361,7 +361,7 @@ Resources:
             - Bucket:
                 Fn::Sub: "${CloudFrontAccessLogsBucketName}.s3.${AWS::URLSuffix}"
               IncludeCookies: false
-              Prefix: /cloudfront
+              Prefix: cloudfront/
             - Ref: AWS::NoValue
         Comment:
           Fn::Sub: "FormKiQ ${AppEnvironment} - Web UI (${ConsoleVersion})"
