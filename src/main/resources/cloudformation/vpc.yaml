@@ -878,6 +878,54 @@ Resources:
               ArnLike:
                 aws:SourceArn: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
 
+  #! The access-log destination must not log requests to itself, to avoid recursive logging.
+  #! trivy:ignore:AVD-AWS-0089
+  VpcFlowLogsAccessLogsBucket:
+    Condition: IsFlowLogToS3AndEnabled
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  VpcFlowLogsAccessLogsBucketPolicy:
+    Condition: IsFlowLogToS3AndEnabled
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref VpcFlowLogsAccessLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowS3AccessLogDelivery
+            Effect: Allow
+            Principal:
+              Service: logging.s3.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub "${VpcFlowLogsAccessLogsBucket.Arn}/vpc-flow-logs/*"
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !GetAtt VpcFlowLogsBucket.Arn
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt VpcFlowLogsAccessLogsBucket.Arn
+              - !Sub "${VpcFlowLogsAccessLogsBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
   VpcFlowLogsBucket:
     Condition: IsFlowLogToS3AndEnabled
     Type: AWS::S3::Bucket
@@ -887,6 +935,9 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: aws:kms
               KMSMasterKeyID: !GetAtt VpcFlowLogsKmsKey.Arn
+      LoggingConfiguration:
+        DestinationBucketName: !Ref VpcFlowLogsAccessLogsBucket
+        LogFilePrefix: vpc-flow-logs/
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -931,7 +982,9 @@ Resources:
 
   VpcFlowLogS3:
     Condition: IsFlowLogToS3AndEnabled
-    DependsOn: VpcFlowLogsBucketPolicy
+    DependsOn:
+      - VpcFlowLogsBucketPolicy
+      - VpcFlowLogsAccessLogsBucketPolicy
     Type: AWS::EC2::FlowLog
     Properties:
       LogDestination: !GetAtt VpcFlowLogsBucket.Arn
