@@ -206,12 +206,33 @@ Parameters:
 
   CertificateStackNameUserAuthApiDomain:
     Type: String
-    Description: Certificate Auth Api Domain
+    Description: Certificate User Auth API Domain
+    Default: ""
+
+  CertificateStackNameUserAuthCertificateArn:
+    Type: String
+    Description: Certificate User Auth API ACM Certificate ARN
+    Default: ""
+
+  CertificateStackNameHostedZoneId:
+    Type: String
+    Description: Optional Route53 hosted zone for the User Auth API domain
     Default: ""
 
 Conditions:
 
   HasCertificateStackNameUserAuthApiDomain:
+    Fn::And:
+      - Condition: HasConfiguredUserAuthApiDomain
+      - Condition: HasCertificateStackNameUserAuthCertificateArn
+
+  HasCertificateStackNameUserAuthCertificateArn:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals: [{Ref: CertificateStackNameUserAuthCertificateArn}, ""]
+          - Fn::Equals: [{Ref: CertificateStackNameUserAuthCertificateArn}, "_"]
+
+  HasConfiguredUserAuthApiDomain:
     Fn::Not:
       - Fn::Or:
           - Fn::Equals:
@@ -415,6 +436,10 @@ Resources:
           Ref: CognitoUserPoolClient
         CertificateStackNameUserAuthApiDomain:
           Ref: CertificateStackNameUserAuthApiDomain
+        CertificateStackNameUserAuthCertificateArn:
+          Ref: CertificateStackNameUserAuthCertificateArn
+        CertificateStackNameHostedZoneId:
+          Ref: CertificateStackNameHostedZoneId
         DocumentsApiRequestsArn:
           Fn::GetAtt:
             - ApiLambda

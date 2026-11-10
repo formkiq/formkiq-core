@@ -28,7 +28,47 @@ Parameters:
     Type: String
     Description: Certificate User Auth Api Domain
 
+  CertificateStackNameUserAuthCertificateArn:
+    Type: String
+    Description: Certificate User Auth API ACM Certificate ARN
+    Default: ""
+
+  CertificateStackNameHostedZoneId:
+    Type: String
+    Description: Optional Route53 hosted zone for the User Auth API domain
+    Default: ""
+
 Conditions:
+
+  HasCertificateStackNameUserAuthCertificateArn:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthCertificateArn
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameUserAuthCertificateArn
+              - "_"
+
+  HasCertificateStackNameHostedZoneId:
+    Fn::Not:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: CertificateStackNameHostedZoneId
+              - ""
+          - Fn::Equals:
+              - Ref: CertificateStackNameHostedZoneId
+              - "_"
+
+  CanCreateUserAuthApiDomainName:
+    Fn::And:
+      - Condition: HasCertificateStackNameUserAuthApiDomain
+      - Condition: HasCertificateStackNameUserAuthCertificateArn
+
+  CanCreateUserAuthApiARecord:
+    Fn::And:
+      - Condition: CanCreateUserAuthApiDomainName
+      - Condition: HasCertificateStackNameHostedZoneId
 
   HasCertificateStackNameUserAuthApiDomain:
     Fn::Not:
@@ -47,6 +87,36 @@ Resources:
     Properties:
       FailOnWarnings: "true"
 
+  UserAuthApiDomainName:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: CanCreateUserAuthApiDomainName
+    Properties:
+      DomainName:
+        Ref: CertificateStackNameUserAuthApiDomain
+      DomainNameConfigurations:
+        - CertificateArn:
+            Ref: CertificateStackNameUserAuthCertificateArn
+
+  UserAuthApiDomainNameRoute53RecordSetGroup:
+    Type: AWS::Route53::RecordSet
+    Condition: CanCreateUserAuthApiARecord
+    Properties:
+      Name:
+        Ref: UserAuthApiDomainName
+      Type: A
+      HostedZoneId:
+        Ref: CertificateStackNameHostedZoneId
+      AliasTarget:
+        DNSName:
+          Fn::GetAtt:
+            - UserAuthApiDomainName
+            - RegionalDomainName
+        EvaluateTargetHealth: false
+        HostedZoneId:
+          Fn::GetAtt:
+            - UserAuthApiDomainName
+            - RegionalHostedZoneId
+
 Outputs:
   UserAuthApi:
     Description: User Auth API
@@ -56,7 +126,7 @@ Outputs:
     Description: "The endpoint url for the User Auth API"
     Value:
       Fn::If:
-        - HasCertificateStackNameUserAuthApiDomain
+        - CanCreateUserAuthApiDomainName
         - Fn::Join:
             - ''
             - - 'https://'
