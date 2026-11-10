@@ -71,6 +71,19 @@ Parameters:
     Type: String
     AllowedValues: ["false", "true"]
 
+  EnableS3InterfaceEndpoint:
+    Description: Enable an S3 interface endpoint for private downloads (hourly and data processing charges apply)
+    Default: "false"
+    Type: String
+    AllowedValues: ["false", "true"]
+
+  S3InterfaceEndpointClientCidr:
+    Description: IPv4 CIDR allowed HTTPS access to the S3 interface endpoint (leave empty to use VpcCidr)
+    Type: String
+    Default: ""
+    AllowedPattern: '^$|^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/(3[0-2]|[12]?[0-9])$'
+    ConstraintDescription: Must be empty or a valid IPv4 CIDR block.
+
   EnableVpcLinks:
     Description: Enable VPC Links (needed for Typesense)
     Default: "false"
@@ -156,6 +169,13 @@ Conditions:
     Fn::Equals:
       - Ref: EnableVpcLinks
       - 'true'
+
+  IsEnableS3InterfaceEndpoint:
+    Fn::Equals: [ !Ref EnableS3InterfaceEndpoint, "true" ]
+
+  HasS3InterfaceEndpointClientCidr:
+    Fn::Not:
+      - Fn::Equals: [ !Ref S3InterfaceEndpointClientCidr, "" ]
 
   IsCaCentral1:
     Fn::Equals:
@@ -803,6 +823,40 @@ Resources:
       VpcId:
         Ref: Vpc
 
+  S3InterfaceEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: IsEnableS3InterfaceEndpoint
+    Properties:
+      GroupDescription: HTTPS access to the FormKiQ S3 interface endpoint
+      VpcId:
+        Ref: Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp:
+            Fn::If:
+              - HasS3InterfaceEndpointClientCidr
+              - Ref: S3InterfaceEndpointClientCidr
+              - Ref: VpcCidr
+
+  S3InterfaceEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: IsEnableS3InterfaceEndpoint
+    Properties:
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: false
+      ServiceName:
+        Fn::Sub: 'com.amazonaws.${AWS::Region}.s3'
+      VpcId:
+        Ref: Vpc
+      SubnetIds:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+        - Ref: PrivateSubnet3
+      SecurityGroupIds:
+        - Ref: S3InterfaceEndpointSecurityGroup
+
   DynamoDbGatewayEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
     Condition: IsEnableVpcEndpoints
@@ -1077,6 +1131,38 @@ Resources:
       NatGatewayId: !Ref NatGateway
 
 Outputs:
+
+  S3InterfaceEndpointUrl:
+    Condition: IsEnableS3InterfaceEndpoint
+    Description: "S3 interface endpoint URL for bucket requests"
+    Value:
+      Fn::Sub:
+        - "https://${BucketEndpointDnsName}"
+        - BucketEndpointDnsName:
+            # The first DNS entry is regional. Remove the hosted zone ID and replace '*'.
+            Fn::Join:
+              - "bucket"
+              - Fn::Split:
+                  - "*"
+                  - Fn::Select:
+                      - 1
+                      - Fn::Split:
+                          - ":"
+                          - Fn::Select:
+                              - 0
+                              - Fn::GetAtt: [ S3InterfaceEndpoint, DnsEntries ]
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-S3InterfaceEndpointUrl"
+
+  S3GatewayEndpointId:
+    Condition: IsEnableVpcEndpoints
+    Description: "S3 Gateway Endpoint Id"
+    Value:
+      Ref: S3GatewayEndpoint
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-S3GatewayEndpointId"
 
   VpcFlowLogsBucket:
     Condition: IsFlowLogToS3AndEnabled
