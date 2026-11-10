@@ -5,7 +5,7 @@ Description: FormKiQ - VPC
 Parameters:
 
   VpcId:
-    Description: "The ID of the existing VPC (leave blank to create new vpc)"
+    Description: "The ID of the existing VPC"
     Type: String
 
   VpcCidr:
@@ -52,6 +52,13 @@ Parameters:
     Type: String
     AllowedValues: ["false", "true"]
 
+  S3InterfaceEndpointUrl:
+    Description: Existing S3 interface endpoint URL for bucket requests (optional; leave empty to skip the export)
+    Type: String
+    Default: ""
+    AllowedPattern: '^$|^https://bucket\.vpce-[a-z0-9-]+\.s3\.[a-z0-9-]+\.vpce\.amazonaws\.com(\.cn)?/?$'
+    ConstraintDescription: Must be empty or an HTTPS S3 interface endpoint URL starting with bucket.vpce-.
+
   EnableVpcLinks:
     Description: Enable VPC Links (needed for Typesense)
     Default: "false"
@@ -95,6 +102,10 @@ Conditions:
     Fn::Equals:
       - Ref: EnableVpcLinks
       - 'true'
+
+  HasS3InterfaceEndpointUrl:
+    Fn::Not:
+      - Fn::Equals: [ !Ref S3InterfaceEndpointUrl, "" ]
 
   UseTwoSubnets:
     Fn::Equals:
@@ -201,6 +212,15 @@ Resources:
         Ref: VpcId
 
 Outputs:
+  S3InterfaceEndpointUrl:
+    Condition: HasS3InterfaceEndpointUrl
+    Description: "Existing S3 interface endpoint URL for bucket requests"
+    Value:
+      Ref: S3InterfaceEndpointUrl
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-S3InterfaceEndpointUrl"
+
   Vpc:
     Description: "VPC Id"
     Value:

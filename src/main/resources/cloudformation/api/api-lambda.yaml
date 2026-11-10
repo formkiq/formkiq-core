@@ -6,6 +6,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - API
     
 Parameters:
+  S3Endpoint:
+    Type: String
+    Default: regional
+    AllowedValues: [regional, vpc]
+    Description: S3 endpoint for API operations and presigned URLs; vpc requires VpcStackName and private network connectivity
+
   EnableS3TransferAcceleration:
     Type: String
     Default: "false"
@@ -148,7 +154,32 @@ Parameters:
     Type: String
     Description: "VPC Https Security Group"
 
+Rules:
+
+  RequireVpcForS3Endpoint:
+    RuleCondition:
+      Fn::Equals:
+        - Ref: S3Endpoint
+        - vpc
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: VpcStackName
+                - ""
+        AssertDescription: VpcStackName is required when S3Endpoint is vpc.
+      - Assert:
+          Fn::Equals:
+            - Ref: EnableS3TransferAcceleration
+            - "false"
+        AssertDescription: S3 Transfer Acceleration cannot be enabled when S3Endpoint is vpc.
+
 Conditions:
+
+  UseVpcS3Endpoint:
+    Fn::Equals:
+      - Ref: S3Endpoint
+      - vpc
 
   IsOperationalModeActive:
     Fn::Equals:
@@ -243,6 +274,12 @@ Resources:
       AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
       Environment:
         Variables:
+          S3_ENDPOINT_URL:
+            Fn::If:
+              - UseVpcS3Endpoint
+              - Fn::ImportValue:
+                  Fn::Sub: "${VpcStackName}-S3InterfaceEndpointUrl"
+              - Ref: AWS::NoValue
           APP_ENVIRONMENT: 
             Fn::Sub: "${AppEnvironment}"
           LOG_LEVEL:
