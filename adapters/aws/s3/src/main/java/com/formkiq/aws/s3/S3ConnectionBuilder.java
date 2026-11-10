@@ -96,6 +96,17 @@ public class S3ConnectionBuilder {
   }
 
   /**
+   * Configure path-style addressing for S3 interface endpoints.
+   *
+   * @param enabled Whether to force path-style addressing
+   * @return {@link S3ConnectionBuilder}
+   */
+  public S3ConnectionBuilder pathStyleAccessEnabled(final Boolean enabled) {
+    this.builder = this.builder.forcePathStyle(enabled);
+    return this;
+  }
+
+  /**
    * Set Credentials.
    * 
    * @param cred {@link AwsCredentialsProvider}

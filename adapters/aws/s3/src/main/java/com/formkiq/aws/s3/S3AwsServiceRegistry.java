@@ -35,26 +35,49 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
  */
 public class S3AwsServiceRegistry implements AwsServiceRegistry {
 
+  /**
+   * Resolve the configured S3 interface endpoint before creating clients.
+   *
+   * @param serviceCache {@link AwsServiceCache}
+   * @return Endpoint URI, or null for regional mode
+   */
+  private URI getVpcEndpoint(final AwsServiceCache serviceCache) {
+    String endpointUrl = serviceCache.environment("S3_ENDPOINT_URL");
+    if (endpointUrl == null || endpointUrl.isBlank()) {
+      return null;
+    }
+    return URI.create(endpointUrl);
+  }
+
   @Override
   public void initService(final AwsServiceCache serviceCache,
       final Map<String, URI> awsServiceEndpoints,
       final AwsCredentialsProvider credentialsProvider) {
 
+    URI vpcEndpoint = getVpcEndpoint(serviceCache);
+    URI s3Endpoint = awsServiceEndpoints.getOrDefault("s3", vpcEndpoint);
+    URI presignerEndpoint = awsServiceEndpoints.getOrDefault("s3presigner", vpcEndpoint);
+
     S3ConnectionBuilder s3 =
         new S3ConnectionBuilder(serviceCache.enableXray()).setRegion(serviceCache.region())
-            .setCredentials(credentialsProvider).setEndpointOverride(awsServiceEndpoints.get("s3"));
+            .setCredentials(credentialsProvider).setEndpointOverride(s3Endpoint);
+
+    if (vpcEndpoint != null) {
+      s3.pathStyleAccessEnabled(Boolean.TRUE);
+    }
 
     serviceCache.register(S3ConnectionBuilder.class, new ClassServiceExtension<>(s3));
 
-    S3PresignerConnectionBuilder s3Presigner = new S3PresignerConnectionBuilder()
-        .setRegion(serviceCache.region()).setCredentials(credentialsProvider)
-        .setEndpointOverride(awsServiceEndpoints.get("s3presigner"));
+    S3PresignerConnectionBuilder s3Presigner =
+        new S3PresignerConnectionBuilder().setRegion(serviceCache.region())
+            .setCredentials(credentialsProvider).setEndpointOverride(presignerEndpoint);
 
     if ("true".equals(serviceCache.environment("S3_TRANSFER_ACCELERATION_ENABLED"))) {
       s3Presigner.acceleratedBucket(serviceCache.environment("DOCUMENTS_S3_BUCKET"));
     }
 
-    if ("true".equals(serviceCache.environment("PATH_STYLE_ACCESS_ENABLED"))) {
+    if (vpcEndpoint != null
+        || "true".equals(serviceCache.environment("PATH_STYLE_ACCESS_ENABLED"))) {
       s3Presigner = s3Presigner.pathStyleAccessEnabled(Boolean.TRUE);
     }
 

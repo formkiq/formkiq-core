@@ -6,6 +6,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: FormKiQ Core - API
     
 Parameters:
+  S3Endpoint:
+    Type: String
+    Default: regional
+    AllowedValues: [regional, vpc]
+    Description: S3 endpoint for API operations and presigned URLs; vpc requires VpcStackName and private network connectivity
+
   EnableS3TransferAcceleration:
     Type: String
     Default: "false"
@@ -209,6 +215,21 @@ Parameters:
     Description: Certificate Auth Api Domain
     Default: ""
 
+Rules:
+
+  RequireVpcForS3Endpoint:
+    RuleCondition:
+      Fn::Equals:
+        - Ref: S3Endpoint
+        - vpc
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: VpcStackName
+                - ""
+        AssertDescription: VpcStackName is required when S3Endpoint is vpc.
+
 Conditions:
 
   HasCertificateStackNameUserAuthApiDomain:
@@ -269,6 +290,8 @@ Resources:
     Properties:
       Location: ./api-lambda.yaml
       Parameters:
+        S3Endpoint:
+          Ref: S3Endpoint
         EnableS3TransferAcceleration:
           Ref: EnableS3TransferAcceleration
         HttpsSecurityGroup:
