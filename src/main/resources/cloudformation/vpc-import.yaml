@@ -12,6 +12,12 @@ Parameters:
     Type: String
     Description: VPC CIDR block
 
+  NumberOfSubnets:
+    Type: Number
+    Description: Number of private subnets and, when provided, public subnets to use
+    Default: 3
+    AllowedValues: [2, 3]
+
   PublicSubnet1Id:
     Type: String
     Description: Public Subnet 1 (optional) ID (starts with 'subnet-')
@@ -24,7 +30,7 @@ Parameters:
 
   PublicSubnet3Id:
     Type: String
-    Description: Public Subnet 3 (optional) ID (starts with 'subnet-')
+    Description: Public Subnet 3 ID (only used with 3 subnets; optional when no public subnets are provided)
     Default: ""
 
   PrivateSubnet1Id:
@@ -37,7 +43,8 @@ Parameters:
 
   PrivateSubnet3Id:
     Type: String
-    Description: Private Subnet 3 ID (starts with 'subnet-')
+    Description: Private Subnet 3 ID (starts with 'subnet-'; required when NumberOfSubnets is 3)
+    Default: ""
 
   EnableVpcEndpoints:
     Description: Enable VPC Endpoints (S3, Dynamodb, SNS, SMS, Execute-Api) set to 'true' if using Opensearch
@@ -55,6 +62,17 @@ Parameters:
     Type: CommaDelimitedList
     Description: Private Route Table ID (starts with 'rtb-')
 
+Rules:
+
+  RequireThirdPrivateSubnet:
+    RuleCondition:
+      Fn::Equals: [ !Ref NumberOfSubnets, "3" ]
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals: [ !Ref PrivateSubnet3Id, "" ]
+        AssertDescription: PrivateSubnet3Id must be provided when NumberOfSubnets is 3.
+
 Conditions:
 
   HasPublic:
@@ -63,8 +81,10 @@ Conditions:
           - Fn::Equals: [ !Ref PublicSubnet1Id, "" ]
       - Fn::Not:
           - Fn::Equals: [ !Ref PublicSubnet2Id, "" ]
-      - Fn::Not:
-          - Fn::Equals: [ !Ref PublicSubnet3Id, "" ]
+      - Fn::Or:
+          - Condition: UseTwoSubnets
+          - Fn::Not:
+              - Fn::Equals: [ !Ref PublicSubnet3Id, "" ]
 
   IsEnableVpcEndpoints:
     Fn::Equals:
@@ -78,8 +98,8 @@ Conditions:
 
   UseTwoSubnets:
     Fn::Equals:
-      - Ref: "AWS::Region"
-      - "ca-central-1"
+      - Ref: NumberOfSubnets
+      - "2"
 
   UseThreePrivateSubnets:
     Fn::Not:
