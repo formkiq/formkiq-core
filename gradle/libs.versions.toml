@@ -1,14 +1,13 @@
 [versions]
 aws-lambda-core = "1.4.1"
 aws-lambda-events = "3.16.1"
-aws-sdk = "2.57.9"
+aws-sdk = "2.57.13"
 aws-xray = "2.21.2"
 angus-mail = "2.0.5"
 commons-cli = "1.11.0"
 commons-codec = "1.23.0"
 commons-csv = "1.14.1"
 commons-lang3 = "3.21.0"
-# Approved exception: this branch uses APIs not yet available in a stable client release.
 formkiq-client = "1.19.2"
 formkiq-graalvm-annotations = "1.2.0"
 formkiq-graalvm-annotations-processor = "1.5.2"
