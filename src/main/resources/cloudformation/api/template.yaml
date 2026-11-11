@@ -606,7 +606,7 @@ Resources:
       ApiId:
         Fn::GetAtt:
           - UserAuthApi
-          - Outputs.UserAuthApi
+          - Outputs.AuthApi
       AutoDeploy: true
       Description:
         Fn::Sub: "Auth API ${AppEnvironment}"
@@ -627,7 +627,7 @@ Resources:
       ApiId:
         Fn::GetAtt:
           - UserAuthApi
-          - Outputs.UserAuthApi
+          - Outputs.AuthApi
       Stage:
         Ref: UserAuthStage
 
@@ -671,7 +671,7 @@ Resources:
       Value:
         Fn::GetAtt:
           - UserAuthApi
-          - Outputs.UserAuthApiUrl
+          - Outputs.AuthApiUrl
       Tags:
         Application: "FormKiQ"
         AppEnvironment:
@@ -954,9 +954,9 @@ Outputs:
       Fn::GetAtt:
         - HttpApi
         - Outputs.DocumentsHttpApiUrl
-  UserAuthApiUrl:
+  AuthApiUrl:
     Description: "The endpoint url for the Auth API"
     Value:
       Fn::GetAtt:
         - UserAuthApi
-        - Outputs.UserAuthApiUrl
+        - Outputs.AuthApiUrl
