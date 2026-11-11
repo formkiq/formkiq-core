@@ -118,11 +118,11 @@ Resources:
             - RegionalHostedZoneId
 
 Outputs:
-  UserAuthApi:
+  AuthApi:
     Description: User Auth API
     Value:
       Ref: AuthApi
-  UserAuthApiUrl:
+  AuthApiUrl:
     Description: "The endpoint url for the User Auth API"
     Value:
       Fn::If:

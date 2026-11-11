@@ -320,7 +320,7 @@ Resources:
         AuthApiUrl:
           Fn::GetAtt:
             - CoreApi
-            - Outputs.UserAuthApiUrl
+            - Outputs.AuthApiUrl
         DocumentsTableName:
           Fn::GetAtt:
             - CoreStorage
@@ -660,7 +660,7 @@ Resources:
         UserAuthApiUrl:
           Fn::GetAtt:
           - CoreApi
-          - Outputs.UserAuthApiUrl
+          - Outputs.AuthApiUrl
         DocumentsDeadLetterQueueName:
           Fn::GetAtt:
           - CoreStorage
@@ -689,12 +689,12 @@ Outputs:
       Fn::GetAtt: 
       - CoreApi
       - Outputs.DocumentsHttpApiUrl
-  UserAuthApiUrl:
+  AuthApiUrl:
     Description: "The endpoint url for the User Auth API"
     Value:
       Fn::GetAtt:
         - CoreApi
-        - Outputs.UserAuthApiUrl
+        - Outputs.AuthApiUrl
   ConsoleUrl:
     Description: The URL for the FormKiQ Console
     Value: 
