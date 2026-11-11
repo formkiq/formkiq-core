@@ -175,6 +175,8 @@ Resources:
       FunctionName: 
         Ref: ApiKeyAuthorizer
       Principal: apigateway.amazonaws.com
+      SourceAccount:
+        Ref: AWS::AccountId
 
   #@overlay/match missing_ok=True
   ApiKeyAuthorizerRole:
