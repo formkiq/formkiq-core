@@ -9,7 +9,7 @@ commons-codec = "1.23.0"
 commons-csv = "1.14.1"
 commons-lang3 = "3.21.0"
 # Approved exception: this branch uses APIs not yet available in a stable client release.
-formkiq-client = "1.19.2-SNAPSHOT"
+formkiq-client = "1.19.2"
 formkiq-graalvm-annotations = "1.2.0"
 formkiq-graalvm-annotations-processor = "1.5.2"
 formkiq-java-base-plugin = "1.0.13"
