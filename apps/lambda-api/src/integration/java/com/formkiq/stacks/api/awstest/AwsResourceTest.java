@@ -26,27 +26,24 @@ package com.formkiq.stacks.api.awstest;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
-import static com.formkiq.testutils.aws.FkqDocumentService.addDocument;
+import static com.formkiq.testutils.aws.FkqDocumentService.uploadDocumentContent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.formkiq.testutils.api.documents.GetDocumentsRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentRequestBuilder;
+import com.formkiq.testutils.api.documents.GetDocumentUploadRequestBuilder;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -56,7 +53,6 @@ import com.formkiq.aws.cognito.CognitoIdentityProviderService;
 import com.formkiq.aws.cognito.CognitoIdentityService;
 import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
-import com.formkiq.client.model.Document;
 import com.formkiq.client.model.GetDocumentsResponse;
 import com.formkiq.testutils.aws.AbstractAwsIntegrationTest;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
@@ -200,8 +196,7 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
   }
 
   /**
-   * Tests Getting a Presign URL which will create a record in DynamoDB for the document. Then we 1)
-   * search for the /documents by TZ.
+   * Upload through a presigned URL and find that document using its UTC insertion date.
    * 
    * @throws Exception Exception
    */
@@ -211,34 +206,38 @@ public class AwsResourceTest extends AbstractAwsIntegrationTest {
     for (ApiClient apiClient : getApiClients(null)) {
       // given
       String siteId = null;
-      final String documentId = addDocument(apiClient, siteId, "test.txt",
-          "content".getBytes(StandardCharsets.UTF_8), "text/plain", null);
+      byte[] content = "content".getBytes(StandardCharsets.UTF_8);
+      var upload = new GetDocumentUploadRequestBuilder().path(UUID.randomUUID() + ".txt")
+          .contentLength(content.length).submitOk(apiClient, siteId).response();
+      String documentId = upload.getDocumentId();
 
       try {
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        Date lastHour =
-            Date.from(LocalDateTime.now().minusHours(1).atZone(ZoneId.systemDefault()).toInstant());
-        String tz = String.format("%tz", Instant.now().atZone(ZoneId.systemDefault()));
-
-        List<Document> list = Collections.emptyList();
+        var uploadedDocument =
+            new GetDocumentRequestBuilder(documentId).submitOk(apiClient, siteId).response();
+        String date = DateUtil.getYyyyMmDdFormatter()
+            .format(DateUtil.getIsoDateFormatter().parse(uploadedDocument.getInsertedDate()));
+        String tz = "UTC";
+        String next = null;
+        GetDocumentsResponse documents = null;
+        boolean found = false;
+        long deadline = System.nanoTime() + Duration.ofSeconds(20).toNanos();
 
         // when
-        while (list.isEmpty()) {
-          GetDocumentsResponse documents = new GetDocumentsRequestBuilder()
-              .date(df.format(lastHour)).tz(tz).submit(apiClient, siteId).throwIfError().response();
-          // api.getDocuments(siteId, null, null, null,
-          // df.format(lastHour), tz, null, null, null, null);
-
-          // then
-          list = documents.getDocuments();
-
-          if (list.isEmpty()) {
+        uploadDocumentContent(upload.getUrl(), content, "text/plain", Map.of());
+        do {
+          documents = new GetDocumentsRequestBuilder().date(date).tz(tz).next(next)
+              .submitOk(apiClient, siteId).response();
+          found = notNull(documents.getDocuments()).stream()
+              .anyMatch(document -> documentId.equals(document.getDocumentId()));
+          next = documents.getNext();
+          if (!found && (next == null || next.isEmpty())) {
             TimeUnit.SECONDS.sleep(1);
           }
-        }
+        } while (!found && System.nanoTime() < deadline);
 
-        assertFalse(list.isEmpty());
-        assertNotNull(list.get(0).getDocumentId());
+        // then
+        assertTrue(found, "Document " + documentId + " was not listed for date=" + date + ", tz="
+            + tz + ", api=" + apiClient.getBasePath() + "; last response=" + documents);
 
       } finally {
         new DeleteDocumentRequestBuilder(documentId).softDelete(false).submitOk(apiClient, siteId);
