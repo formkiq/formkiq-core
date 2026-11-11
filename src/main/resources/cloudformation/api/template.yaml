@@ -456,6 +456,8 @@ Resources:
         - ApiLambda
         - Outputs.DocumentsApiRequests
       Principal: apigateway.amazonaws.com
+      SourceAccount:
+        Ref: AWS::AccountId
       
   DocumentsStageAccessLogs:
     Type: AWS::Logs::LogGroup

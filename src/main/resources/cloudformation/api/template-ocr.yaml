@@ -110,6 +110,8 @@ Resources:
       FunctionName: 
         Ref: OcrProcessor
       Principal: apigateway.amazonaws.com
+      SourceAccount:
+        Ref: AWS::AccountId
       
   OcrProcessor:
     Type: AWS::Serverless::Function
