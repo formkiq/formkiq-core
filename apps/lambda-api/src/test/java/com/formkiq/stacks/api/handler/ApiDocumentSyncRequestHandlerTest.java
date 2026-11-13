@@ -88,14 +88,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.api.documents.AddDocumentSyncRequestBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 /** Unit Tests for request /documents/{documentId}/syncs. */
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiDocumentSyncRequestHandlerTest extends AbstractApiClientRequestTest
     implements DbKeys {

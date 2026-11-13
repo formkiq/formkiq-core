@@ -43,7 +43,7 @@ import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.aws.dynamodb.base64.Pagination;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Unit Tests for request GET / POST / DELETE /documents. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class ApiDocumentsRequestTest extends AbstractRequestHandler {
 
   /**

@@ -50,9 +50,9 @@ import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.api.JwtTokenEncoder;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 class RequestHandlerTest {
 

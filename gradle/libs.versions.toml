@@ -98,7 +98,6 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 tess4j = { module = "net.sourceforge.tess4j:tess4j", version.ref = "tess4j" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
-testcontainers-localstack = { module = "org.testcontainers:testcontainers-localstack", version.ref = "testcontainers" }
 thumbnailator = { module = "net.coobird:thumbnailator", version.ref = "thumbnailator" }
 ulid-creator = { module = "com.github.f4b6a3:ulid-creator", version.ref = "ulid" }
 

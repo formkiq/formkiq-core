@@ -82,7 +82,7 @@ import com.formkiq.aws.dynamodb.DynamoDbService;
 import com.formkiq.aws.dynamodb.model.SearchMetaCriteria;
 import com.formkiq.aws.dynamodb.model.SearchQuery;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 /**
@@ -91,7 +91,7 @@ import software.amazon.awssdk.services.sqs.model.Message;
  *
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 class FolderIndexProcessorTest implements DbKeys {
 
   /** {@link DynamoDbService}. */

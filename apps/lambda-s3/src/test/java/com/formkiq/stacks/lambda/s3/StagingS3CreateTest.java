@@ -146,7 +146,7 @@ import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.validation.ValidationException;
 import com.google.gson.Gson;
@@ -184,9 +184,9 @@ public class StagingS3CreateTest implements DbKeys {
   private static final Gson GSON =
       new GsonBuilder().disableHtmlEscaping().setDateFormat(DateUtil.DATE_FORMAT).create();
 
-  /** Register LocalStack extension. */
+  /** Register Floci extension. */
   @RegisterExtension
-  static LocalStackExtension localStack = new LocalStackExtension();
+  static FlociExtension floci = new FlociExtension();
   /** {@link ClientAndServer}. */
   private static ClientAndServer mockServer;
   /** {@link S3Service}. */

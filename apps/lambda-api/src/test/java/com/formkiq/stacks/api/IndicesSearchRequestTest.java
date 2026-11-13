@@ -49,10 +49,10 @@ import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.stacks.dynamodb.GlobalIndexService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 
 /** Unit Tests for request /indices/search. */
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class IndicesSearchRequestTest extends AbstractRequestHandler {
 
