@@ -15,5 +15,5 @@ dependencies {
   testRuntimeOnly libs.slf4j.simple
   testImplementation libs.junit.jupiter.engine
   testRuntimeOnly  libs.junit.platform.launcher
-  testImplementation libs.testcontainers.localstack
+  testImplementation libs.testcontainers
 }

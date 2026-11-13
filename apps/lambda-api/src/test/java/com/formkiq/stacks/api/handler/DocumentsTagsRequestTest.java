@@ -47,7 +47,7 @@ import com.formkiq.testutils.api.documents.SetDocumentTagValueRequestBuilder;
 import com.formkiq.testutils.api.documents.SetDocumentTagsRequestBuilder;
 import com.formkiq.testutils.api.documents.UpdateDocumentTagsRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.urls.HttpStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Unit Tests for request /documents/{documentId}/tags. */
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentsTagsRequestTest extends AbstractApiClientRequestTest {
 

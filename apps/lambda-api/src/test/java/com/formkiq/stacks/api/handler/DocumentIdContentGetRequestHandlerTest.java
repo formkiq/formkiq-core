@@ -51,7 +51,6 @@ import com.formkiq.client.model.AddDocumentUploadRequest;
 import com.formkiq.client.model.GetDocumentContentResponse;
 import com.formkiq.stacks.dynamodb.DocumentVersionServiceDynamoDb;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
 import com.formkiq.testutils.aws.TestServices;
 
 /** Unit Tests for request /documents/{documentId}/content. */
@@ -157,11 +156,11 @@ public class DocumentIdContentGetRequestHandlerTest extends AbstractApiClientReq
       assertEquals("application/octet-stream", response.getContentType());
 
       if (siteId != null) {
-        assertTrue(url.startsWith(TestServices.getEndpointOverride(Service.S3).toString()
-            + "/testbucket/" + siteId + "/" + documentId));
+        assertTrue(url.startsWith(TestServices.getEndpointOverride().toString() + "/testbucket/"
+            + siteId + "/" + documentId));
       } else {
         assertTrue(url.startsWith(
-            TestServices.getEndpointOverride(Service.S3).toString() + "/testbucket/" + documentId));
+            TestServices.getEndpointOverride().toString() + "/testbucket/" + documentId));
       }
     }
   }

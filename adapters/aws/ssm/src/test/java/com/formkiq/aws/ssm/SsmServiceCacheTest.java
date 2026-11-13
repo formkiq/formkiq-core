@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
@@ -50,12 +50,13 @@ import software.amazon.awssdk.services.ssm.model.ParameterNotFoundException;
  */
 public class SsmServiceCacheTest {
 
-  /** LocalStack {@link DockerImageName}. */
-  private static DockerImageName localStackImage =
-      DockerImageName.parse("localstack/localstack:2.1");
-  /** {@link LocalStackContainer}. */
-  private static LocalStackContainer localstack =
-      new LocalStackContainer(localStackImage).withServices(Service.SSM);
+  /** Default Floci port. */
+  private static final int FLOCI_PORT = 4566;
+  /** Floci {@link DockerImageName}. */
+  private static DockerImageName flociImage = DockerImageName.parse("floci/floci:2.4.0");
+  /** {@link GenericContainer}. */
+  private static GenericContainer<?> floci = new GenericContainer<>(flociImage)
+      .withExposedPorts(FLOCI_PORT).waitingFor(Wait.forHttp("/_floci/health").forPort(FLOCI_PORT));
 
   /** {@link SsmServiceCache}. */
   private static SsmServiceCache cache;
@@ -65,7 +66,7 @@ public class SsmServiceCacheTest {
    */
   @AfterAll
   public static void afterClass() {
-    localstack.stop();
+    floci.stop();
   }
 
   /**
@@ -81,11 +82,11 @@ public class SsmServiceCacheTest {
     AwsCredentialsProvider cred = StaticCredentialsProvider
         .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-    localstack.start();
+    floci.start();
 
-    SsmConnectionBuilder connection =
-        new SsmConnectionBuilder(false).setCredentials(cred).setRegion(Region.US_EAST_1)
-            .setEndpointOverride(new URI(localstack.getEndpointOverride(Service.SSM).toString()));
+    SsmConnectionBuilder connection = new SsmConnectionBuilder(false).setCredentials(cred)
+        .setRegion(Region.US_EAST_1).setEndpointOverride(
+            new URI("http://" + floci.getHost() + ":" + floci.getMappedPort(FLOCI_PORT)));
 
     cache = new SsmServiceCache(connection, 1, TimeUnit.SECONDS);
   }

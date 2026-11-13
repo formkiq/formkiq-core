@@ -28,7 +28,7 @@ import java.net.URISyntaxException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 
 /**
@@ -36,7 +36,7 @@ import com.formkiq.testutils.aws.TestServices;
  * Unit Tests for {@link EventServiceSns}.
  *
  */
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class DocumentEventServiceSnsTest {
 
   /** {@link EventServiceSns}. */

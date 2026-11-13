@@ -51,10 +51,10 @@ import com.formkiq.aws.dynamodb.DynamicObject;
 import com.formkiq.aws.dynamodb.documents.DocumentMetadata;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 
 /** Unit Tests for {@link CoreRequestHandler} class. */
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class ApiRequestHandlerTest extends AbstractRequestHandler {
 

@@ -25,7 +25,6 @@ dependencies {
   implementation libs.junit.jupiter.api
 
   implementation libs.testcontainers
-  implementation libs.testcontainers.localstack
   api libs.mockserver.netty
   implementation libs.jjwt.api
   runtimeOnly libs.jjwt.impl

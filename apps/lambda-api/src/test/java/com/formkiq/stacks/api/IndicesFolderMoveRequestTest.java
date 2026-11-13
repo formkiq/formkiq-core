@@ -38,10 +38,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import com.formkiq.aws.services.lambda.ApiGatewayRequestEvent;
 import com.formkiq.lambda.apigateway.util.GsonUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 
 /** Unit Tests for request /indices/folder/move. */
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class IndicesFolderMoveRequestTest extends AbstractRequestHandler {
 

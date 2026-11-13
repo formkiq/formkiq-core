@@ -44,7 +44,7 @@ import com.formkiq.client.model.ReindexTarget;
 import com.formkiq.client.model.SetSchemaAttributes;
 import com.formkiq.client.model.SetSitesSchemaRequest;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.api.documents.AddReindexDocumentRequestBuilder;
 import com.formkiq.testutils.api.schemas.SetSitesSchemaRequestBuilder;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /reindex/documents/{documentId}. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class ReindexDocumentsRequestTest extends AbstractApiClientRequestTest {
 
   private void addAttribute(final String siteId, final String key) throws ApiException {

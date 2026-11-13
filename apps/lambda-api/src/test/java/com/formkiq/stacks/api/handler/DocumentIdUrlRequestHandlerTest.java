@@ -78,12 +78,11 @@ import org.junit.jupiter.api.Test;
 import com.formkiq.module.http.HttpService;
 import com.formkiq.module.http.HttpServiceJdk11;
 import com.formkiq.stacks.dynamodb.DocumentFormat;
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.impl.bootstrap.HttpServer;
 
 /** Unit Tests for request /documents/{documentId}/url. */
 public class DocumentIdUrlRequestHandlerTest extends AbstractApiClientRequestTest {
 
-  /** {@link HttpServer}. */
+  /** {@link HttpService}. */
   private final HttpService http = new HttpServiceJdk11();
 
   private String addDocumentWithWatermarks(final String siteId) throws ApiException {

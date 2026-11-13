@@ -78,13 +78,13 @@ import com.formkiq.client.model.DeleteIndicesResponse;
 import com.formkiq.stacks.dynamodb.DocumentSearchService;
 import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.api.opensearch.DeleteIndexRequestBuilder;
 import com.formkiq.testutils.api.opensearch.IndexSearchRequestBuilder;
 
 /** Unit Tests for request /indices/{type}/{indexKey}. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class IndicesRequestHandlerTest extends AbstractApiClientRequestTest {
 
   /** {@link DocumentService}. */

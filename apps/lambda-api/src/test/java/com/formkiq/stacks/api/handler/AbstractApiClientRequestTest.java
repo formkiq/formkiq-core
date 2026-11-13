@@ -60,7 +60,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.FormKiqApiExtension;
 import com.formkiq.testutils.api.JwtTokenEncoder;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypesenseExtension;
 import com.formkiq.validation.ValidationException;
@@ -75,13 +75,13 @@ import software.amazon.awssdk.services.sqs.model.Message;
  * Abstract Request Test using {@link ApiClient}.
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public abstract class AbstractApiClientRequestTest {
 
-  /** {@link LocalStackExtension}. */
+  /** {@link FlociExtension}. */
   @RegisterExtension
   @Order(0)
-  static LocalStackExtension localstack = new LocalStackExtension();
+  static FlociExtension floci = new FlociExtension();
 
   /** {@link TypesenseExtension}. */
   @RegisterExtension
@@ -90,7 +90,7 @@ public abstract class AbstractApiClientRequestTest {
   /** FormKiQ Server. */
   @RegisterExtension
   @Order(2)
-  static FormKiqApiExtension server = new FormKiqApiExtension(localstack, typeSense,
+  static FormKiqApiExtension server = new FormKiqApiExtension(floci, typeSense,
       () -> Map.of("DOCUMENT_VERSIONS_PLUGIN", DocumentVersionServiceNoVersioning.class.getName()),
       new FormKiQResponseCallback());
 
@@ -119,7 +119,7 @@ public abstract class AbstractApiClientRequestTest {
    */
   public void clearSqsMessages() {
 
-    String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
+    String sqsDocumentEventUrl = floci.getSqsDocumentEventUrl();
 
     AwsServiceCache awsServices = getAwsServices();
     awsServices.register(SqsService.class, new SqsServiceExtension());
@@ -179,7 +179,7 @@ public abstract class AbstractApiClientRequestTest {
   public Map<String, Object> getSqsMessages(final String eventType, final String documentId)
       throws InterruptedException {
 
-    String sqsDocumentEventUrl = localstack.getSqsDocumentEventUrl();
+    String sqsDocumentEventUrl = floci.getSqsDocumentEventUrl();
 
     AwsServiceCache awsServices = getAwsServices();
     awsServices.register(SqsService.class, new SqsServiceExtension());

@@ -78,7 +78,7 @@ import com.formkiq.testutils.api.entity.AddEntityRequestBuilder;
 import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.schemas.AddClassificationRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.api.attributes.GetAttributeAllowedValuesRequestBuilder;
 import com.formkiq.testutils.api.schemas.GetClassificationRequestBuilder;
 import com.formkiq.testutils.api.schemas.GetSitesClassificationsRequestBuilder;
@@ -105,7 +105,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /sites/{siteId}/schema/document. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class SitesClassificationsRequestTest extends AbstractApiClientRequestTest {
 
   private void addAttribute(final String siteId, final String key) throws ApiException {

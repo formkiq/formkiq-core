@@ -68,8 +68,8 @@ public class FormKiqApiExtension
 
   /** {@link ClientAndServer}. */
   private ClientAndServer formkiqServer;
-  /** {@link LocalStackExtension}. */
-  private final LocalStackExtension localStackExtension;
+  /** {@link FlociExtension}. */
+  private final FlociExtension flociExtension;
   /** Port to run Test server. */
   private int port;
   /** Is server running. */
@@ -80,16 +80,16 @@ public class FormKiqApiExtension
   /**
    * constructor.
    * 
-   * @param localstack {@link LocalStackExtension}
+   * @param floci {@link FlociExtension}
    * @param typeSense {@link TypesenseExtension}
    * @param extensionConfig {@link FormKiQApiExtensionConfig}
    * @param responseCallback {@link AbstractFormKiqApiResponseCallback}
    */
-  public FormKiqApiExtension(final LocalStackExtension localstack,
-      final TypesenseExtension typeSense, final FormKiQApiExtensionConfig extensionConfig,
+  public FormKiqApiExtension(final FlociExtension floci, final TypesenseExtension typeSense,
+      final FormKiQApiExtensionConfig extensionConfig,
       final AbstractFormKiqApiResponseCallback responseCallback) {
 
-    this.localStackExtension = localstack;
+    this.flociExtension = floci;
     this.typeSenseExtension = typeSense;
     this.callback = responseCallback;
     this.config = extensionConfig;
@@ -142,9 +142,9 @@ public class FormKiqApiExtension
       map.putAll(this.config.getEnvironment());
     }
 
-    if (this.localStackExtension != null) {
-      map.put("SNS_DOCUMENT_EVENT", this.localStackExtension.getSnsDocumentEvent());
-      map.put("SQS_DOCUMENT_EVENT_URL", this.localStackExtension.getSqsDocumentEventUrl());
+    if (this.flociExtension != null) {
+      map.put("SNS_DOCUMENT_EVENT", this.flociExtension.getSnsDocumentEvent());
+      map.put("SQS_DOCUMENT_EVENT_URL", this.flociExtension.getSqsDocumentEventUrl());
     }
 
     map.put("APP_ENVIRONMENT", FORMKIQ_APP_ENVIRONMENT);

@@ -71,7 +71,7 @@ import com.formkiq.module.ocr.Ocr;
 import com.formkiq.module.ocr.OcrScanStatus;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -85,7 +85,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
  *
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 class OcrTesseractProcessorTest {
 
   /** {@link ActionsService}. */

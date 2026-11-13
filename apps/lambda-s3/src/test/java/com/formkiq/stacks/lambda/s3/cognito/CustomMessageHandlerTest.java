@@ -35,7 +35,7 @@ import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.testutils.FileUtil;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.LambdaContextRecorder;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** {@link CustomMessageHandler} Unit Tests. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class CustomMessageHandlerTest {
 
   /** {@link S3Service}. */

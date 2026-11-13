@@ -8,19 +8,13 @@ services:
     volumes:
       - "./docker/dynamodb:/home/dynamodblocal/data"
     working_dir: /home/dynamodblocal
-  localstack:
-    image: localstack/localstack:2.1
+  floci:
+    image: floci/floci:2.4.0
     ports:
-      - "127.0.0.1:4566:4566"            # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559"  # ext services port range
-      - "127.0.0.1:53:53"                # DNS config
-      - "127.0.0.1:53:53/udp"            # DNS config
-      - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway
+      - "127.0.0.1:4566:4566"
     environment:
-      - DEBUG=1
-      - PERSISTENCE=${PERSISTENCE-}
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - LS_LOG=trace
+      - FLOCI_STORAGE_MODE=${FLOCI_STORAGE_MODE:-memory}
+      - QUARKUS_LOG_LEVEL=${FLOCI_LOG_LEVEL:-INFO}
     volumes:
-      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "${FLOCI_VOLUME_DIR:-./volume/floci}:/app/data"
       - "/var/run/docker.sock:/var/run/docker.sock"

@@ -142,6 +142,7 @@
 		<allow pkg="org.mockserver.integration" />
 
 		<allow pkg="org.junit.jupiter.api.extension" />
+		<allow class="org.testcontainers.DockerClientFactory" />
 		<allow pkg="org.testcontainers.containers" />
 		<allow pkg="org.testcontainers.utility" />
 		<allow pkg="software.amazon.awssdk.auth.credentials" />

@@ -53,7 +53,7 @@ import com.formkiq.aws.dynamodb.model.DocumentSyncStatus;
 import com.formkiq.aws.dynamodb.model.DocumentSyncType;
 import com.formkiq.aws.secretsmanager.SecretsManagerAwsServiceRegistry;
 import com.formkiq.aws.secretsmanager.SecretsManagerServiceImpl;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.module.lambdaservices.AwsServiceCache;
 import com.formkiq.module.lambdaservices.AwsServiceCacheBuilder;
 import com.formkiq.module.typesense.TypeSenseService;
@@ -79,7 +79,7 @@ import software.amazon.awssdk.utils.IoUtils;
  *
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 class TypesenseProcessorTest {
 
   /** {@link TypesenseExtension}. */

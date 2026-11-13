@@ -69,7 +69,6 @@ dependencies {
   testRuntimeOnly  libs.junit.platform.launcher
 
   testImplementation platform(libs.testcontainers.bom)
-  testImplementation libs.testcontainers.localstack
 
   testImplementation libs.mockserver.netty
 }

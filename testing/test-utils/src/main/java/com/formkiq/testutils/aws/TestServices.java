@@ -24,8 +24,10 @@
 package com.formkiq.testutils.aws;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -39,8 +41,10 @@ import java.util.concurrent.TimeUnit;
 
 import com.formkiq.aws.secretsmanager.SecretsManagerConnectionBuilder;
 import com.formkiq.aws.sns.SnsService;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import com.formkiq.aws.s3.S3ConnectionBuilder;
 import com.formkiq.aws.s3.S3PresignerConnectionBuilder;
@@ -68,17 +72,16 @@ public final class TestServices {
   public static final Region AWS_REGION = Region.US_EAST_1;
   /** {@link String}. */
   public static final String BUCKET_NAME = "testbucket";
-  /** Default LocalStack Port. */
-  private static final int DEFAULT_LOCALSTACK_PORT = 4566;
-  /** Maximum LocalStack startup attempts. */
-  private static final int LOCALSTACK_STARTUP_ATTEMPTS = 3;
+  /** Default Floci Port. */
+  private static final int DEFAULT_FLOCI_PORT = 4566;
+  /** Maximum Floci startup attempts. */
+  private static final int FLOCI_STARTUP_ATTEMPTS = 3;
   /** App Environment. */
   public static final String FORMKIQ_APP_ENVIRONMENT = "test";
-  /** {@link LocalStackContainer}. */
-  private static LocalStackContainer localstack = null;
-  /** LocalStack {@link DockerImageName}. */
-  private static final DockerImageName LOCALSTACK_IMAGE =
-      DockerImageName.parse("localstack/localstack:4.14.0");
+  /** {@link GenericContainer}. */
+  private static GenericContainer<?> floci = null;
+  /** Floci {@link DockerImageName}. */
+  private static final DockerImageName FLOCI_IMAGE = DockerImageName.parse("floci/floci:2.4.0");
   /** {@link String}. */
   public static final String OCR_BUCKET_NAME = "ocrbucket";
   /** {@link S3ConnectionBuilder}. */
@@ -154,37 +157,14 @@ public final class TestServices {
     return queueUrl;
   }
 
-  private static String getDefaultLocalStackEndpoint(final Service service) {
-    String url = "http://localhost:" + DEFAULT_LOCALSTACK_PORT;
-    if (Service.S3.equals(service)) {
-      url = "http://s3.localhost:" + DEFAULT_LOCALSTACK_PORT;
-    } else if (Service.SQS.equals(service)) {
-      url = "http://sqs.localhost:" + DEFAULT_LOCALSTACK_PORT;
-    }
-
-    return url;
-  }
-
   /**
-   * Get Local Stack Endpoint.
-   * 
-   * @param service {@link Service}
+   * Get Floci Endpoint.
+   *
    * @param endpointOverride {@link URI}
    * @return {@link URI}
    */
-  public static URI getEndpoint(final Service service, final URI endpointOverride) {
-    URI endpoint = endpointOverride;
-
-    if (endpoint == null) {
-      try {
-        endpoint = new URI(localstack != null ? localstack.getEndpointOverride(service).toString()
-            : getDefaultLocalStackEndpoint(service));
-      } catch (URISyntaxException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    return endpoint;
+  public static URI getEndpoint(final URI endpointOverride) {
+    return endpointOverride != null ? endpointOverride : getEndpointOverride();
   }
 
   /**
@@ -194,25 +174,27 @@ public final class TestServices {
    */
   public static Map<String, URI> getEndpointMap() {
     Map<String, URI> endpoints = Map.of("dynamodb", DynamoDbTestServices.getEndpoint(), "s3",
-        TestServices.getEndpoint(Service.S3, null), "s3presigner",
-        TestServices.getEndpoint(Service.S3, null), "ssm",
-        TestServices.getEndpoint(Service.SSM, null), "sqs",
-        TestServices.getEndpoint(Service.SQS, null), "sns",
-        TestServices.getEndpoint(Service.SNS, null), "secretsmanager",
-        TestServices.getEndpoint(Service.SECRETSMANAGER, null));
+        TestServices.getEndpoint(null), "s3presigner", TestServices.getEndpoint(null), "ssm",
+        TestServices.getEndpoint(null), "sqs", TestServices.getEndpoint(null), "sns",
+        TestServices.getEndpoint(null), "secretsmanager", TestServices.getEndpoint(null));
     return endpoints;
   }
 
   /**
-   * Get LocalStack {@link Service}.
-   * 
-   * @param service {@link Service}
+   * Get Floci Endpoint.
+   *
    * @return {@link URI}
-   * @throws URISyntaxException URISyntaxException
    */
-  public static URI getEndpointOverride(final Service service) throws URISyntaxException {
-    return localstack != null ? localstack.getEndpointOverride(service)
-        : new URI(getDefaultLocalStackEndpoint(service));
+  public static URI getEndpointOverride() {
+    try {
+      String host = floci != null ? floci.getHost() : "localhost";
+      int port = floci != null ? floci.getMappedPort(DEFAULT_FLOCI_PORT) : DEFAULT_FLOCI_PORT;
+      // An IP endpoint keeps the SDK's S3 requests and presigned URLs in path style.
+      String address = InetAddress.getByName(host).getHostAddress();
+      return new URI("http", null, address, port, null, null, null);
+    } catch (UnknownHostException | URISyntaxException e) {
+      throw new IllegalStateException("Cannot obtain Floci endpoint URL", e);
+    }
   }
 
   /**
@@ -222,7 +204,7 @@ public final class TestServices {
    * @throws URISyntaxException URISyntaxException
    */
   public static URI getKmsEndpoint() throws URISyntaxException {
-    return getEndpointOverride(Service.KMS);
+    return getEndpointOverride();
   }
 
   /**
@@ -253,7 +235,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       s3Connection = new S3ConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getEndpoint(Service.S3, endpointOverride));
+          .setEndpointOverride(getEndpoint(endpointOverride));
     }
 
     return s3Connection;
@@ -274,7 +256,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       s3PresignerConnection = new S3PresignerConnectionBuilder().setCredentials(cred)
-          .setRegion(AWS_REGION).setEndpointOverride(getEndpoint(Service.S3, endpointOverride));
+          .setRegion(AWS_REGION).setEndpointOverride(getEndpoint(endpointOverride));
     }
 
     return s3PresignerConnection;
@@ -294,9 +276,8 @@ public final class TestServices {
       AwsCredentialsProvider cred = StaticCredentialsProvider
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
-      secretsManagerConnection =
-          new SecretsManagerConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
-              .setEndpointOverride(getEndpoint(Service.SECRETSMANAGER, endpointOverride));
+      secretsManagerConnection = new SecretsManagerConnectionBuilder(false).setCredentials(cred)
+          .setRegion(AWS_REGION).setEndpointOverride(getEndpoint(endpointOverride));
     }
 
     return secretsManagerConnection;
@@ -317,7 +298,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       snsConnection = new SnsConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getEndpoint(Service.SNS, endpointOverride));
+          .setEndpointOverride(getEndpoint(endpointOverride));
     }
 
     return snsConnection;
@@ -338,7 +319,7 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       sqsConnection = new SqsConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getEndpoint(Service.SQS, endpointOverride));
+          .setEndpointOverride(getEndpoint(endpointOverride));
     }
 
     return sqsConnection;
@@ -410,14 +391,14 @@ public final class TestServices {
           .create(AwsSessionCredentials.create("ACCESSKEY", "SECRETKEY", "TOKENKEY"));
 
       ssmConnection = new SsmConnectionBuilder(false).setCredentials(cred).setRegion(AWS_REGION)
-          .setEndpointOverride(getEndpoint(Service.SSM, endpointOverride));
+          .setEndpointOverride(getEndpoint(endpointOverride));
     }
 
     return ssmConnection;
   }
 
   /**
-   * Checks Whether LocalStack is currently running on the default port.
+   * Checks Whether Floci is currently running on the default port.
    * 
    * @return boolean
    */
@@ -429,8 +410,7 @@ public final class TestServices {
     HttpClient client = HttpClient.newHttpClient();
     try {
       HttpRequest request = HttpRequest.newBuilder().timeout(Duration.ofSeconds(2))
-          .uri(new URI("http://localhost:" + DEFAULT_LOCALSTACK_PORT + "/_localstack/health")).GET()
-          .build();
+          .uri(new URI("http://localhost:" + DEFAULT_FLOCI_PORT + "/_floci/health")).GET().build();
       HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
       available = response.statusCode() != status200;
     } catch (URISyntaxException | IOException | InterruptedException e) {
@@ -441,27 +421,29 @@ public final class TestServices {
   }
 
   /**
-   * Start LocalStack.
+   * Start Floci.
    */
   @SuppressWarnings("resource")
-  public static synchronized void startLocalStack() {
+  public static synchronized void startFloci() {
 
-    if (localstack == null && isPortAvailable()) {
-      LocalStackContainer container = new LocalStackContainer(LOCALSTACK_IMAGE)
-          .withServices(Service.S3, Service.SQS, Service.SSM, Service.SNS,
-              LocalStackContainer.EnabledService.named("events"))
-          .withStartupAttempts(LOCALSTACK_STARTUP_ATTEMPTS);
+    if (floci == null && isPortAvailable()) {
+      GenericContainer<?> container =
+          new GenericContainer<>(FLOCI_IMAGE).withExposedPorts(DEFAULT_FLOCI_PORT)
+              .withFileSystemBind(DockerClientFactory.instance().getRemoteDockerUnixSocketPath(),
+                  "/var/run/docker.sock", BindMode.READ_WRITE)
+              .waitingFor(Wait.forHttp("/_floci/health").forPort(DEFAULT_FLOCI_PORT))
+              .withStartupAttempts(FLOCI_STARTUP_ATTEMPTS);
       container.start();
-      localstack = container;
+      floci = container;
     }
   }
 
   /**
-   * Stop LocalStack.
+   * Stop Floci.
    */
-  public static void stopLocalStack() {
-    if (localstack != null) {
-      localstack.stop();
+  public static void stopFloci() {
+    if (floci != null) {
+      floci.stop();
     }
   }
 

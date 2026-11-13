@@ -1552,7 +1552,7 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
    *
    */
   @Test
-  public void testPost17() {
+  public void testPost17() throws ApiException {
     // given
     for (String siteId : Arrays.asList(null, ID.uuid())) {
 
@@ -1565,16 +1565,11 @@ public class DocumentsRequestTest extends AbstractApiClientRequestTest {
           .checksum(checksum).checksumType(ChecksumType.SHA256);
 
       // when
-      try {
-        new AddDocumentRequestBuilder(req).submitOk(this.client, siteId);
-        fail();
-      } catch (ApiException e) {
-        // then
-        assertEquals(SC_BAD_REQUEST.getStatusCode(), e.getCode());
-        assertTrue(e.getResponseBody()
-            .startsWith("{\"message\":\"<?xml version='1.0' encoding='utf-8'?>\\n"
-                + "<Error><Code>InvalidRequest</Code>"));
-      }
+      var response = new AddDocumentRequestBuilder(req).submitError(this.client, siteId);
+
+      // then
+      assertEquals(SC_BAD_REQUEST.getStatusCode(), response.exception().getCode());
+      assertTrue(response.exception().getResponseBody().contains("checksum"));
     }
   }
 

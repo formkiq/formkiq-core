@@ -106,7 +106,7 @@ import com.formkiq.stacks.lambda.s3.event.AwsEvent;
 import com.formkiq.stacks.lambda.s3.util.FileUtils;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestEnvironment;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.aws.TypesenseExtension;
@@ -169,7 +169,7 @@ import static org.mockserver.model.HttpRequest.request;
 
 /** Unit Tests for {@link DocumentActionsProcessor}. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class DocumentActionsProcessorTest implements DbKeys {
 
   /** SQS polling interval. */

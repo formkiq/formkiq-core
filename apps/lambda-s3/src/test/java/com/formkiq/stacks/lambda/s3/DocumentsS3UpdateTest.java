@@ -129,7 +129,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -141,7 +141,7 @@ import software.amazon.awssdk.services.sqs.model.Message;
 
 /** {@link DocumentsS3Update} Unit Tests. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class DocumentsS3UpdateTest implements DbKeys {
 
   /** Captures authorization at the downstream event boundary. */
@@ -587,7 +587,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           new DocumentRecordSet(documentRecord, null, addTags, null);
       service.saveDocument(siteId, documentRecordSet, new SaveDocumentOptions());
 
-      addS3File(key, "pdf", true, "testdata");
+      addS3File(key, "application/pdf", true, "testdata");
 
       // when
       final DocumentRecord item = handleRequest(siteId, documentId, map);
@@ -610,7 +610,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       assertEquals(DocumentTagType.USERDEFINED, tags.getResults().get(i).getType());
       assertEquals("12345", tags.getResults().get(i).getValue());
 
-      verifyDocumentSaved(siteId, item, "pdf", "8");
+      verifyDocumentSaved(siteId, item, "application/pdf", "8");
       assertNotNull(service.findMostDocumentDate());
 
       assertCreateDocumentSnsMessage(siteId, "update");
@@ -640,7 +640,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       service.saveDocument(siteId, new DocumentRecordSet(documentRecord, null, tags, null),
           new SaveDocumentOptions());
 
-      addS3File(key, "pdf", false, "testdata");
+      addS3File(key, "application/pdf", false, "testdata");
 
       // when
       DocumentRecord item = handleRequest(siteId, BUCKET_KEY, map);
@@ -712,7 +712,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
           new DocumentRecordSet(documentRecord, null, null, List.of(child)),
           new SaveDocumentOptions());
 
-      addS3File(key, "pdf", false, "testdata");
+      addS3File(key, "application/pdf", false, "testdata");
 
       // when
       final DocumentRecord item = handleRequest(siteId, childDoc.documentId(), map);
@@ -732,7 +732,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
 
       assertEquals(0, tags.getResults().size());
 
-      verifyDocumentSaved(siteId, item, "pdf", "8");
+      verifyDocumentSaved(siteId, item, "application/pdf", "8");
 
       tags = service.findDocumentTags(siteId, childDocument, null, MAX_RESULTS);
       assertEquals(0, tags.getResults().size());
@@ -761,7 +761,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       final Map<String, Object> map =
           loadFileAsMap(this, "/objectcreate-event1.json", BUCKET_KEY, key);
 
-      addS3File(key, "pdf", false, "testdata");
+      addS3File(key, "application/pdf", false, "testdata");
 
       // when
       DocumentRecord item = handleRequest(siteId, documentId, map);
@@ -910,7 +910,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       DocumentRecordSet doc = new DocumentRecordSet(documentRecord, null, null, null);
       service.saveDocument(siteId, doc, new SaveDocumentOptions());
 
-      addS3File(key, "pdf", false, "testdata");
+      addS3File(key, "application/pdf", false, "testdata");
 
       // when
       DocumentRecord item = handleRequest(siteId, documentId, map);
@@ -922,7 +922,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       Map<String, AttributeValue> result = db.getItem(r).item();
       assertEquals(ttl, result.get("TimeToLive").n());
 
-      verifyDocumentSaved(siteId, item, "pdf", "8");
+      verifyDocumentSaved(siteId, item, "application/pdf", "8");
       assertCreateDocumentSnsMessage(siteId, "create");
     }
   }
@@ -946,7 +946,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       actionsService.saveNewActions(
           List.of(createAction(document).status(ActionStatus.COMPLETE).build(siteId)));
 
-      addS3File(key, "pdf", false, "testdata");
+      addS3File(key, "application/pdf", false, "testdata");
 
       // when
       handleRequest(siteId, BUCKET_KEY, map);
@@ -1007,7 +1007,7 @@ public class DocumentsS3UpdateTest implements DbKeys {
       actionsService.saveNewActions(
           List.of(createAction(document).status(ActionStatus.RUNNING).build(siteId)));
 
-      addS3File(key, "pdf", false, "testdata");
+      addS3File(key, "application/pdf", false, "testdata");
 
       Map<String, Object> map = createS3Map(siteId, doc);
 
