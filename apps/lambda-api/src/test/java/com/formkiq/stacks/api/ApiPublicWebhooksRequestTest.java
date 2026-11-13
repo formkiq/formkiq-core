@@ -48,11 +48,11 @@ import com.formkiq.aws.dynamodb.cache.CacheService;
 import com.formkiq.stacks.dynamodb.config.ConfigService;
 import com.formkiq.stacks.dynamodb.WebhooksService;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 
 /** Unit Tests for request POST /public/webhooks. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class ApiPublicWebhooksRequestTest extends AbstractRequestHandler {
 
   /** Extension for FormKiQ config file. */

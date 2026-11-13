@@ -52,7 +52,7 @@ import com.formkiq.client.model.DocumentsCompressRequest;
 import com.formkiq.client.model.DocumentsCompressResponse;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.testutils.api.documents.CompressDocumentsRequestBuilder;
 import com.google.gson.Gson;
@@ -61,7 +61,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 
 /** POST /documents/compress tests. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class DocumentsCompressRequestTest extends AbstractApiClientRequestTest {
 
   /** To test objects put to the staging S3. **/

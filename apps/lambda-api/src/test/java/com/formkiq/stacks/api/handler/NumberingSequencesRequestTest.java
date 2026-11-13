@@ -44,7 +44,7 @@ import com.formkiq.client.model.NumberingSequenceReset;
 import com.formkiq.client.model.SetNumberingSequenceRequest;
 import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.api.systemmanagement.GetNumberingSequenceRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.GetNumberingSequencesRequestBuilder;
 import com.formkiq.testutils.api.systemmanagement.SetNumberingSequenceRequestBuilder;
@@ -53,7 +53,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /** Request tests for numbering sequence endpoints. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class NumberingSequencesRequestTest extends AbstractApiClientRequestTest {
 
   /**

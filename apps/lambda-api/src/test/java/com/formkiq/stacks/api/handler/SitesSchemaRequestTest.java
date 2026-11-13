@@ -86,7 +86,7 @@ import com.formkiq.testutils.api.entity.AddEntityTypeRequestBuilder;
 import com.formkiq.testutils.api.entity.DeleteEntityRequestBuilder;
 import com.formkiq.testutils.api.schemas.SetSchemaDocumentRequestBuilder;
 import com.formkiq.testutils.aws.DynamoDbExtension;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.api.schemas.GetSitesSchemaRequestBuilder;
 import com.formkiq.testutils.api.schemas.SetSitesSchemaRequestBuilder;
 import com.formkiq.urls.HttpStatus;
@@ -116,7 +116,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /** Unit Tests for request /sites/{siteId}/schema/document. */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class SitesSchemaRequestTest extends AbstractApiClientRequestTest {
 
   private static void assertEntity(final DocumentAttribute da, final String entityTypeId,

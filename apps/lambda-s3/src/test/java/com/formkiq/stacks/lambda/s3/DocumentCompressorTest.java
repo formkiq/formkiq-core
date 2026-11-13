@@ -65,14 +65,14 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceExtension;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbHelper;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import com.formkiq.validation.ValidationException;
 
 /**
  * Unit Test for {@link DocumentCompressor}.
  */
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 @ExtendWith(DynamoDbExtension.class)
 public class DocumentCompressorTest {
   /** {@link DynamoDbHelper}. */

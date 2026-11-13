@@ -35,7 +35,6 @@ import java.util.UUID;
 import com.formkiq.aws.sns.SnsService;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.testcontainers.containers.localstack.LocalStackContainer;
 import com.formkiq.aws.dynamodb.DynamoDbAwsServiceRegistry;
 import com.formkiq.aws.s3.S3AwsServiceRegistry;
 import com.formkiq.aws.s3.S3Service;
@@ -56,11 +55,10 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 /**
  * 
- * JUnit 5 Extension for {@link LocalStackContainer}.
+ * JUnit 5 Extension for Floci AWS services.
  *
  */
-public class LocalStackExtension
-    implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
+public class FlociExtension implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
   /** SQS Sns Update Queue. */
   private static final String SNS_SQS_CREATE_QUEUE = "sqssnsCreate" + UUID.randomUUID();
@@ -75,7 +73,7 @@ public class LocalStackExtension
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
 
-    TestServices.startLocalStack();
+    TestServices.startFloci();
 
     Map<String, String> env = Map.of("AWS_REGION", "us-east-1", "DOCUMENTS_TABLE", DOCUMENTS_TABLE,
         "OPERATIONAL_MODE", "ACTIVE");
@@ -109,7 +107,7 @@ public class LocalStackExtension
 
   @Override
   public void close() throws Throwable {
-    TestServices.stopLocalStack();
+    TestServices.stopFloci();
   }
 
   private void createS3Buckets(final S3Service s3service) {

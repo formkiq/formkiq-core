@@ -44,7 +44,7 @@ import com.formkiq.stacks.dynamodb.config.SiteConfigurationOcr;
 import com.formkiq.aws.dynamodb.ocr.OcrEngine;
 import com.formkiq.testutils.aws.DynamoDbExtension;
 import com.formkiq.testutils.aws.DynamoDbTestServices;
-import com.formkiq.testutils.aws.LocalStackExtension;
+import com.formkiq.testutils.aws.FlociExtension;
 import com.formkiq.testutils.aws.TestServices;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -71,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Unit Test for {@link DocumentOcrServiceTesseract}.
  */
 @ExtendWith(DynamoDbExtension.class)
-@ExtendWith(LocalStackExtension.class)
+@ExtendWith(FlociExtension.class)
 public class DocumentOcrServiceTesseractTest {
 
   /** {@link DocumentOcrServiceTesseract}. */
