@@ -26,11 +26,20 @@ Parameters:
     Type: String
     Description: The Cognito User Pool Client Id
 
+  CognitoAdditionalAppClientId:
+    Type: String
+    Default: ""
+    Description: Optional additional Cognito app client accepted by the document JWT API.
+
   CertificateStackNameHttpApiDomain:
     Type: String
     Description: Certificate Http Api Domain
 
 Conditions:
+
+  HasCognitoAdditionalAppClientId:
+    Fn::Not:
+      - Fn::Equals: [{Ref: CognitoAdditionalAppClientId}, ""]
 
   HasCertificateStackNameHttpApiDomain:
     Fn::Not:

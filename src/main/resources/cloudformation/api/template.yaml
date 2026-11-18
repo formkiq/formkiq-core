@@ -99,6 +99,11 @@ Parameters:
     Description: The Cognito User Pool Client Id
     AllowedPattern: ".+"
 
+  CognitoAdditionalAppClientId:
+    Type: String
+    Default: ""
+    Description: Optional additional Cognito app client accepted by the document JWT API.
+
   UserAuthentication:
     Description: How are the users authenticating
     AllowedPattern: ".+"
@@ -354,6 +359,8 @@ Resources:
     Properties:
       Location: ./api.yaml
       Parameters:
+        CognitoAdditionalAppClientId:
+          Ref: CognitoAdditionalAppClientId
         AppEnvironment: 
           Ref: AppEnvironment
         CertificateStackNameHttpApiDomain:
