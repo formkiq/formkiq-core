@@ -53,7 +53,7 @@ public class PptxFormatConverter implements FormatConverter {
 
   @Override
   public boolean isSupported(final OcrSqsMessage sqsMessage, final MimeType mineType) {
-    return MimeType.MIME_XLSX.equals(mineType);
+    return MimeType.MIME_PPTX.equals(mineType);
   }
 
 }
