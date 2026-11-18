@@ -568,7 +568,7 @@ class OcrTesseractProcessorTest {
   }
 
   /**
-   * Test Successful XLSX OCR.
+   * Test Successful PPTX OCR.
    *
    * @throws Exception Exception
    */
@@ -591,7 +591,7 @@ class OcrTesseractProcessorTest {
 
       SqsMessageRecord record = new SqsMessageRecord().eventSource("aws:sqs")
           .body(GSON.toJson(Map.of("siteId", siteId, "documentId", documentId, "jobId", jobId,
-              "contentType", MimeType.MIME_XLSX.getContentType())));
+              "contentType", MimeType.MIME_PPTX.getContentType())));
       SqsMessageRecords records = new SqsMessageRecords().records(List.of(record));
 
       String json = GSON.toJson(records);
