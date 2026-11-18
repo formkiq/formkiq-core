@@ -136,6 +136,8 @@ gomplateOpenApiVariants.each { suffix, cfg ->
     description = "Generate ${suffix} OpenAPI spec using gomplate."
 
     inputs.file openApiTemplate
+    inputs.dir rootProject.file("src/main/resources/cloudformation/api/${cfg.dirName.split('/')[0]}")
+    inputs.dir openApiPartials
     outputs.file openApiSpecOutputFile
 
     commandLine "gomplate",
