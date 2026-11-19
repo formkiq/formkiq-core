@@ -231,9 +231,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
         } else {
 
           AttributeRecord attribute = attributesMap.get(da.getKey());
-          AttributeDataType dataType = attribute.getDataType();
-          validateDataType(siteId, da, dataType, vb);
-          validateRegex(attribute, da, vb);
+          validateRegex(attribute, da, validateDataType(siteId, da, attribute.getDataType(), vb));
 
           AttributeValidationAccess va = da.getValidationAccess() != null ? da.getValidationAccess()
               : accessApproval.accessFor(da.getKey());
@@ -254,9 +252,9 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     }
   }
 
-  private void validateDataType(final String siteId, final DocumentAttributeRecord a,
+  private ValidationBuilder validateDataType(final String siteId, final DocumentAttributeRecord a,
       final AttributeDataType dataType, final ValidationBuilder vb) {
-    switch (dataType) {
+    return switch (dataType) {
       case STRING ->
         vb.isRequired(a.getKey(), a.getStringValue(), "attribute only support string value");
       case ENTITY -> validateEntity(siteId, a, vb);
@@ -267,18 +265,14 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
       case DATE -> validateDate(a, vb);
       case BOOLEAN -> vb.isRequired(a.getKey(), a.getBooleanValue() != null,
           "attribute only support boolean value");
-      case KEY_ONLY -> {
-        if (!isKeyOnlyValues(a)) {
-          String errorMsg = "attribute does not support a value";
-          vb.addError(a.getKey(), errorMsg);
-        }
-      }
-      default -> {
-      }
-    }
+      case KEY_ONLY ->
+        isKeyOnlyValues(a) ? vb : vb.addError(a.getKey(), "attribute does not support a value");
+      case PUBLICATION, WATERMARK, RELATIONSHIP -> vb;
+    };
   }
 
-  private void validateDate(final DocumentAttributeRecord a, final ValidationBuilder vb) {
+  private ValidationBuilder validateDate(final DocumentAttributeRecord a,
+      final ValidationBuilder vb) {
     vb.isRequired(a.getKey(), a.getDateValue(), "attribute only support date value");
 
     if (!isEmpty(a.getDateValueAsString())) {
@@ -288,6 +282,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
         vb.addError(a.getKey(), "invalid date value");
       }
     }
+
+    return vb;
   }
 
   @Override
@@ -360,7 +356,7 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
     return vb.getErrors();
   }
 
-  private void validateEntity(final String siteId, final DocumentAttributeRecord a,
+  private ValidationBuilder validateEntity(final String siteId, final DocumentAttributeRecord a,
       final ValidationBuilder vb) {
     vb.isRequired("entityTypeId", a.getStringValue());
     vb.isRequired("entityId", a.getStringValue());
@@ -388,6 +384,8 @@ public class AttributeValidatorImpl implements AttributeValidator, DbKeys {
           .documentId(entityKey.entityId()).buildKey(siteId);
       vb.isRequired("entityId", this.db.exists(entity), "EntityId does not exist");
     }
+
+    return vb;
   }
 
   private void validateEntityTypeDefaults(final SchemaAttributes attributes,

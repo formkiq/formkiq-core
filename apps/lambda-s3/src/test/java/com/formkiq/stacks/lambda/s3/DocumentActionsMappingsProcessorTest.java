@@ -69,6 +69,7 @@ import com.formkiq.stacks.dynamodb.DocumentVersionServiceNoVersioning;
 import com.formkiq.stacks.dynamodb.SaveDocumentOptions;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.stacks.dynamodb.attributes.AttributeServiceExtension;
+import com.formkiq.stacks.dynamodb.attributes.DocumentAttributeRecordToMap;
 import com.formkiq.stacks.dynamodb.mappings.Mapping;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
@@ -125,6 +126,7 @@ import static com.formkiq.testutils.aws.TypesenseExtension.API_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -1000,6 +1002,51 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
   }
 
   /**
+   * Map a populated AI prompt result to a typed DATE attribute.
+   *
+   * @throws IOException if the prompt result fixture cannot be read
+   */
+  @Test
+  public void testIdpAiPromptResultDate() throws IOException {
+    // given
+    String siteId = ID.uuid();
+    DocumentArtifact document = addTextToBucket(siteId, "Effective date: 2026-11-19");
+    String attributeKey = "agreementEffectiveDate";
+    String promptName = "agreementMetadata";
+
+    try (InputStream input = getClass().getResourceAsStream("/idp-ai-prompt-date.json")) {
+      mockServer
+          .when(request().withMethod("GET")
+              .withPath("/documents/" + document.documentId() + "/ai/prompts/" + promptName))
+          .respond(org.mockserver.model.HttpResponse.response(IoUtils.toUtf8String(input)));
+    }
+
+    attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
+        AttributeDataType.DATE, null);
+    Mapping mapping = createMapping(attributeKey, null, null,
+        MappingAttributeSourceType.AI_PROMPT_RESULT, null, null, null);
+    mapping.attributes().getFirst().setLlmPromptEntityName(promptName);
+    MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+    // when
+    processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+    // then
+    Action action = actionsService.getActions(siteId, document).getFirst();
+    assertEquals(ActionStatus.COMPLETE, action.status(), action::message);
+
+    List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, document);
+    assertEquals(1, results.size());
+    DocumentAttributeRecord attribute = results.getFirst();
+    assertEquals(attributeKey, attribute.getKey());
+    assertEquals(DocumentAttributeValueType.DATE, attribute.getValueType());
+    assertEquals("2026-11-19T00:00:00Z", attribute.getDateValueAsString());
+    Map<String, Object> summary =
+        new DocumentAttributeRecordToMap(true).apply(null, results).iterator().next();
+    assertEquals("2026-11-19T00:00:00Z", summary.get("dateValue"));
+  }
+
+  /**
    * Handle Idp with Mapping Action and SourceType AI_PROMPT_RESULT filtering empty string values.
    *
    */
@@ -1045,6 +1092,64 @@ public class DocumentActionsMappingsProcessorTest implements DbKeys {
       assertEquals(1, results.size());
       assertDocumentAttributeEquals(results.getFirst(), "validValue", "Valid", null);
     }
+  }
+
+  /** Reject an invalid DATE without saving the other mapped value. */
+  @Test
+  public void testIdpInvalidDate() {
+    // given
+    String siteId = ID.uuid();
+    DocumentArtifact document = addTextToBucket(siteId, "agreement");
+    String attributeKey = "agreementDates";
+    attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
+        AttributeDataType.DATE, null);
+    Mapping mapping = createMapping(attributeKey, null, null, MappingAttributeSourceType.MANUAL,
+        null, List.of("2026-11-19", "2026-02-30"), null);
+    MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+    // when
+    processIdpRequest(siteId, document, "text/plain", mappingRecord);
+
+    // then
+    Action action = actionsService.getActions(siteId, document).getFirst();
+    assertEquals(ActionStatus.FAILED, action.status());
+    assertEquals("Invalid DATE for 'agreementDates'. Expected an ISO date or date-time.",
+        action.message());
+    assertTrue(findDocumentAttributes(siteId, document).isEmpty());
+  }
+
+  /** Map multiple manual DATE values to an artifact. */
+  @Test
+  public void testIdpManualArtifactDates() {
+    // given
+    String siteId = ID.uuid();
+    DocumentArtifact parent = addTextToBucket(siteId, "agreement");
+    createDocument(siteId, parent, "text/plain");
+    DocumentArtifact artifact = DocumentArtifact.of(parent.documentId(), ID.uuid());
+    String attributeKey = "agreementDates";
+    attributeService.addAttribute(AttributeValidationAccess.CREATE, siteId, attributeKey,
+        AttributeDataType.DATE, null);
+    Mapping mapping = createMapping(attributeKey, null, null, MappingAttributeSourceType.MANUAL,
+        null, List.of("2026-11-19", "2026-11-19T00:30:00+02:00"), null);
+    MappingRecord mappingRecord = mappingService.saveMapping(siteId, null, mapping);
+
+    // when
+    processIdpRequest(siteId, artifact, "text/plain", mappingRecord);
+
+    // then
+    assertActionCompleted(actionsService.getActions(siteId, artifact).getFirst());
+    assertTrue(findDocumentAttributes(siteId, parent).isEmpty());
+    List<DocumentAttributeRecord> results = findDocumentAttributes(siteId, artifact);
+    assertEquals(2, results.size());
+    for (DocumentAttributeRecord attribute : results) {
+      assertEquals(artifact.documentId(), attribute.getDocumentId());
+      assertEquals(artifact.artifactId(), attribute.getArtifactId());
+      assertEquals(DocumentAttributeValueType.DATE, attribute.getValueType());
+    }
+    Map<String, Object> summary =
+        new DocumentAttributeRecordToMap(true).apply(null, results).iterator().next();
+    assertEquals(List.of("2026-11-18T22:30:00Z", "2026-11-19T00:00:00Z"),
+        summary.get("dateValues"));
   }
 
   /**

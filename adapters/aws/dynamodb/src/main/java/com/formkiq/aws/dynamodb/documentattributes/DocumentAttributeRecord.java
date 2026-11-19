@@ -494,18 +494,13 @@ public class DocumentAttributeRecord implements DynamoDbEntityBuilder<DocumentAt
   }
 
   private String getSkValue(final String sk) {
-    String val = sk;
-    switch (this.valueType) {
-      case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS, ENTITY ->
-        val += this.stringValue;
-      case DATE -> val += this.dateValue;
-      case BOOLEAN -> val += this.booleanValue;
-      case NUMBER -> val += formatDouble(this.numberValue);
-      case KEY_ONLY, PUBLICATION, WATERMARK, JSON -> {
-      }
-      default -> throw new IllegalArgumentException("Unexpected value: " + this.valueType);
-    }
-    return val;
+    return switch (this.valueType) {
+      case STRING, COMPOSITE_STRING, CLASSIFICATION, RELATIONSHIPS, ENTITY -> sk + this.stringValue;
+      case DATE -> sk + this.dateValue;
+      case BOOLEAN -> sk + this.booleanValue;
+      case NUMBER -> sk + formatDouble(this.numberValue);
+      case KEY_ONLY, PUBLICATION, WATERMARK, JSON -> sk;
+    };
   }
 
   /**

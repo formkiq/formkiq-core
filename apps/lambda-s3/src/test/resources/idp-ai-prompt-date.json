@@ -1,0 +1,17 @@
+{
+  "aiPromptResults": [
+    {
+      "values": [
+        {
+          "resultType": "KEY_VALUE",
+          "attributes": [
+            {
+              "key": "agreementEffectiveDate",
+              "stringValues": [" 2026-11-19 ", "", "   "]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

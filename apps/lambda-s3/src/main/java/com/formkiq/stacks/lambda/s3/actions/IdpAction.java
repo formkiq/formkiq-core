@@ -35,15 +35,13 @@ import com.formkiq.stacks.dynamodb.DocumentService;
 import com.formkiq.stacks.dynamodb.GsonUtil;
 import com.formkiq.aws.dynamodb.attributes.AttributeKeyReserved;
 import com.formkiq.aws.dynamodb.attributes.AttributeDataType;
-import com.formkiq.stacks.dynamodb.attributes.AttributeRecord;
 import com.formkiq.stacks.dynamodb.attributes.AttributeService;
 import com.formkiq.aws.dynamodb.attributes.AttributeValidationAccess;
 import com.formkiq.stacks.dynamodb.attributes.AttributeValidationType;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeRecord;
 import com.formkiq.aws.dynamodb.documentattributes.DocumentAttributeValueType;
+import com.formkiq.aws.dynamodb.objects.DateUtil;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttribute;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttributeLabelMatchingType;
-import com.formkiq.stacks.dynamodb.mappings.MappingAttributeMetadataField;
 import com.formkiq.stacks.dynamodb.mappings.MappingAttributeSourceType;
 import com.formkiq.stacks.dynamodb.mappings.MappingClassification;
 import com.formkiq.stacks.dynamodb.mappings.MappingClassificationCondition;
@@ -70,9 +68,12 @@ import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.time.DateTimeException;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,36 +133,30 @@ public class IdpAction implements DocumentAction {
 
     for (MappingAttribute mappingAttribute : mappingAttributes) {
 
-      MappingAttributeSourceType sourceType = mappingAttribute.getSourceType();
-
-      switch (sourceType) {
-        case CONTENT -> records.addAll(processContent(logger, siteId, document, mappingAttribute));
+      List<DocumentAttributeRecord> mappedRecords = switch (mappingAttribute.getSourceType()) {
+        case CONTENT -> processContent(logger, siteId, document, mappingAttribute);
         case CONTENT_KEY_VALUE ->
-          records.addAll(processContentKeyValue(logger, siteId, document, mappingAttribute));
-        case METADATA -> records.addAll(processMetaData(siteId, document, mappingAttribute));
-        case MANUAL -> records.addAll(createDocumentAttribute(siteId, document, mappingAttribute,
-            createValues(mappingAttribute)));
+          processContentKeyValue(logger, siteId, document, mappingAttribute);
+        case METADATA -> processMetaData(siteId, document, mappingAttribute);
+        case MANUAL -> createDocumentAttribute(siteId, document, mappingAttribute,
+            createValues(mappingAttribute));
         case DATA_CLASSIFICATION -> {
           String value = dataClassificationMap.get(mappingAttribute.getAttributeKey());
-          if (!isEmpty(value)) {
-            records.addAll(
-                createDocumentAttribute(siteId, document, mappingAttribute, List.of(value)));
-          }
+          yield isEmpty(value) ? List.of()
+              : createDocumentAttribute(siteId, document, mappingAttribute, List.of(value));
         }
-        case METADATA_EXTRACTION_RESULT -> records.addAll(processMetadataExtraction(siteId,
-            document, mappingAttribute, docMetadataExtractionMap));
-        case AI_PROMPT_RESULT -> records.addAll(
-            processAiPromptResult(siteId, document, mappingAttribute, docAiPromptResultMap));
+        case METADATA_EXTRACTION_RESULT ->
+          processMetadataExtraction(siteId, document, mappingAttribute, docMetadataExtractionMap);
+        case AI_PROMPT_RESULT ->
+          processAiPromptResult(siteId, document, mappingAttribute, docAiPromptResultMap);
 
         case MALWARE_SCAN -> {
           String value = getScanStatus(siteId, document);
-          if (!isEmpty(value)) {
-            records.addAll(
-                createDocumentAttribute(siteId, document, mappingAttribute, List.of(value)));
-          }
+          yield isEmpty(value) ? List.of()
+              : createDocumentAttribute(siteId, document, mappingAttribute, List.of(value));
         }
-        default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
-      }
+      };
+      records.addAll(mappedRecords);
     }
 
     return records;
@@ -296,23 +291,24 @@ public class IdpAction implements DocumentAction {
   }
 
   private DocumentAttributeRecord createDocumentAttribute(final DocumentArtifact document,
-      final AttributeRecord attribute, final String attributeKey, final String matchValue) {
+      final AttributeDataType dataType, final String attributeKey, final String matchValue) {
 
     String username = ApiAuthorization.getAuthorization().getUsername();
     DocumentAttributeRecord r = new DocumentAttributeRecord().setDocument(document)
         .setKey(attributeKey).setUserId(username);
 
-    switch (attribute.getDataType()) {
+    return switch (dataType) {
       case STRING -> r.setValueType(DocumentAttributeValueType.STRING).setStringValue(matchValue);
       case NUMBER -> r.setValueType(DocumentAttributeValueType.NUMBER)
           .setNumberValue(Double.valueOf(matchValue));
       case BOOLEAN -> r.setValueType(DocumentAttributeValueType.BOOLEAN)
           .setBooleanValue(Boolean.valueOf(matchValue));
+      case DATE -> r.setValueType(DocumentAttributeValueType.DATE)
+          .setDateValue(parseMappedDate(attributeKey, matchValue));
       case KEY_ONLY -> r.setValueType(DocumentAttributeValueType.KEY_ONLY);
-      default ->
-        throw new IllegalArgumentException("Unsupported data type: " + attribute.getDataType());
-    }
-    return r;
+      case JSON, PUBLICATION, WATERMARK, RELATIONSHIP, ENTITY ->
+        throw new IllegalArgumentException("Unsupported data type: " + dataType);
+    };
   }
 
   private List<DocumentAttributeRecord> createDocumentAttribute(final String siteId,
@@ -320,13 +316,15 @@ public class IdpAction implements DocumentAction {
       final List<String> matchValues) throws ValidationException {
 
     String attributeKey = mappingAttribute.getAttributeKey();
-    AttributeRecord attribute = this.attributeService.getAttribute(siteId, attributeKey);
+    AttributeDataType dataType =
+        this.attributeService.getAttribute(siteId, attributeKey).getDataType();
 
     List<DocumentAttributeRecord> records = notNull(matchValues).stream()
-        .map(val -> createDocumentAttribute(document, attribute, attributeKey, val)).toList();
+        .filter(val -> dataType != AttributeDataType.DATE || (val != null && !val.isBlank()))
+        .map(val -> createDocumentAttribute(document, dataType, attributeKey, val)).toList();
 
-    if (records.isEmpty() && AttributeDataType.KEY_ONLY.equals(attribute.getDataType())) {
-      records = List.of(createDocumentAttribute(document, attribute, attributeKey, null));
+    if (records.isEmpty() && dataType == AttributeDataType.KEY_ONLY) {
+      records = List.of(createDocumentAttribute(document, dataType, attributeKey, null));
     }
 
     return records;
@@ -409,16 +407,16 @@ public class IdpAction implements DocumentAction {
     TextMatch match = matcher.findMatch(text, labelTexts, new TokenGeneratorRegex(REGEX, FORMATTER),
         alg, REGEX, FORMATTER);
 
-    String value;
-
     String validationRegex = mappingAttribute.getValidationRegex();
     MappingAttributeSourceType sourceType = mappingAttribute.getSourceType();
 
-    switch (sourceType) {
-      case CONTENT -> value = matcher.findMatchValue(text, match, validationRegex);
-      case METADATA -> value = match != null ? match.getToken().getOriginal() : null;
-      default -> throw new IllegalArgumentException("Unsupported source type: " + sourceType);
-    }
+    String value = switch (sourceType) {
+      case CONTENT -> matcher.findMatchValue(text, match, validationRegex);
+      case METADATA -> match != null ? match.getToken().getOriginal() : null;
+      case CONTENT_KEY_VALUE, MANUAL, DATA_CLASSIFICATION, METADATA_EXTRACTION_RESULT,
+          AI_PROMPT_RESULT, MALWARE_SCAN ->
+        throw new IllegalArgumentException("Unsupported source type: " + sourceType);
+    };
 
     List<String> values = Collections.emptyList();
 
@@ -427,8 +425,7 @@ public class IdpAction implements DocumentAction {
     } else if (!notNull(mappingAttribute.getDefaultValues()).isEmpty()) {
       values = mappingAttribute.getDefaultValues();
     } else if (!isEmpty(mappingAttribute.getDefaultValue())) {
-      value = mappingAttribute.getDefaultValue();
-      values = List.of(value);
+      values = List.of(mappingAttribute.getDefaultValue());
     }
 
     return values;
@@ -468,19 +465,13 @@ public class IdpAction implements DocumentAction {
 
   private String getMetadataText(final MappingAttribute mappingAttribute, final String siteId,
       final DocumentArtifact doc) {
-    String text;
-
     DocumentRecord document = this.documentService.findDocument(siteId, doc);
 
-    MappingAttributeMetadataField metadataField = mappingAttribute.getMetadataField();
-    switch (metadataField) {
-      case PATH -> text = document.path();
-      case USERNAME -> text = document.userId();
-      case CONTENT_TYPE -> text = document.contentType();
-      default -> throw new IllegalArgumentException("Unsupported metadata field: " + metadataField);
-    }
-
-    return text;
+    return switch (mappingAttribute.getMetadataField()) {
+      case PATH -> document.path();
+      case USERNAME -> document.userId();
+      case CONTENT_TYPE -> document.contentType();
+    };
   }
 
   private String getScanStatus(final String siteId, final DocumentArtifact document)
@@ -498,20 +489,12 @@ public class IdpAction implements DocumentAction {
   }
 
   private TextMatchAlgorithm getTextMatchAlgorithm(final MappingAttribute mappingAttribute) {
-
-    TextMatchAlgorithm textMatchAlgorithm;
-    MappingAttributeLabelMatchingType labelMatchingType = mappingAttribute.getLabelMatchingType();
-
-    switch (labelMatchingType) {
-      case EXACT -> textMatchAlgorithm = new ExactMatcher();
-      case FUZZY -> textMatchAlgorithm = new FuzzyMatcher();
-      case CONTAINS -> textMatchAlgorithm = new ContainsMatcher();
-      case BEGINS_WITH -> textMatchAlgorithm = new BeginsWithMatcher();
-      default ->
-        throw new IllegalArgumentException("Unsupported label matching type: " + labelMatchingType);
-    }
-
-    return textMatchAlgorithm;
+    return switch (mappingAttribute.getLabelMatchingType()) {
+      case EXACT -> new ExactMatcher();
+      case FUZZY -> new FuzzyMatcher();
+      case CONTAINS -> new ContainsMatcher();
+      case BEGINS_WITH -> new BeginsWithMatcher();
+    };
   }
 
   private boolean matchesCondition(final MappingClassificationCondition condition,
@@ -520,56 +503,52 @@ public class IdpAction implements DocumentAction {
       final Map<String, Map<String, List<String>>> docAiPromptResultMap,
       final String documentContent) {
 
-    List<String> values;
     String expected = condition.resultValue();
     MappingClassificationConditionMatchingType matchingType = condition.matchingType();
 
-    switch (condition.sourceType()) {
-      case CONTENT -> {
-        values = documentContent != null ? List.of(documentContent) : List.of();
-        expected = condition.text();
-      }
-      case DATA_CLASSIFICATION -> {
-        String value = dataClassificationMap.get(condition.resultKey());
-        values = value != null ? List.of(value) : List.of();
-      }
+    return switch (condition.sourceType()) {
+      case CONTENT -> matchesResult(documentContent, condition.text(), matchingType);
+      case DATA_CLASSIFICATION ->
+        matchesResult(dataClassificationMap.get(condition.resultKey()), expected, matchingType);
       case METADATA_EXTRACTION_RESULT -> {
         Map<String, String> extractionResult =
             docMetadataExtractionMap.get(condition.llmPromptEntityName());
         String value =
             extractionResult != null ? extractionResult.get(condition.resultKey()) : null;
-        values = value != null ? List.of(value) : List.of();
+        yield matchesResult(value, expected, matchingType);
       }
       case AI_PROMPT_RESULT -> {
         Map<String, List<String>> aiPromptResult =
             docAiPromptResultMap.get(condition.llmPromptEntityName());
-        values =
-            aiPromptResult != null ? notNull(aiPromptResult.get(condition.resultKey())) : List.of();
+        yield aiPromptResult != null && notNull(aiPromptResult.get(condition.resultKey())).stream()
+            .anyMatch(value -> matchesResult(value, expected, matchingType));
       }
-      default -> throw new IllegalArgumentException(
-          "Unsupported classification condition source type: " + condition.sourceType());
-    }
-
-    String expectedValue = expected;
-    return values.stream().anyMatch(value -> matchesResult(value, expectedValue, matchingType));
+    };
   }
 
   private boolean matchesResult(final String value, final String expected,
       final MappingClassificationConditionMatchingType matchingType) {
 
-    boolean match = false;
-
-    if (value != null) {
-      switch (matchingType) {
-        case EXACT -> match = value.equals(expected);
-        case BEGINS_WITH -> match = value.startsWith(expected);
-        case CONTAINS -> match = value.contains(expected);
-        default ->
-          throw new IllegalArgumentException("Unsupported result matching type: " + matchingType);
-      }
+    if (value == null) {
+      return false;
     }
 
-    return match;
+    return switch (matchingType) {
+      case EXACT -> value.equals(expected);
+      case BEGINS_WITH -> value.startsWith(expected);
+      case CONTAINS -> value.contains(expected);
+    };
+  }
+
+  private Date parseMappedDate(final String attributeKey, final String value) {
+    try {
+      return DateUtil.toDateFromString(value.strip(), ZoneOffset.UTC);
+    } catch (DateTimeException | IllegalArgumentException e) {
+      throw ValidationException.builder()
+          .error(attributeKey,
+              "Invalid DATE for '" + attributeKey + "'. Expected an ISO date or date-time.")
+          .build();
+    }
   }
 
   private List<DocumentAttributeRecord> processAiPromptResult(final String siteId,
