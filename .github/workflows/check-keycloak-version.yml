@@ -1,0 +1,47 @@
+name: Check Keycloak Version
+
+on:
+  schedule:
+    - cron: '35 6 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-keycloak-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Compare with the latest stable Keycloak release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dockerfile=apps/netty-server/keycloak/Dockerfile
+          image_tag=$(sed -n 's|^FROM quay\.io/keycloak/keycloak:\([^ @]*\).*|\1|p' "$dockerfile")
+          if [[ ! "$image_tag" =~ ^([0-9]+\.[0-9]+\.[0-9]+)(-[0-9]+)?$ ]]; then
+            echo "::error file=$dockerfile::Expected a versioned Keycloak base image."
+            exit 1
+          fi
+          current=${BASH_REMATCH[1]}
+
+          latest=$(gh api repos/keycloak/keycloak/releases/latest --jq '.tag_name')
+          latest=${latest#v}
+          if [[ ! "$latest" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error::The latest Keycloak release did not have a stable server version tag.'
+            exit 1
+          fi
+
+          echo "Dockerfile uses Keycloak $image_tag. Latest stable server release is $latest."
+          oldest=$(printf '%s\n' "$current" "$latest" | sort -V | head -n 1)
+          if [[ "$oldest" != "$latest" ]]; then
+            echo "::error file=$dockerfile::Keycloak $latest is available. Update the base image from $image_tag."
+            exit 1
+          fi

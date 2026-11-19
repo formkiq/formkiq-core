@@ -45,6 +45,7 @@ services:
       # - "8100:8100" #uncomment this line and "ENV JAVA_TOOL_OPTIONS" in Dockerfile to enable debugging
     environment:
       PORT: 8080
+      JDK_JAVA_OPTIONS: "-XX:-UseBASE64Intrinsics" # Also mitigate CVE-2026-114938 in prebuilt API images.
       DYNAMODB_URL: http://dynamodb:8000
       SQS_URL: http://elasticmq:9324
       S3_URL: http://minio:9000
@@ -100,7 +101,7 @@ services:
     working_dir: /home/dynamodblocal
 
   keycloak:
-    image: docker.io/formkiq/keycloak:26.8.2
+    image: docker.io/formkiq/keycloak:26.8.2-3
     command: "start-dev --db=dev-file --http-port=8081"
     #command: export --dir /opt/keycloak/data/import/ --realm formkiq --users realm_file #To export data comment line above and uncomment this line
     environment:
