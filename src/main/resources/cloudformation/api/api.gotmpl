@@ -26,10 +26,10 @@ Parameters:
     Type: String
     Description: The Cognito User Pool Client Id
 
-  CognitoAdditionalAppClientId:
+  CognitoAdditionalClientIds:
     Type: String
     Default: ""
-    Description: Optional additional Cognito app client accepted by the document JWT API.
+    Description: Optional comma-separated Cognito app client IDs from the FormKiQ user pool accepted by the document JWT API.
 
   CertificateStackNameHttpApiDomain:
     Type: String
@@ -37,9 +37,9 @@ Parameters:
 
 Conditions:
 
-  HasCognitoAdditionalAppClientId:
+  HasCognitoAdditionalClientIds:
     Fn::Not:
-      - Fn::Equals: [{Ref: CognitoAdditionalAppClientId}, ""]
+      - Fn::Equals: [{Ref: CognitoAdditionalClientIds}, ""]
 
   HasCertificateStackNameHttpApiDomain:
     Fn::Not:

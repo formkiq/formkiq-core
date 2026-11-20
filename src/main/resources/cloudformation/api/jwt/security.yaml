@@ -7,9 +7,13 @@ ApiAuthorization:
       issuer:
         Fn::Sub: https://cognito-idp.${AWS::Region}.${AWS::URLSuffix}/${CognitoUserPool}
       audience:
-        - Fn::Sub: "${CognitoUserPoolClient}"
-        - Fn::If:
-            - HasCognitoAdditionalAppClientId
-            - Ref: CognitoAdditionalAppClientId
-            - Ref: AWS::NoValue
+        Fn::Split:
+          - ','
+          - Fn::Join:
+              - ''
+              - - Ref: CognitoUserPoolClient
+                - Fn::If:
+                    - HasCognitoAdditionalClientIds
+                    - Fn::Sub: ',${CognitoAdditionalClientIds}'
+                    - ''
     identitySource: "$request.header.Authorization"
