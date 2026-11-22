@@ -1,59 +1,98 @@
-<img width="100%" src="https://github.com/formkiq/formkiq-core/raw/master/images/logo.png"/>
+<img width="100%" src="images/logo.png" alt="FormKiQ" />
 
 <div align="center">
 
-[Get Started](https://formkiq.com) · [Documentation](https://docs.formkiq.com/) · [API Reference](https://docs.formkiq.com/docs/category/api-reference) · [Contact Us](mailto:info@formkiq.com)
+[Get Started](#quick-start) · [Documentation](https://docs.formkiq.com/) · [API Reference](https://docs.formkiq.com/docs/category/api-reference) · [Compare Editions](https://formkiq.com/pricing) · [Contact Us](mailto:info@formkiq.com)
 
 [![GitHub Stars](https://img.shields.io/github/stars/formkiq/formkiq-core?color=FFD700&label=Stars&logo=Github)](https://github.com/formkiq/formkiq-core)
-<a href="https://github.com/formkiq/formkiq-core/tree/main/LICENSE" target="_blank">
-<img src="https://img.shields.io/static/v1?label=license&message=MIT&color=white" alt="License">
-</a>
+[![License: MIT](https://img.shields.io/static/v1?label=license&message=MIT&color=white)](LICENSE)
 
 </div>
 
 # FormKiQ Core
 
-FormKiQ Core is the open-source backend for FormKiQ: an API-first document management platform that runs in your AWS account or locally with Docker. It provides document storage, metadata, tagging, search, versioning, events, and access control using AWS-native services.
+**Open-source document management on AWS. Your document layer, under your control.**
+
+FormKiQ Core gives your applications a dedicated document layer: APIs, storage, metadata, classification, OCR, search, and a Web Console. Deploy it into your own AWS account, integrate it into an existing product, or use the console as a standalone document management system. Run locally with Docker for development and evaluation.
+
+Core is MIT-licensed and free for personal and commercial use. You can use, customize, and distribute it; AWS infrastructure and usage charges apply to cloud deployments.
+
+[Explore FormKiQ Core](https://formkiq.com/platform/formkiq-core) · [Understand the document layer](https://formkiq.com/document-layer)
+
+## Watch FormKiQ Core
+
+[![Watch: Deploying FormKiQ Core into your AWS account](https://img.youtube.com/vi/G5R6ldbHYKs/hqdefault.jpg)](https://www.youtube.com/watch?v=G5R6ldbHYKs)
+
+[Watch the deployment walkthrough on YouTube](https://www.youtube.com/watch?v=G5R6ldbHYKs), also featured in the [official AWS Quick Start](https://docs.formkiq.com/docs/getting-started/quick-start).
+
+## See the Web Console
+
+[![FormKiQ Web showing a fictional invoice in the document viewer](docs/images/formkiq-web-document-preview.png)](https://docs.formkiq.com/docs/formkiq-web/working-with-documents)
+
+Screenshot from the [FormKiQ Web Guide](https://docs.formkiq.com/docs/formkiq-web/working-with-documents): Web v4.3.8, Enterprise v1.19.2, with fictional sample data. Available features and navigation vary by edition; Reports and other commercial capabilities shown require a paid edition.
 
 ## Who it’s for
-- Teams building secure file workflows that must remain in their AWS accounts.
-- Regulated workloads needing auditability, retention, and least-privilege access.
-- SaaS platforms delivering per-tenant document storage with isolation and signed links.
-- Ops/support teams needing fast search over PDFs and images without custom pipelines.
+
+- Product and architecture teams adding document management to existing applications.
+- SaaS builders organizing documents across teams and tenants.
+- Organizations that need control over AWS deployment, data location, and integrations.
+- Developers validating a document platform before expanding into workflow automation and governance.
 
 ## Capabilities at a glance
-- Ingest via API Gateway, S3, or email; optional OCR pipeline for images/PDFs.
-- Metadata and tagging for every document plus custom attributes.
-- Full-text/OCR search and filters; show only what each user/tenant should see.
-- Versioning, retention, and audit trails built-in; lifecycle controls via policies.
-- Event hooks via Lambda/SNS/SQS/EventBridge to enrich, classify, notify.
-- SDKs for Java and Python, plus OpenAPI for other languages.
+
+- **Store and retrieve:** document APIs, Amazon S3 storage, and bulk uploads.
+- **Organize:** metadata, tags, classification, and schemas for validation.
+- **Find:** metadata search with DynamoDB and optional basic full-text search with Typesense.
+- **Extract:** OCR using Tesseract for scanned content.
+- **Extend:** document actions, SNS events, and inbound/outbound webhooks.
+- **Serve multiple teams:** multi-team and multi-tenant functionality.
+- **Use a Web Console:** upload, browse, search, view, and share documents through a customizable React interface.
+- **Integrate:** Cognito JWT, API key, and IAM authentication; Java, Python, and TypeScript SDKs; OpenAPI specifications.
 
 ## Why teams choose FormKiQ
-- Data and keys stay in your AWS account; IAM-first access control and audit trails.
-- Built-in metadata/tagging, OCR search, versioning, and retention—no custom boilerplate.
-- Serverless stack that auto-scales; no servers to patch or capacity to size.
-- Multi-tenant ready and SOC 2–aligned design for regulated workloads.
+
+- **Keep deployment control:** run in your AWS account and choose the region for your data.
+- **Build on an existing foundation:** start with working document APIs, search, and a console.
+- **Adapt to your application:** customize the source and connect document events to your systems.
+- **Grow on the same platform:** expand into commercial editions as operational and governance needs increase.
 
 ## Common use cases
-- Records and retention vaults for HR, legal, and finance with audit trails and versioning.
-- Intelligent ingestion: drop into S3/email/API, OCR + metadata tagging, and route via events.
-- Compliance-focused file storage where data must remain in your AWS account with IAM-scoped access.
-- Customer/partner file portals with per-tenant isolation and signed access links.
-- Workflow enrichment: trigger Lambdas on uploads to classify, enrich metadata, notify via SNS/SQS/EventBridge.
-- Searchable knowledge stores over PDFs/images for support and operations teams.
 
-## Deployment options
-- Deploy to your AWS account with the [AWS SAM CLI](https://docs.formkiq.com/docs/getting-started/quick-start#install-with-sam-cli) or CloudFormation links from the Quickstart Guide.
-- Run locally with Docker using the Netty server package.
-- Evaluate in the hosted demo environment (read-only).
-- Inquire about managed workspaces if you prefer a turnkey setup.
+- Embed document storage and retrieval in a SaaS product or internal application.
+- Organize invoices, contracts, case files, and correspondence with searchable metadata.
+- Make scanned documents discoverable using OCR and full-text indexing.
+- Connect uploads and document actions to custom processing and notification services.
+
+## From Core to Enterprise
+
+Core is the open-source foundation of the broader [FormKiQ document and information management platform](https://formkiq.com/platform). Commercial editions add capabilities and support as your requirements grow.
+
+| Edition | Focus |
+| --- | --- |
+| **Core** | Open-source APIs, console, metadata, search, OCR, and extensibility. |
+| **Essentials** | Operational support, SSO, workflows, document control/versioning, and Textract processing. |
+| **Advanced** | Available add-on modules for AI processing, document generation, eSignature, enhanced search, and integrations. |
+| **Enterprise** | Architecture and governance support, tailored deployment models, and enterprise licensing. |
+
+The wider platform supports contract, case, grants, records, and archives management solutions. See the [current feature and edition comparison](https://formkiq.com/pricing) for availability, add-ons, and support terms.
 
 ## Quick Start
-1. **Run locally with Docker**: build and run the local FormKiQ stack on your machine.
-2. **AWS deploy**: use the [AWS SAM CLI](https://docs.formkiq.com/docs/getting-started/quick-start#install-with-sam-cli) or CloudFormation launch links from the [Quickstart Guide](https://docs.formkiq.com/docs/getting-started/quick-start).
-3. **Hosted demo**: [Explore](https://explore.tryformkiq.com/) — Email: `demo@formkiq.com`, Password: `tryformkiq`.
-4. **API walkthrough**: [Step-by-step](https://docs.formkiq.com/docs/getting-started/api-walkthrough) to integrate quickly.
+
+1. **Deploy to AWS:** follow the [AWS Quick Start](https://docs.formkiq.com/docs/getting-started/quick-start) for prerequisites and regional CloudFormation launch links. Allow approximately 15–30 minutes for installation.
+2. **Run locally:** follow [Run locally with Docker](#run-locally-with-docker) below.
+3. **Make your first API call:** follow the [API walkthrough](https://docs.formkiq.com/docs/getting-started/api-walkthrough).
+
+### AWS cost example
+
+Core has no license fee. For an illustration of AWS usage costs, the [AWS Cost Planning guide](https://docs.formkiq.com/docs/platform/costs#illustrative-cost-examples) models adding **1 million documents averaging 1 MB each** (about 1 TB), with basic metadata processing and S3 Standard storage:
+
+| Cost component | Published illustrative cost (USD) |
+| --- | --- |
+| Ingestion: S3 PUT requests, Lambda requests/execution, and DynamoDB writes | About $27 |
+| Storage: about 1 TB in S3 Standard plus 1 GB of DynamoDB metadata | About $30/month |
+| Ingestion plus one month of storage | About $57 |
+
+These rounded figures cover the listed components only. API Gateway, downloads/data transfer, console traffic, authentication, messaging, logs, backups, and networking add costs. OCR, full-text search, replication, and extra document versions are excluded; Typesense adds ongoing compute and storage costs even when idle. The example assumes no Free Tier discounts. Recalculate for your AWS region and workload with the [AWS Pricing Calculator](https://calculator.aws/) before deployment.
 
 ### Run locally with Docker
 The `apps/netty-server` module mimics the AWS API Gateway + Lambda runtime so FormKiQ Core can run as a Docker Compose stack.
@@ -98,29 +137,7 @@ Default local login:
 
 ### Configure Typesense on AWS
 
-Create a Secrets Manager secret in the same AWS account and Region as FormKiQ.
-Choose **Other type of secret**, select **Plaintext**, and store only the Typesense
-API key as the secret's `SecretString`, without a JSON object or surrounding quotes.
-Provide its full ARN as the CloudFormation parameter `TypesenseApiKeySecretArn`,
-along with `VpcStackName`. An empty ARN disables Typesense.
-
-`TypesenseApiKey` is no longer a supported CloudFormation parameter. When upgrading,
-create the secret with your existing Typesense key, remove the old parameter from
-deployment overrides, and supply `TypesenseApiKeySecretArn`. The stack update removes
-the old `/formkiq/<environment>/typesense/ApiKey` SSM parameter. Keep the secret available
-throughout deployment and rollback; FormKiQ does not create or delete this secret.
-
-The ECS task receives the key through its `Secrets` configuration. API, indexing,
-and document-action Lambdas receive the ARN and retrieve the key at runtime. IAM
-permissions allow reads of that secret and KMS decryption for its encryption context.
-For a customer managed KMS key, its key policy must also permit these execution roles.
-
-Updating the secret does not automatically refresh running tasks or cached Lambda
-clients. Coordinate key changes with an ECS service deployment and recycling the
-Typesense-consuming Lambda execution environments. The current single-task Typesense
-service can have a brief search interruption during deployment. Existing task revisions
-may retain the previous plaintext key, so rotate it after migration and validation.
-Local Docker development continues to use its local `TYPESENSE_API_KEY` setting.
+For optional full-text search, follow the [Typesense configuration and migration guide](docs/typesense-configuration.md), including Secrets Manager setup and API key rotation.
 
 ### Common API flow
 1. Log in with `POST /login`.
@@ -129,11 +146,22 @@ Local Docker development continues to use its local `TYPESENSE_API_KEY` setting.
 4. Search, tag, update, or route documents through events as needed.
 
 ## Architecture
-Serverless on AWS: Lambda + API Gateway + S3 + DynamoDB + OpenSearch, with optional modules for OCR, Typesense, and event handling.
 
-<div align="center" style="margin: 30px;">
-<img src="https://raw.githubusercontent.com/formkiq/formkiq-core/master/docs/images/formkiq_architecture.png" style="width:600px;" alt="FormKiQ architecture diagram" />
-</div>
+The AWS foundation uses Lambda, API Gateway, S3, and DynamoDB, with Cognito for user authentication and CloudFront for the Web Console. Optional Typesense provides basic full-text search; Tesseract provides OCR. Document events and webhooks connect Core to downstream services. Typesense uses provisioned compute alongside the serverless API and storage services.
+
+These v1.19.2 diagrams show the broader FormKiQ platform. Orange connectors identify configured capabilities whose availability depends on edition, installed modules, and configuration. Select either diagram to view it at full size.
+
+### Deployment
+
+[![FormKiQ deployment: CloudFormation provisions core resources and enables configured capabilities in your AWS account](docs/images/formkiq-deployment-technical-light-v1.19.2.webp)](docs/images/formkiq-deployment-technical-light-v1.19.2.webp)
+
+Source: [Deployment overview](https://docs.formkiq.com/docs/overview#deployment). The connections show provisioning and configuration relationships.
+
+### Platform architecture
+
+[![FormKiQ platform architecture: API authentication and shared Lambda handler, S3 content, DynamoDB metadata, SNS and SQS processing, and configured integrations](docs/images/formkiq-architecture-technical-light-v1.19.2.webp)](docs/images/formkiq-architecture-technical-light-v1.19.2.webp)
+
+Source: [Platform Overview](https://docs.formkiq.com/docs/platform/overview), including request flows, component descriptions, and diagram sources.
 
 ## Project structure & commands
 - `apps/`: Lambda apps, console, and the local Netty server.
@@ -154,11 +182,6 @@ Common commands:
 ./gradlew licenseReport          # Regenerate license inventory
 ```
 
-## Security, compliance, and scale
-- Data, encryption keys, and access policies remain in your AWS account; IAM secures every interaction.
-- Versioning and audit trails support retention and evidence needs for SOC 2/HIPAA-style controls.
-- Serverless footprint scales with demand; designed for thousands of concurrent requests.
-
 ## Client SDKs
 - **[Java SDK](https://github.com/formkiq/formkiq-client-sdk-java)** — best for JVM backends.
 - **[Python SDK](https://github.com/formkiq/formkiq-client-sdk-python)** — scripting/data workflows.
@@ -177,4 +200,4 @@ Common commands:
 
 ## License
 
-MIT License - © 2020-2025 FormKiQ, Inc. See [LICENSE](LICENSE) for full details.
+FormKiQ Core is available under the [MIT License](LICENSE).
