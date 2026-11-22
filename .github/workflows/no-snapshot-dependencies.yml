@@ -5,6 +5,12 @@ on:
     branches:
       - main
       - master
+    # Match the Gradle files and version catalogs inspected by git grep below.
+    paths:
+      - '**/*.gradle'
+      - '**/*.gradle.kts'
+      - '**/*.versions.toml'
+      - '.github/workflows/no-snapshot-dependencies.yml'
   workflow_dispatch:
 
 permissions:
