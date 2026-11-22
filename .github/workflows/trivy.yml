@@ -5,6 +5,32 @@ on:
     branches:
       - main
       - master
+    # Keep build inputs aligned with gradle.yml, plus Trivy-specific inputs.
+    paths:
+      - '.github/workflows/trivy.yml'
+      - '.github/trivy-cloudformation-parameters.json'
+      - '.trivyignore.yaml'
+      - 'scripts/trivy-readable-report.mjs'
+      - 'integrationTests.yaml'
+      - 'adapters/**'
+      - 'apps/**'
+      - 'domain/**'
+      - 'fkq-lambda-core/**'
+      - 'libs/**'
+      - 'packaging/**'
+      - 'testing/**'
+      - 'src/**'
+      - 'config/**'
+      - 'gradle/**'
+      - '*.gradle'
+      - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'spotless.eclipseformat.xml'
+      - 'docker-compose*.yml'
+      - 'INSTALL.md'
+      - 'LICENSE'
+      - '!apps/console/README.md'
   schedule:
     - cron: '20 6 * * 1'
   workflow_dispatch:

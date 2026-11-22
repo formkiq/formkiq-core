@@ -9,6 +9,30 @@ name: Java CI with Gradle
 
 on:
   push:
+    # Keep this list aligned with the AWS Cloud and Netty distribution inputs.
+    paths:
+      - '.github/workflows/gradle.yml'
+      - 'adapters/**'
+      - 'apps/**'
+      - 'domain/**'
+      - 'fkq-lambda-core/**'
+      - 'libs/**'
+      - 'packaging/**'
+      - 'testing/**'
+      - 'src/**'
+      - 'config/**'
+      - 'gradle/**'
+      - '*.gradle'
+      - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'spotless.eclipseformat.xml'
+      - 'docker-compose*.yml'
+      # These files are included in the AWS Cloud release ZIP.
+      - 'INSTALL.md'
+      - 'LICENSE'
+      # The console README is contributor documentation, not a package input.
+      - '!apps/console/README.md'
   workflow_dispatch:
 
 permissions:
@@ -38,9 +62,10 @@ jobs:
       - name: add binaries to path
         run: |
           mkdir -p "$HOME/.local/bin"
+          export PATH="$HOME/.local/bin:$PATH"
           curl -L -o "$HOME/.local/bin/ytt" https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
           chmod +x "$HOME/.local/bin/ytt"
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           ytt --version
 
           GOMPLATE_VERSION="v4.3.3"
