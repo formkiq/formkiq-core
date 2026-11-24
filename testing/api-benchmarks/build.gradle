@@ -1,0 +1,39 @@
+description = 'FormKiQ API Benchmarks'
+
+dependencies {
+  implementation project(':testing:test-utils')
+  implementation project(':adapters:aws:dynamodb')
+  implementation libs.aws.sdk.auth
+  implementation libs.aws.sdk.regions
+  implementation libs.gson
+  implementation libs.commons.csv
+  implementation libs.okhttp
+
+  runtimeOnly libs.aws.sdk.sts
+
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly libs.junit.platform.launcher
+}
+
+def benchmarkProperties = [
+  'benchmarkUrl', 'benchmarkLabel', 'benchmarkArchitecture', 'benchmarkSiteId',
+  'benchmarkScenarios', 'benchmarkRates', 'benchmarkRequests', 'benchmarkWarmup',
+  'benchmarkRepetitions', 'benchmarkConcurrency', 'benchmarkFixtures', 'benchmarkPayloadBytes',
+  'benchmarkTimeoutSeconds', 'benchmarkRevision'
+]
+
+tasks.named('test', Test) {
+  benchmarkProperties.each { propertyName ->
+    providers.gradleProperty(propertyName).orNull?.with { value ->
+      systemProperty propertyName, value
+    }
+  }
+  systemProperty 'benchmarkReportDir', layout.buildDirectory.dir('reports/api-benchmarks').get().asFile.absolutePath
+  maxParallelForks = 1
+  if (providers.gradleProperty('benchmarkUrl').isPresent()) {
+    outputs.upToDateWhen { false }
+    outputs.doNotCacheIf('Benchmarks must execute against the live instance') { true }
+    testLogging.showStandardStreams = true
+  }
+}
