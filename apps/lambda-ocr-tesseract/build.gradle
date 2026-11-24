@@ -36,43 +36,15 @@ dependencies {
   testRuntimeOnly  libs.junit.platform.launcher
 }
 
-tasks.register('downloadZipFile', Download) {
-  src('https://github.com/bweigel/aws-lambda-tesseract-layer/releases/download/v5.3.9/tesseract-al2-x86.zip')
-  dest(layout.buildDirectory.file('tesseract-al2-x86.zip'))
-  overwrite(false)
-}
-
-tasks.register('downloadAndUnzipFile', Copy) {
-  dependsOn(tasks.named('downloadZipFile'))
-  from({ zipTree(layout.buildDirectory.file('tesseract-al2-x86.zip')) })
-  into(layout.buildDirectory.dir('tesseract'))
-}
-
-tasks.register('buildTesseractLayer', Zip) {
-  dependsOn 'downloadAndUnzipFile'
-  archiveFileName = 'layer-tesseract-5.3.9.zip'
-  destinationDirectory = layout.buildDirectory.dir('distributions/api')
-
-  from(layout.buildDirectory.dir('tesseract')) { spec ->
-    eachFile { details ->
-      if (details.path.matches('lib/libtesseract\\.so\\..*')) {
-        details.path = 'lib/libtesseract.so'
-      }
-    }
-    includeEmptyDirs = false
-
-    // 2) keep only eng/osd traineddata; drop the rest
-    exclude { details ->
-      if (details.path.startsWith('tesseract/tesseract/share/tessdata/')) {
-        def name = details.file.name
-        return !(name in [
-          'eng.traineddata',
-          'osd.traineddata'
-        ])
-      }
-      return false
-    }
-  }
+def layerArchitecture = rootProject.ext.lambdaArchitectureProvider
+tasks.register('buildTesseractLayer', Exec) {
+  description = 'Builds and smoke-tests the Amazon Linux 2023 Tesseract layer.'
+  inputs.dir('layer')
+  inputs.property('lambdaArchitecture', layerArchitecture)
+  outputs.file(layerArchitecture.map {
+    layout.buildDirectory.file("distributions/api/layer-tesseract-5.5.2-${it}.zip").get()
+  })
+  commandLine 'bash', file('layer/build.sh'), layerArchitecture.get()
 }
 
 distZip.dependsOn buildTesseractLayer

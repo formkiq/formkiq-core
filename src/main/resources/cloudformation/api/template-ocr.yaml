@@ -99,7 +99,9 @@ Resources:
     Type: AWS::Serverless::LayerVersion
     Properties:
       Description: Lambda Layer containing Tesseract binary
-      ContentUri: ./layer-tesseract-5.3.9.zip
+      CompatibleArchitectures:
+        - #@ data.values.lambdaArchitecture
+      ContentUri: #@ "./layer-tesseract-5.5.2-" + data.values.lambdaArchitecture + ".zip"
 
   OcrProcessorApiInvokePermission:
     Type: "AWS::Lambda::Permission"
@@ -120,7 +122,7 @@ Resources:
       Description: Lambda function to convert document to Tesseract
       Runtime: java25
       Architectures:
-        - x86_64
+        - #@ data.values.lambdaArchitecture
       Timeout: 
         Fn::Sub: "${LambdaTimeout}"
       MemorySize: 

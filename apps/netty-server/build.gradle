@@ -79,6 +79,7 @@ tasks.named('distZip') {
   group = 'distribution'
   description = 'Builds the Netty server Docker distribution package.'
   archiveBaseName.set("${rootProject.name}-netty-server")
+  archiveClassifier.set(rootProject.ext.lambdaArchitectureProvider)
   destinationDirectory.set(rootProject.layout.buildDirectory.dir("distributions"))
   dependsOn tasks.named('jar')
 }

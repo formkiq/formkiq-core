@@ -37,7 +37,7 @@ Set only one of the JWT/API-key variables. Credentials are not Gradle arguments 
 written to benchmark reports. Tokens and IAM session credentials must remain valid for the
 whole run. HTTPS is required except for loopback endpoints used in local verification.
 
-The target principal needs document read/create/update/delete and attribute search permissions
+The target principal needs document read/create/update/delete, attribute definition create/delete, and attribute search permissions
 on the selected site. Use a dedicated benchmark site with compatible configuration and no
 unrelated processing actions or required schema fields. Site configuration and other existing
 documents are preserved. Site-wide list results include any existing data in that site.
@@ -53,13 +53,14 @@ warm-up. The default workload uses plain-text inline content. It covers:
 | `list_documents` | `GET /documents`, first page, limit 20 |
 | `get_document` | `GET /documents/{documentId}` |
 | `get_content` | `GET /documents/{documentId}/content`, verify text |
-| `search` | `POST /search`, equality on the run's `benchmarkRunId` attribute, limit 20 |
+| `search` | `POST /search`, equality on a unique per-run string attribute, limit 20 |
 | `create_document` | `POST /documents`, unique ID/path and inline text |
 | `update_document` | `PATCH /documents/{documentId}`, one metadata value |
 
 All API requests, including setup and cleanup, use the existing test-utils request builders.
 Reads cycle through the fixture population; updates use one exclusive fixture per worker lane.
-Setup verifies content and search readiness before measurement. Creates use unique document IDs
+Setup registers a unique temporary string attribute definition and verifies content and search
+readiness before measurement. The definition is removed after all owned documents are removed. Creates use unique document IDs
 allocated before submission, including warm-up creates, and are tracked even if a response
 fails or times out. Created documents are removed between warm-up and measurement and between
 cells so the fixture population stays consistent.
@@ -112,6 +113,7 @@ testing/api-benchmarks/build/reports/api-benchmarks/<timestamp>-<unique-id>/
   results.json      Versioned configuration, status, aggregate measurements and failures
   samples.csv       One row per measured scheduled request
   documents.txt     IDs allocated by this run, including ambiguous creates
+  attributes.txt    Temporary attribute definition allocated by this run
 ```
 
 The HTML table shows offered rate, sent/success/error/drop counts, successful throughput,
@@ -133,7 +135,8 @@ including errors; successful-request p95 is also reported. Empty distributions a
 JSON and shown as an em dash in HTML. The normal Gradle/JUnit report is also available.
 
 The runner deletes only document IDs allocated by the current run and writes unresolved IDs
-to `remainingDocuments` in JSON. A not-found deletion after an ambiguous create is retained as
+to `remainingDocuments` in JSON. Unresolved attribute definitions are listed in
+`remainingAttributes`; pre-existing attribute definitions are preserved. A not-found deletion after an ambiguous create is retained as
 unresolved because that create could still commit. Flat document paths avoid creating folders.
 Keep the manifest if the test process is forcibly terminated;
 the normal cleanup/report path cannot execute after a process kill.

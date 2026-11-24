@@ -7,12 +7,20 @@
 
 name: S3 Dev Deployment
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       version:
         description: 'The FormKiQ version number string to deploy.'
         required: true
+      architecture:
+        description: 'Distribution architecture'
+        type: choice
+        required: true
+        default: x86_64
+        options:
+          - x86_64
+          - arm64
       aws-region:
         description: 'AWS region to deploy to'
         type: choice
@@ -31,7 +39,7 @@ on:
           - eu-west-3
           - sa-east-1
         default: 'us-east-2'
-        
+
 permissions:
   contents: read
   id-token: write
@@ -39,9 +47,12 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    env:
+      LAMBDA_ARCHITECTURE: ${{ inputs.architecture }}
 
     steps:
+    - uses: actions/checkout@v5
     - name: Set AWS credentials
       uses: aws-actions/configure-aws-credentials@v6
       with:
@@ -49,15 +60,10 @@ jobs:
         role-session-name: formkiq-core-deployment-dev
         aws-region: ${{ github.event.inputs.aws-region }}
         retry-max-attempts: 3
-    - name: deploy to s3
+    - name: Publish selected architecture to regional S3 buckets
       env:
         S3_BUCKET: ${{ secrets.S3_BUCKET }}
-        formKiQVersion: ${{ github.event.inputs.version }}
-        awsRegion: ${{ github.event.inputs.aws-region }}
-      run: |
-        aws s3 cp s3://${S3_BUCKET}/formkiq-core/formkiq-core-${formKiQVersion}.zip .
-        unzip formkiq-core*
-        sam package --s3-prefix ${formKiQVersion} --s3-bucket formkiq-core-distribution-${awsRegion} --template-file template.yaml --region ${awsRegion} --output-template-file template-${formKiQVersion}.yaml
-        aws s3 cp template-${formKiQVersion}.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/template.yaml
-        aws s3 cp vpc.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/vpc.yaml
-        aws s3 cp vpc-import.yaml s3://formkiq-core-distribution-${awsRegion}/${formKiQVersion}/vpc-import.yaml
+        FORMKIQ_VERSION: ${{ inputs.version }}
+        LAMBDA_ARCHITECTURE: ${{ inputs.architecture }}
+        SELECTED_AWS_REGION: ${{ inputs['aws-region'] }}
+      run: bash scripts/publish-aws-cloud.sh "$FORMKIQ_VERSION" "$LAMBDA_ARCHITECTURE" "$SELECTED_AWS_REGION"

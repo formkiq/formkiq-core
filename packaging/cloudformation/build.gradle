@@ -13,12 +13,7 @@ def openApiPathPartialFiles = {
     include "**/*.yaml"
   }.files.sort { a, b -> a.name <=> b.name ?: a.path <=> b.path }.collect { it.absolutePath }
 }
-def detectedLambdaArchitecture = ["aarch64", "arm64"].contains(System.getProperty("os.arch")) ? "arm64" : "x86_64"
-def lambdaArchitecture = providers.gradleProperty("lambdaArchitecture").orElse(detectedLambdaArchitecture)
-
-if (!["x86_64", "arm64"].contains(lambdaArchitecture.get())) {
-  throw new GradleException("Invalid lambdaArchitecture '${lambdaArchitecture.get()}'. Expected one of: x86_64, arm64")
-}
+def lambdaArchitecture = rootProject.ext.lambdaArchitectureProvider
 
 ytt {
   defaultDataValues.put("version", project.version.toString())

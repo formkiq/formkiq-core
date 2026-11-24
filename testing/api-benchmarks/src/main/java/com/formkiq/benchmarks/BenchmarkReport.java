@@ -82,27 +82,10 @@ public final class BenchmarkReport {
     body.append("<section><h2>Failures and cleanup</h2><pre>")
         .append(escape("Setup/execution failure: " + document.get("failure")
             + "\nWarm-up failures: " + document.get("warmupFailures")
-            + "\nDocuments requiring cleanup: " + document.get("remainingDocuments")))
+            + "\nDocuments requiring cleanup: " + document.get("remainingDocuments")
+            + "\nAttributes requiring cleanup: " + document.get("remainingAttributes")))
         .append("</pre></section>");
-    body.append("""
-        <section><h2>How to read these results</h2>
-        <p>Requests use a fixed arrival rate and bounded concurrency. Drops are scheduled requests
-        the generator could not send; they count against success. Throughput includes the final
-        response drain. Latency measures a synchronous SDK operation and response validation,
-        including serialization and deserialization, excluding fixture setup, warm-up and cleanup.
-        p50/p95/p99 use all attempted operations, including failures; success p95 excludes errors.
-        Warm-up failures are reported separately and fail the run.</p>
-        <p>Each row is one repetition. Compare matching scenario, rate, payload, concurrency,
-        revision and deployment settings across saved architecture runs. Architecture is a supplied
-        label. The report does not verify AWS deployment equivalence, identify cold starts, collect
-        Lambda billed duration or estimate AWS cost. Background processing completion is only
-        checked during fixture setup; measured writes report API acceptance latency.</p>
-        <p>Tail percentiles from fewer than 10,000 attempted requests per cell are exploratory.
-        Keep repeated runs separate when assessing variance. These measurements include network
-        and generator overhead. A run with drops cannot demonstrate the requested sustainable
-        throughput. Cleanup removes only document IDs in this run's manifest; failed or ambiguous
-        creates remain listed for cleanup if deletion fails.</p></section></main></html>
-        """);
+    body.append(notes());
     return body.toString();
   }
 
@@ -128,6 +111,43 @@ public final class BenchmarkReport {
       body.append("</tr>");
     }
     body.append("</tbody></table></section>");
+  }
+
+  private String notes() {
+    return """
+        <section><h2>How to read these results</h2>
+        <p>Requests use a fixed arrival rate and bounded concurrency. Drops are
+        scheduled requests
+        the generator could not send; they count against success. Throughput
+        includes the final
+        response drain. Latency measures a synchronous SDK operation and response
+        validation,
+        including serialization and deserialization, excluding fixture setup, warm-
+        up and cleanup.
+        p50/p95/p99 use all attempted operations, including failures; success p95
+        excludes errors.
+        Warm-up failures are reported separately and fail the run.</p>
+        <p>Each row is one repetition. Compare matching scenario, rate, payload,
+        concurrency,
+        revision and deployment settings across saved architecture runs.
+        Architecture is a supplied
+        label. The report does not verify AWS deployment equivalence, identify cold
+        starts, collect
+        Lambda billed duration or estimate AWS cost. Background processing
+        completion is only
+        checked during fixture setup; measured writes report API acceptance
+        latency.</p>
+        <p>Tail percentiles from fewer than 10,000 attempted requests per cell are
+        exploratory.
+        Keep repeated runs separate when assessing variance. These measurements
+        include network
+        and generator overhead. A run with drops cannot demonstrate the requested
+        sustainable
+        throughput. Cleanup removes only documents and attributes allocated by this
+        run; failed or ambiguous
+        creates remain listed for cleanup if deletion
+        fails.</p></section></main></html>
+        """;
   }
 
   /**

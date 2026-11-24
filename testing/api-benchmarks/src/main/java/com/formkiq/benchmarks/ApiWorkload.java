@@ -27,6 +27,8 @@ import com.formkiq.client.invoker.ApiClient;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.DocumentSearchAttribute;
 import com.formkiq.testutils.api.VersionRequestBuilder;
+import com.formkiq.testutils.api.attributes.AddAttributeRequestBuilder;
+import com.formkiq.testutils.api.attributes.DeleteAttributeRequestBuilder;
 import com.formkiq.testutils.api.documents.AddDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.DeleteDocumentRequestBuilder;
 import com.formkiq.testutils.api.documents.GetDocumentContentRequestBuilder;
@@ -78,6 +80,13 @@ public final class ApiWorkload {
   private final ApiClient client;
   /** Unique attribute value and path prefix. */
   private final String runId;
+  /** Unique string attribute definition owned by this run. */
+  private final String attributeKey =
+      "benchmarkRunId" + UUID.randomUUID().toString().replace("-", "");
+  /** Whether the attribute definition still needs cleanup. */
+  private boolean attributeAllocated;
+  /** Persisted attribute definition manifest. */
+  private final Path attributeManifest;
   /** Deterministic text content. */
   private final String content;
   /** Persisted cleanup manifest, including potentially ambiguous create responses. */
@@ -110,6 +119,7 @@ public final class ApiWorkload {
     this.runId = benchmarkRunId;
     this.content = "x".repeat(config.payloadBytes());
     this.manifest = reportDirectory.resolve("documents.txt");
+    this.attributeManifest = reportDirectory.resolve("attributes.txt");
     client.setHttpClient(client.getHttpClient().newBuilder().addInterceptor(chain -> {
       var response = chain.proceed(chain.request());
       responseInfo.set(new ResponseInfo(response.code(),
@@ -157,7 +167,17 @@ public final class ApiWorkload {
    * @return IDs requiring manual cleanup
    */
   public List<String> cleanup() {
-    return deleteDocuments(List.copyOf(ownedIds));
+    List<String> remaining = deleteDocuments(List.copyOf(ownedIds));
+    if (remaining.isEmpty() && attributeAllocated) {
+      try {
+        var result =
+            new DeleteAttributeRequestBuilder(attributeKey).submit(client, config.siteId());
+        attributeAllocated = result.isError();
+      } catch (RuntimeException exception) {
+        // Retain the persisted attribute key for manual cleanup.
+      }
+    }
+    return remaining;
   }
 
   /**
@@ -178,7 +198,7 @@ public final class ApiWorkload {
     try {
       var response = new AddDocumentRequestBuilder().documentId(id)
           .path("api-benchmark-" + runId + "-" + id + ".txt").content(content)
-          .contentType("text/plain").addAttribute("benchmarkRunId", runId)
+          .contentType("text/plain").addAttribute(attributeKey, runId)
           .submitOk(client, config.siteId()).response();
       require(response != null && id.equals(response.getDocumentId()));
     } catch (ApiException exception) {
@@ -273,7 +293,7 @@ public final class ApiWorkload {
       }
       case SEARCH -> {
         var response = new SearchDocumentRequestBuilder()
-            .attribute(new DocumentSearchAttribute().key("benchmarkRunId").eq(runId))
+            .attribute(new DocumentSearchAttribute().key(attributeKey).eq(runId))
             .limit(String.valueOf(PAGE_SIZE)).submitOk(client, site).response();
         require(response != null && response.getDocuments() != null
             && !response.getDocuments().isEmpty());
@@ -301,6 +321,9 @@ public final class ApiWorkload {
     var version = new VersionRequestBuilder().submitOk(client, config.siteId()).response();
     require(version != null && version.getVersion() != null);
     if (config.scenarios().stream().anyMatch(scenario -> scenario != Scenario.VERSION)) {
+      Files.writeString(attributeManifest, attributeKey + System.lineSeparator());
+      attributeAllocated = true;
+      new AddAttributeRequestBuilder().keyAsString(attributeKey).submitOk(client, config.siteId());
       for (int lane = 0; lane < config.fixtures(); lane++) {
         String id = allocateDocument();
         create(id);
@@ -315,4 +338,14 @@ public final class ApiWorkload {
     }
     return version.getVersion();
   }
+
+  /**
+   * Find attribute definitions that still require cleanup.
+   * 
+   * @return unresolved attribute keys
+   */
+  public List<String> remainingAttributes() {
+    return attributeAllocated ? List.of(attributeKey) : List.of();
+  }
+
 }

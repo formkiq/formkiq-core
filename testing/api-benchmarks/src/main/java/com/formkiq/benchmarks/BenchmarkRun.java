@@ -48,6 +48,8 @@ public final class BenchmarkRun {
   private final ConcurrentLinkedQueue<String> warmupFailures = new ConcurrentLinkedQueue<>();
   /** Documents requiring manual cleanup. */
   private List<String> remainingDocuments = List.of();
+  /** Attribute definitions requiring manual cleanup. */
+  private List<String> remainingAttributes = List.of();
   /** Sanitized fatal failure; never includes API bodies or credential material. */
   private String failure = "";
   /** FormKiQ version returned by the target. */
@@ -65,6 +67,7 @@ public final class BenchmarkRun {
     this.config = benchmarkConfig;
     Files.createDirectories(directory());
     Files.createFile(directory().resolve("documents.txt"));
+    Files.createFile(directory().resolve("attributes.txt"));
   }
 
   /**
@@ -94,7 +97,8 @@ public final class BenchmarkRun {
     return Map.of("schemaVersion", 1, "runId", runId, "configuration", config.metadata(),
         "formkiqVersion", version, "successful", successful(), "failure", failure, "warmupFailures",
         List.copyOf(warmupFailures), "remainingDocuments", remainingDocuments, "results",
-        cells.stream().map(CellResult::summary).toList());
+        cells.stream().map(CellResult::summary).toList(), "remainingAttributes",
+        remainingAttributes);
   }
 
   /**
@@ -123,6 +127,7 @@ public final class BenchmarkRun {
       boolean interrupted = Thread.interrupted();
       try {
         remainingDocuments = workload.cleanup();
+        remainingAttributes = workload.remainingAttributes();
         new BenchmarkReport().write(this);
       } finally {
         client.getHttpClient().connectionPool().evictAll();
@@ -173,6 +178,7 @@ public final class BenchmarkRun {
   public boolean successful() {
     boolean complete =
         failure.isEmpty() && warmupFailures.isEmpty() && remainingDocuments.isEmpty();
+    complete = complete && remainingAttributes.isEmpty();
     return complete && !cells.isEmpty()
         && cells.stream().allMatch(cell -> cell.successes() == cell.samples().size());
   }

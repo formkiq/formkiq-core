@@ -12,6 +12,7 @@ on:
     # Keep this list aligned with the AWS Cloud and Netty distribution inputs.
     paths:
       - '.github/workflows/gradle.yml'
+      - 'scripts/publish-aws-cloud.sh'
       - 'adapters/**'
       - 'apps/**'
       - 'domain/**'
@@ -34,6 +35,15 @@ on:
       # The console README is contributor documentation, not a package input.
       - '!apps/console/README.md'
   workflow_dispatch:
+    inputs:
+      architecture:
+        description: 'Lambda build architecture'
+        type: choice
+        required: true
+        default: x86_64
+        options:
+          - x86_64
+          - arm64
 
 permissions:
   contents: read
@@ -42,7 +52,10 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    name: Build (${{ inputs.architecture || 'x86_64' }})
+    runs-on: ${{ inputs.architecture == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    env:
+      LAMBDA_ARCHITECTURE: ${{ inputs.architecture || 'x86_64' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -59,20 +72,24 @@ jobs:
           ossIndexPassword=${{ secrets.OSS_INDEX_PASSWORD }}
           nvdKey=${{ secrets.NVD_KEY }}
           EOF
-      - name: add binaries to path
+      - name: Install architecture-specific build tools
         run: |
+          case "$LAMBDA_ARCHITECTURE/$RUNNER_ARCH" in
+            x86_64/X64) tool_arch=amd64 ;;
+            arm64/ARM64) tool_arch=arm64 ;;
+            *) echo "Runner does not match $LAMBDA_ARCHITECTURE" >&2; exit 1 ;;
+          esac
           mkdir -p "$HOME/.local/bin"
-          export PATH="$HOME/.local/bin:$PATH"
-          curl -L -o "$HOME/.local/bin/ytt" https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-amd64
-          chmod +x "$HOME/.local/bin/ytt"
+          curl --fail --silent --show-error --location --retry 3 \
+            -o "$HOME/.local/bin/ytt" \
+            "https://github.com/vmware-tanzu/carvel-ytt/releases/download/v0.41.1/ytt-linux-$tool_arch"
+          curl --fail --silent --show-error --location --retry 3 \
+            -o "$HOME/.local/bin/gomplate" \
+            "https://github.com/hairyhenderson/gomplate/releases/download/v4.3.3/gomplate_linux-$tool_arch"
+          chmod +x "$HOME/.local/bin/ytt" "$HOME/.local/bin/gomplate"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          ytt --version
-
-          GOMPLATE_VERSION="v4.3.3"
-          curl -L -o "$HOME/.local/bin/gomplate" \
-            https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_linux-amd64
-          chmod +x "$HOME/.local/bin/gomplate"
-          gomplate --version
+          "$HOME/.local/bin/ytt" --version
+          "$HOME/.local/bin/gomplate" --version
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -82,20 +99,44 @@ jobs:
         uses: actions/cache@v5
         with:
           path: build/aws-cognito-v${{ env.AWS_COGNITO_VERSION }}.zip
-          key: cognito-${{ runner.os }}-v${{ env.AWS_COGNITO_VERSION }}
+          key: cognito-${{ runner.os }}-${{ runner.arch }}-v${{ env.AWS_COGNITO_VERSION }}
           restore-keys: |
-            cognito-${{ runner.os }}-
+            cognito-${{ runner.os }}-${{ runner.arch }}-
       - name: Build Project
-        timeout-minutes: 35
+        timeout-minutes: 60
         env:
           PUBLISH_SCANS: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
             && (github.ref_name == 'master' ||  github.ref_name == 'main' || startsWith(github.ref_name, 'v')) }}
-        run: ./gradlew assembleAwsCloud assembleNettyServer --scan --no-daemon --console=plain
+        run: >-
+          ./gradlew assembleAwsCloud assembleNettyServer
+          -PlambdaArchitecture="$LAMBDA_ARCHITECTURE"
+          --scan --no-daemon --console=plain
+      - name: Select distribution packages
+        id: packages
+        run: |
+          mapfile -t aws_packages < <(find build/distributions -maxdepth 1 -type f \
+            -name "formkiq-core-*-$LAMBDA_ARCHITECTURE.zip" ! -name "formkiq-core-netty-server-*-$LAMBDA_ARCHITECTURE.zip")
+          mapfile -t netty_packages < <(find build/distributions -maxdepth 1 -type f \
+            -name "formkiq-core-netty-server-*-$LAMBDA_ARCHITECTURE.zip")
+          if [[ "${#aws_packages[@]}" -ne 1 || "${#netty_packages[@]}" -ne 1 ]]; then
+            echo "Expected exactly one AWS Cloud and one Netty package" >&2
+            exit 1
+          fi
+          printf 'aws_cloud=%s\n' "${aws_packages[0]}" >> "$GITHUB_OUTPUT"
+          printf 'netty=%s\n' "${netty_packages[0]}" >> "$GITHUB_OUTPUT"
+      - name: Upload distribution packages
+        uses: actions/upload-artifact@v6
+        with:
+          name: formkiq-packages-${{ env.LAMBDA_ARCHITECTURE }}
+          path: |
+            ${{ steps.packages.outputs.aws_cloud }}
+            ${{ steps.packages.outputs.netty }}
+          retention-days: 14
       - name: Upload test reports
         uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: test-reports
+          name: test-reports-${{ env.LAMBDA_ARCHITECTURE }}
           path: "**/build/reports/*"
           retention-days: 5
       - name: Set AWS credentials
@@ -106,13 +147,11 @@ jobs:
           aws-region: us-east-2
           retry-max-attempts: 3
 
-      # Runs a set of commands using the runners shell
-      - name: Deploy to S3
+      - name: Publish distribution archives to S3
         env:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
-          DISTRIBUTION_ID: ${{ secrets.DISTRIBUTION_ID }}
+          AWS_CLOUD_PACKAGE: ${{ steps.packages.outputs.aws_cloud }}
+          NETTY_PACKAGE: ${{ steps.packages.outputs.netty }}
         run: |
-          find ./build/distributions -maxdepth 1 -type f -name 'formkiq-core-*.zip' ! -name 'formkiq-core-netty-server-*.zip' \
-            -exec aws s3 cp {} s3://${S3_BUCKET}/formkiq-core/ \;
-          find ./build/distributions -maxdepth 1 -type f -name 'formkiq-core-netty-server-*.zip' \
-            -exec aws s3 cp {} s3://${S3_BUCKET}/formkiq-core-netty-server/ \;
+          aws s3 cp "$AWS_CLOUD_PACKAGE" "s3://$S3_BUCKET/formkiq-core/$LAMBDA_ARCHITECTURE/"
+          aws s3 cp "$NETTY_PACKAGE" "s3://$S3_BUCKET/formkiq-core-netty-server/$LAMBDA_ARCHITECTURE/"

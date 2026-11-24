@@ -1,0 +1,51 @@
+name: Build Tesseract Layer
+on:
+  push:
+    paths:
+      - '.github/workflows/tesseract-layer.yml'
+      - 'apps/lambda-ocr-tesseract/layer/**'
+      - 'apps/lambda-ocr-tesseract/build.gradle'
+  workflow_dispatch:
+    inputs:
+      architecture:
+        description: 'Lambda layer architecture'
+        type: choice
+        required: true
+        default: x86_64
+        options:
+          - x86_64
+          - arm64
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  build:
+    name: Build (${{ inputs.architecture || 'x86_64' }})
+    runs-on: ${{ inputs.architecture == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    env:
+      LAMBDA_ARCHITECTURE: ${{ inputs.architecture || 'x86_64' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: temurin
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build and smoke-test layer
+        timeout-minutes: 30
+        run: ./gradlew :apps:lambda-ocr-tesseract:buildTesseractLayer -PlambdaArchitecture="$LAMBDA_ARCHITECTURE" --no-daemon --console=plain
+      - name: Upload layer package
+        uses: actions/upload-artifact@v6
+        with:
+          name: tesseract-layer-${{ env.LAMBDA_ARCHITECTURE }}
+          path: apps/lambda-ocr-tesseract/build/distributions/api/layer-tesseract-5.5.2-${{ env.LAMBDA_ARCHITECTURE }}.zip
+          if-no-files-found: error
+      - name: Set AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-2
+      - name: Publish layer ZIP
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        run: aws s3 cp "apps/lambda-ocr-tesseract/build/distributions/api/layer-tesseract-5.5.2-$LAMBDA_ARCHITECTURE.zip" "s3://$S3_BUCKET/formkiq-core-layer-tesseract/$LAMBDA_ARCHITECTURE/"

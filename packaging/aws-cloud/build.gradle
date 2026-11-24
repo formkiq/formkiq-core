@@ -16,6 +16,7 @@ def awsCloudPackageTasks = [
 tasks.named('distZip') {
   description = 'Builds the AWS Cloud distribution package.'
   archiveBaseName.set(rootProject.name)
+  archiveClassifier.set(rootProject.ext.lambdaArchitectureProvider)
   destinationDirectory.set(rootProject.layout.buildDirectory.dir("distributions"))
   dependsOn awsCloudPackageTasks, ':packaging:cloudformation:yttRenderAll'
 }
@@ -50,7 +51,10 @@ distributions {
       from rootProject.file('apps/lambda-api/build/distributions')
       from rootProject.file('apps/lambda-s3/build/distributions')
       from rootProject.file('apps/lambda-typesense/build/distributions')
-      from rootProject.file('apps/lambda-ocr-tesseract/build/distributions')
+      from(rootProject.file('apps/lambda-ocr-tesseract/build/distributions')) {
+        include 'api/formkiq-module-lambda-ocr-tesseract.zip'
+        include "api/layer-tesseract-5.5.2-${rootProject.ext.lambdaArchitectureProvider.get()}.zip"
+      }
       from rootProject.file('apps/lambda-apikey-authorizer/build/distributions')
       into '/'
     }

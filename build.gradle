@@ -10,9 +10,16 @@ plugins {
 
 repositories { mavenCentral() }
 
+def detectedLambdaArchitecture = ["aarch64", "arm64"].contains(System.getProperty("os.arch")) ? "arm64" : "x86_64"
+def lambdaArchitecture = providers.gradleProperty("lambdaArchitecture").orElse(detectedLambdaArchitecture)
+if (!["x86_64", "arm64"].contains(lambdaArchitecture.get())) {
+  throw new GradleException("Invalid lambdaArchitecture '${lambdaArchitecture.get()}'. Expected one of: x86_64, arm64")
+}
+ext.lambdaArchitectureProvider = lambdaArchitecture
+
 allprojects {
 
-  version = '1.19.2'
+  version = '1.20.0'
 
   plugins.withType(JavaPlugin).configureEach {
     java {
@@ -23,6 +30,13 @@ allprojects {
   }
 
   group = 'com.formkiq.stacks'
+
+  tasks.withType(com.formkiq.gradle.GraalvmNativeTask).configureEach {
+    // Native outputs cannot be shared between target architectures or build hosts.
+    inputs.property('lambdaArchitecture', lambdaArchitecture)
+    inputs.property('nativeBuildHostArchitecture', System.getProperty('os.arch'))
+    inputs.property('nativeBuildHostOs', System.getProperty('os.name'))
+  }
 
   configurations.all {
     resolutionStrategy {

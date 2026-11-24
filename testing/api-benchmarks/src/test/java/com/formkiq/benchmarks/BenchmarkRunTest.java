@@ -60,6 +60,8 @@ class BenchmarkRunTest {
     private final HttpServer server;
     /** In-memory documents, including an unrelated document that must survive. */
     private final Map<String, JsonObject> documents = new ConcurrentHashMap<>();
+    /** Attribute definitions, including an unrelated definition that must survive. */
+    private final Map<String, JsonObject> attributes = new ConcurrentHashMap<>();
     /** Create endpoint status used to inject failures. */
     private final AtomicInteger createStatus = new AtomicInteger(201);
     /** Get metadata endpoint status for measured failure injection. */
@@ -75,9 +77,32 @@ class BenchmarkRunTest {
     Instance() throws IOException {
       server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
       documents.put("unrelated", new JsonObject());
+      attributes.put("unrelated", new JsonObject());
       server.createContext("/", this::handle);
       server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
       server.start();
+    }
+
+    private Created attribute(final HttpExchange exchange) throws IOException {
+      if ("POST".equals(exchange.getRequestMethod())) {
+        var request = new Gson().fromJson(
+            new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8),
+            JsonObject.class);
+        JsonObject definition = request.getAsJsonObject("attribute");
+        attributes.put(definition.get("key").getAsString(), definition);
+        return new Created(201, "{}");
+      }
+      String path = exchange.getRequestURI().getPath();
+      String key = path.substring(path.lastIndexOf('/') + 1);
+      int status = deleteStatus.get();
+      if ("DELETE".equals(exchange.getRequestMethod())) {
+        if (status == 200) {
+          status = attributes.remove(key) == null ? 404 : 200;
+        }
+        return new Created(status, "{}");
+      }
+      return new Created(attributes.containsKey(key) ? 200 : 404,
+          new Gson().toJson(Map.of("attribute", attributes.getOrDefault(key, new JsonObject()))));
     }
 
     @Override
@@ -91,6 +116,12 @@ class BenchmarkRunTest {
           new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8),
           JsonObject.class);
       String id = request.get("documentId").getAsString();
+      for (var value : request.getAsJsonArray("attributes")) {
+        String key = value.getAsJsonObject().get("key").getAsString();
+        if (!attributes.containsKey(key)) {
+          return new Created(400, new Gson().toJson(Map.of("message", "Attribute not found")));
+        }
+      }
       int status = createStatus.get();
       if (status < 300 || ambiguousCreate) {
         documents.put(id, request);
@@ -117,7 +148,11 @@ class BenchmarkRunTest {
       String id = path.substring(path.lastIndexOf('/') + 1);
       String body;
       int status = 200;
-      if ("/version".equals(path)) {
+      if (path.startsWith("/attributes")) {
+        var result = attribute(exchange);
+        status = result.status();
+        body = result.body();
+      } else if ("/version".equals(path)) {
         body = "{\"version\":\"test-version\"}";
       } else if ("/documents".equals(path) && "POST".equals(method)) {
         var created = create(exchange);
@@ -209,6 +244,7 @@ class BenchmarkRunTest {
 
       // then
       assertFalse(run.successful());
+      assertEquals(1, report.getAsJsonArray("remainingAttributes").size());
       assertTrue(report.getAsJsonArray("remainingDocuments").size() > 0);
       assertTrue(Files.exists(run.directory().resolve("report.html")));
       assertTrue(instance.documents.containsKey("unrelated"));
@@ -277,6 +313,8 @@ class BenchmarkRunTest {
       // then
       assertTrue(run.successful(), json);
       assertEquals(7, run.cells().size());
+      assertEquals(1, instance.attributes.size());
+      assertTrue(instance.attributes.containsKey("unrelated"));
       assertEquals(1, instance.documents.size());
       assertTrue(instance.documents.containsKey("unrelated"));
       assertTrue(html.contains("&lt;test instance&gt;"));
