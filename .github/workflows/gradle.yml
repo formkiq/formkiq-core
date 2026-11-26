@@ -40,10 +40,10 @@ on:
         description: 'Lambda build architecture'
         type: choice
         required: true
-        default: x86_64
+        default: arm64
         options:
-          - x86_64
           - arm64
+          - x86_64
 
 permissions:
   contents: read
@@ -52,10 +52,10 @@ permissions:
 jobs:
   build:
 
-    name: Build (${{ inputs.architecture || 'x86_64' }})
-    runs-on: ${{ inputs.architecture == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    name: Build (${{ inputs.architecture || 'arm64' }})
+    runs-on: ${{ inputs.architecture == 'x86_64' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
     env:
-      LAMBDA_ARCHITECTURE: ${{ inputs.architecture || 'x86_64' }}
+      LAMBDA_ARCHITECTURE: ${{ inputs.architecture || 'arm64' }}
 
     steps:
       - uses: actions/checkout@v5

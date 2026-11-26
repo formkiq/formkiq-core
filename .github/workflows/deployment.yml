@@ -17,10 +17,10 @@ on:
         description: 'Distribution architecture'
         type: choice
         required: true
-        default: x86_64
+        default: arm64
         options:
-          - x86_64
           - arm64
+          - x86_64
 
 permissions:
   contents: read
