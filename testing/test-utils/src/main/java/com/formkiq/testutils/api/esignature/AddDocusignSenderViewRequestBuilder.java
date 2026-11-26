@@ -48,11 +48,26 @@ public class AddDocusignSenderViewRequestBuilder
   /** Request parameter. */
   private String artifactId;
 
+  /** DocuSign account selection. */
+  private String accountId;
+
   @Override
   public ApiHttpResponse<AddDocusignSenderViewResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(() -> new ESignatureApi(apiClient).addDocusignSenderView(this.documentId,
-        this.envelopeId, this.addDocusignSenderViewRequest, siteId, this.artifactId));
+    return executeApiCall(
+        () -> new ESignatureApi(apiClient).addDocusignSenderView(this.documentId, this.envelopeId,
+            this.addDocusignSenderViewRequest, siteId, this.artifactId, this.accountId));
+  }
+
+  /**
+   * Set the DocuSign account ID.
+   *
+   * @param value DocuSign account ID
+   * @return this builder
+   */
+  public AddDocusignSenderViewRequestBuilder withAccountId(final String value) {
+    this.accountId = value;
+    return this;
   }
 
   /**

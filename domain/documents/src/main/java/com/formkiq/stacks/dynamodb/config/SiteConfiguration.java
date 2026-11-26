@@ -25,14 +25,9 @@ package com.formkiq.stacks.dynamodb.config;
 
 import static com.formkiq.aws.dynamodb.DbKeys.PREFIX_CONFIG;
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.ADDITIONAL_DOCUSIGN_ACCOUNTS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUSIGN_ENVIRONMENT;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_CONNECT_URL;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_USER_ID;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
@@ -48,7 +43,6 @@ import com.formkiq.graalvm.annotations.Reflectable;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,7 +56,8 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     SiteConfigurationNotification notification, SiteConfigurationDocument document,
     SiteConfigurationOcr ocr, SiteConfigurationGoogle google, SiteConfigurationDocusign docusign,
     String documentTimeToLive, String webhookTimeToLive, SiteConfigurationWebUi webui,
-    SiteConfigurationBranding branding) {
+    SiteConfigurationBranding branding,
+    List<SiteConfigurationDocusign> additionalDocusignAccounts) {
 
   /**
    * Construct a {@link SiteConfiguration} from a DynamoDB attribute map.
@@ -86,7 +81,8 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
 
     SiteConfigurationOcr ocr = getSiteConfigurationOcr(attributes);
     SiteConfigurationGoogle google = getSiteConfigurationGoogle(attributes);
-    SiteConfigurationDocusign docusign = getSiteConfigurationDocusign(attributes);
+    SiteConfigurationDocusign docusign = SiteConfigurationDocusign.fromAttributeMap(attributes);
+    List<SiteConfigurationDocusign> additionalAccounts = getAdditionalDocusignAccounts(attributes);
     SiteConfigurationDocument document = getSiteConfigurationDocument(attributes);
     SiteConfigurationWebUi webui = getSiteConfigurationWebUi(attributes);
     SiteConfigurationNotification notification =
@@ -98,7 +94,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
 
     return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
         maxWebhooks, notificationEmail, notification, document, ocr, google, docusign,
-        documentTimeToLive, webhookTimeToLive, webui, branding);
+        documentTimeToLive, webhookTimeToLive, webui, branding, additionalAccounts);
   }
 
   private static SiteConfigurationDocument getSiteConfigurationDocument(
@@ -130,27 +126,13 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     return new SiteConfigurationDocument(contentTypes, retentionAndDisposition);
   }
 
-  private static SiteConfigurationDocusign getSiteConfigurationDocusign(
+  private static List<SiteConfigurationDocusign> getAdditionalDocusignAccounts(
       final Map<String, AttributeValue> attributes) {
-    SiteConfigurationDocusign docusign = null;
-    String environment = DynamoDbTypes.toString(attributes.get(DOCUSIGN_ENVIRONMENT));
-    String docusignUserId = DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_USER_ID));
-    String docusignIntegrationKey =
-        DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_INTEGRATION_KEY));
-    String docusignRsaPrivateKey =
-        DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_RSA_PRIVATE_KEY));
-    String docusignHmacSignature =
-        DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_HMAC_SIGNATURE));
-    String docusignConnectUrl = DynamoDbTypes.toString(attributes.get(KEY_DOCUSIGN_CONNECT_URL));
-
-    String[] values = {environment, docusignUserId, docusignIntegrationKey, docusignRsaPrivateKey,
-        docusignHmacSignature, docusignConnectUrl};
-    if (Arrays.stream(values).anyMatch(value -> !Strings.isEmpty(value))) {
-      docusign = new SiteConfigurationDocusign(environment, docusignUserId, docusignIntegrationKey,
-          docusignRsaPrivateKey, docusignHmacSignature, docusignConnectUrl);
-    }
-
-    return docusign;
+    AttributeValue accounts = attributes.get(ADDITIONAL_DOCUSIGN_ACCOUNTS);
+    return accounts != null
+        ? accounts.l().stream()
+            .map(account -> SiteConfigurationDocusign.fromAttributeMap(account.m())).toList()
+        : null;
   }
 
   private static SiteConfigurationOcr getSiteConfigurationOcr(
@@ -243,6 +225,8 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     private SiteConfigurationGoogle google;
     /** Docusign integration configuration. */
     private SiteConfigurationDocusign docusign;
+    /** Additional DocuSign account configurations. */
+    private List<SiteConfigurationDocusign> additionalDocusignAccounts;
     /** Document TTL value (stored as string). */
     private String documentTimeToLive;
     /** Webhook TTL value (stored as string). */
@@ -253,6 +237,17 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
     private SiteConfigurationDocument document;
     /** Branding configuration. */
     private SiteConfigurationBranding branding;
+
+    /**
+     * Set additional DocuSign account configurations.
+     *
+     * @param value additional account configurations
+     * @return this builder
+     */
+    public Builder additionalDocusignAccounts(final List<SiteConfigurationDocusign> value) {
+      this.additionalDocusignAccounts = value;
+      return this;
+    }
 
     /**
      * Set the branding configuration.
@@ -270,7 +265,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
       String email = notification != null ? notification.email() : notificationEmail;
       return new SiteConfiguration(key, chatGptApiKey, maxContentLengthBytes, maxDocuments,
           maxWebhooks, email, notification, document, ocr, google, docusign, documentTimeToLive,
-          webhookTimeToLive, webui, branding);
+          webhookTimeToLive, webui, branding, additionalDocusignAccounts);
     }
 
     /**
@@ -328,6 +323,7 @@ public record SiteConfiguration(DynamoDbKey key, String chatGptApiKey, String ma
       maxContentLengthBytes(config.maxContentLengthBytes);
       google(config.google);
       docusign(config.docusign);
+      additionalDocusignAccounts(config.additionalDocusignAccounts);
       documentTimeToLive(config.documentTimeToLive);
       document(config.document);
       webui(config.webui);

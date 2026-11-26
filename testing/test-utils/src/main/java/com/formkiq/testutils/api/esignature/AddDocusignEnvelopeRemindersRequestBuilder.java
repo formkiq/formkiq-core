@@ -46,6 +46,9 @@ public class AddDocusignEnvelopeRemindersRequestBuilder
   /** Request parameter. */
   private String artifactId;
 
+  /** Optional DocuSign account override. */
+  private String accountId;
+
   /** Request parameter. */
   private DocusignEnvironment environment;
 
@@ -56,8 +59,19 @@ public class AddDocusignEnvelopeRemindersRequestBuilder
   public ApiHttpResponse<AddDocusignEnvelopeRemindersResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new ESignatureApi(apiClient).addDocusignEnvelopeReminders(
-        this.documentId, this.envelopeId, siteId, this.artifactId, this.environment,
+        this.documentId, this.envelopeId, siteId, this.artifactId, this.accountId, this.environment,
         this.addDocusignEnvelopeRemindersRequest));
+  }
+
+  /**
+   * Select the DocuSign account for this request.
+   *
+   * @param value optional account ID
+   * @return this builder
+   */
+  public AddDocusignEnvelopeRemindersRequestBuilder withAccountId(final String value) {
+    this.accountId = value;
+    return this;
   }
 
   /**

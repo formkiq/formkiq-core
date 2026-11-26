@@ -1097,6 +1097,22 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateConfigurationRequest'
+            examples:
+              multipleDocusignAccounts:
+                summary: Default and Swiss DocuSign accounts using a shared identity
+                value:
+                  docusign:
+                    accountId: a1111111-b222-4333-8444-e55555555555
+                    environment: PRODUCTION
+                    userId: configured-service-user-id
+                    integrationKey: configured-integration-key
+                    rsaPrivateKey: REPLACE_WITH_RSA_PRIVATE_KEY
+                  additionalDocusignAccounts:
+                    - accountId: b1111111-c222-4333-8444-f55555555555
+                      environment: PRODUCTION
+                      userId: configured-service-user-id
+                      integrationKey: configured-integration-key
+                      rsaPrivateKey: REPLACE_WITH_RSA_PRIVATE_KEY
       responses:
         '200':
           description: 200 OK
@@ -3457,6 +3473,21 @@ components:
           $ref: "#/components/schemas/GoogleConfig"
         docusign:
           $ref: "#/components/schemas/DocusignConfig"
+        additionalDocusignAccounts:
+          type: array
+          nullable: true
+          description: >-
+            Additional DocuSign accounts available to this site through the accountId
+            query parameter. The docusign configuration remains the default for new
+            envelopes when accountId is omitted. Each entry is self-contained and
+            does not inherit environment, credentials, or callback settings from
+            docusign. Accounts sharing an authorized identity may use the same
+            credentials. Account IDs must be unique across the default and additional
+            accounts. Omit this property or set it to null to leave the additional accounts unchanged;
+            supply an empty array to clear them. Account overrides apply only when
+            accountId is explicitly supplied on a supported request.
+          items:
+            $ref: "#/components/schemas/AdditionalDocusignConfig"
     
     #@overlay/match missing_ok=True
     UpdateConfigurationResponse:
@@ -3627,6 +3658,15 @@ components:
           $ref: "#/components/schemas/GoogleConfig"
         docusign:
           $ref: "#/components/schemas/DocusignConfig"
+        additionalDocusignAccounts:
+          type: array
+          description: >-
+            Additional DocuSign account configurations selectable through accountId.
+            The docusign configuration remains the default for new envelopes when
+            accountId is omitted. Each entry has its own environment, credentials,
+            and callback settings, with no implicit inheritance from docusign.
+          items:
+            $ref: "#/components/schemas/AdditionalDocusignConfig"
 
     #@overlay/match missing_ok=True
     GoogleConfig:
@@ -3643,6 +3683,14 @@ components:
     DocusignConfig:
       type: "object"
       properties:
+        accountId:
+          type: "string"
+          description: >-
+            Account identifier used to match an explicitly supplied accountId query
+            parameter. It is optional for the default docusign configuration and
+            required for each additionalDocusignAccounts entry. Setting this field
+            alone does not override provider account discovery. Requests omitting
+            accountId retain the default configuration and first-account behavior.
         environment:
           $ref: "#/components/schemas/DocusignEnvironment"
         userId:
@@ -3662,3 +3710,19 @@ components:
           type: "string"
           format: "uri"
           description: "Public HTTPS URL that receives Docusign Connect event notifications. May be configured with or without hmacSignature."
+
+    #@overlay/match missing_ok=True
+    AdditionalDocusignConfig:
+      description: >-
+        A self-contained additional DocuSign account configuration. Credentials may
+        match another configuration when that identity can access both accounts.
+        Optional HMAC and callback settings apply only to this account.
+      allOf:
+        - $ref: "#/components/schemas/DocusignConfig"
+        - type: object
+          required:
+            - accountId
+            - environment
+            - userId
+            - integrationKey
+            - rsaPrivateKey

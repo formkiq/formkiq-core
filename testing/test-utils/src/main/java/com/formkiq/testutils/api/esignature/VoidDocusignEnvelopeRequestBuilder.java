@@ -49,15 +49,29 @@ public class VoidDocusignEnvelopeRequestBuilder
   /** Request parameter. */
   private String artifactId;
 
+  /** Optional DocuSign account override. */
+  private String accountId;
+
   /** Request parameter. */
   private DocusignEnvironment environment;
 
   @Override
   public ApiHttpResponse<VoidDocusignEnvelopeResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new ESignatureApi(apiClient).voidDocusignEnvelope(this.documentId, this.envelopeId,
-            this.voidDocusignEnvelopeRequest, siteId, this.artifactId, this.environment));
+    return executeApiCall(() -> new ESignatureApi(apiClient).voidDocusignEnvelope(this.documentId,
+        this.envelopeId, this.voidDocusignEnvelopeRequest, siteId, this.artifactId, this.accountId,
+        this.environment));
+  }
+
+  /**
+   * Select the DocuSign account for this request.
+   *
+   * @param value optional account ID
+   * @return this builder
+   */
+  public VoidDocusignEnvelopeRequestBuilder withAccountId(final String value) {
+    this.accountId = value;
+    return this;
   }
 
   /**

@@ -45,6 +45,9 @@ public class GetDocusignEnvelopeRequestBuilder
   /** Request parameter. */
   private String artifactId;
 
+  /** Optional DocuSign account override. */
+  private String accountId;
+
   /** Request parameter. */
   private DocusignEnvironment environment;
 
@@ -52,7 +55,18 @@ public class GetDocusignEnvelopeRequestBuilder
   public ApiHttpResponse<GetDocusignEnvelopeResponse> submit(final ApiClient apiClient,
       final String siteId) {
     return executeApiCall(() -> new ESignatureApi(apiClient).getDocusignEnvelope(this.documentId,
-        this.envelopeId, siteId, this.artifactId, this.environment));
+        this.envelopeId, siteId, this.artifactId, this.accountId, this.environment));
+  }
+
+  /**
+   * Select the DocuSign account for this request.
+   *
+   * @param value optional account ID
+   * @return this builder
+   */
+  public GetDocusignEnvelopeRequestBuilder withAccountId(final String value) {
+    this.accountId = value;
+    return this;
   }
 
   /**

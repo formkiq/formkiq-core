@@ -12,6 +12,14 @@ paths:
         as an Add-On Module. Recipient tabs support signatures, initials, automatic
         signing dates, recipient-entered dates, and single-line or multiline text.
         See DocusignSigningTabs for the supported collections and validation rules.
+        An explicit accountId query parameter selects the matching site configuration
+        and provider account for this request. When omitted, uses the existing default
+        docusign configuration and the first account returned for that identity.
+        The selected account's settings control automatic Date Signed formatting.
+        Supply accountId separately on each supported request that needs the same override.
+        For example,
+        POST /esignature/docusign/{documentId}/envelopes?siteId=contracts&accountId=a1111111-b222-4333-8444-e55555555555
+        selects that configured account.
       x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
@@ -19,6 +27,7 @@ paths:
         - $ref: '#/components/parameters/siteIdParam'
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
+        - $ref: '#/components/parameters/docusignAccountIdParam'
       requestBody:
         required: true
         content:
@@ -137,7 +146,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/AddDocusignEnvelopesResponse'
         '400':
-          description: Invalid envelope request
+          description: >-
+            Invalid envelope request or blank, unconfigured, or inaccessible accountId.
           content:
             application/json:
               schema:
@@ -155,6 +165,14 @@ paths:
                     errors:
                       - key: "signers[0].tabs.textTabs[0]"
                         error: "Specify either anchorString with anchor options or pageNumber, xPosition and yPosition"
+                invalidAccountId:
+                  summary: Account is not configured for the site
+                  value:
+                    errors:
+                      - key: accountId
+                        error: DocuSign account is not configured for this site
+        '403':
+          description: Access to the selected document, artifact, or configured DocuSign account is denied
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -176,6 +194,11 @@ paths:
         response as entries in the optional recipientIds array in
         POST /esignature/docusign/{documentId}/envelopes/{envelopeId}/reminders
         to request reminders for selected signers.
+        An explicit accountId selects the matching docusign or additionalDocusignAccounts
+        configuration, its credentials, and the provider account for this request only.
+        When omitted, uses the existing default docusign configuration and the first
+        account returned for that identity. Use the account that owns the envelope;
+        DocuSign validates envelope access within the selected account.
       x-formkiq-required-permission: READ_E_SIGNATURE
       tags:
         - E-Signature
@@ -184,13 +207,15 @@ paths:
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - $ref: '#/components/parameters/docusignAccountIdParam'
         - name: environment
           in: query
           required: false
           description: >-
-            DocuSign environment. Defaults to the site's docusignEnvironment;
-            required when the site has no default. Use the environment in which
-            the envelope was created.
+            DocuSign environment. When omitted, defaults to the matching account's
+            configuration when accountId is supplied, otherwise to the default
+            docusign configuration. Required when the selected configuration has
+            no default environment. Use the environment in which the envelope was created.
           schema:
             $ref: '#/components/schemas/DocusignEnvironment'
       responses:
@@ -230,11 +255,20 @@ paths:
                       routingOrder: '3'
                       status: created
         '400':
-          description: Invalid parameters or missing DocuSign configuration
+          description: >-
+            Invalid parameters, missing DocuSign configuration, or blank, unconfigured,
+            or inaccessible accountId.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
+              examples:
+                unconfiguredAccount:
+                  summary: Account is not configured for the site
+                  value:
+                    errors:
+                      - key: accountId
+                        error: DocuSign account is not configured for this site
         '401':
           description: Authentication required
         '403':
@@ -269,12 +303,17 @@ paths:
         or artifact and validates its stored envelope association before contacting
         DocuSign. Calls GET
         /restapi/v2.1/accounts/{accountId}/envelopes/{envelopeId}/audit_events,
-        resolving the account, base URI, and OAuth token through the site's existing
-        integration. Returns DocuSign's JSON unchanged, including auditEvents,
+        resolving the account, API base URI, and OAuth token through the site's
+        selected DocuSign configuration. Returns DocuSign's JSON unchanged, including auditEvents,
         paymentEvents, and any additional fields, without a FormKiQ wrapper.
         Includes reminder and resend events when recorded by DocuSign; this history
         does not guarantee that every reminder is recorded or confirm inbox delivery.
         Reminder and resend webhook subscriptions are separate from this operation.
+        An explicit accountId selects the matching docusign or additionalDocusignAccounts
+        configuration, its credentials, and the provider account for this request only.
+        When omitted, uses the existing default docusign configuration and the first
+        account returned for that identity. Use the account that owns the envelope;
+        DocuSign validates envelope access within the selected account.
       externalDocs:
         description: DocuSign Envelopes list audit events API
         url: https://developers.docusign.com/docs/esign-rest-api/reference/envelopes/envelopes/listauditevents/
@@ -286,13 +325,15 @@ paths:
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - $ref: '#/components/parameters/docusignAccountIdParam'
         - name: environment
           in: query
           required: false
           description: >-
-            DocuSign environment. Defaults to the site's docusignEnvironment;
-            required when the site has no default. Must match the environment
-            in which the envelope was created.
+            DocuSign environment. When omitted, defaults to the matching account's
+            configuration when accountId is supplied, otherwise to the default
+            docusign configuration. Required when the selected configuration has
+            no default environment. Use the environment in which the envelope was created.
           schema:
             $ref: '#/components/schemas/DocusignEnvironment'
       responses:
@@ -324,11 +365,20 @@ paths:
                         value: Sent
                 paymentEvents: []
         '400':
-          description: Invalid parameters or missing DocuSign configuration
+          description: >-
+            Invalid parameters, missing DocuSign configuration, or blank, unconfigured,
+            or inaccessible accountId.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
+              examples:
+                unconfiguredAccount:
+                  summary: Account is not configured for the site
+                  value:
+                    errors:
+                      - key: accountId
+                        error: DocuSign account is not configured for this site
         '401':
           description: Authentication required
         '403':
@@ -378,6 +428,11 @@ paths:
         Acceptance does not confirm notification delivery. Do not automatically
         retry after a timeout
         because the reminder may already have been requested.
+        An explicit accountId selects the matching docusign or additionalDocusignAccounts
+        configuration, its credentials, and the provider account for this request only.
+        When omitted, uses the existing default docusign configuration and the first
+        account returned for that identity. Use the account that owns the envelope;
+        DocuSign validates envelope access within the selected account.
       x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
@@ -386,13 +441,15 @@ paths:
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - $ref: '#/components/parameters/docusignAccountIdParam'
         - name: environment
           in: query
           required: false
           description: >-
-            DocuSign environment. Defaults to the site's docusignEnvironment;
-            required when the site has no default. Use the environment in which
-            the envelope was created.
+            DocuSign environment. When omitted, defaults to the matching account's
+            configuration when accountId is supplied, otherwise to the default
+            docusign configuration. Required when the selected configuration has
+            no default environment. Use the environment in which the envelope was created.
           schema:
             $ref: '#/components/schemas/DocusignEnvironment'
       requestBody:
@@ -451,11 +508,19 @@ paths:
             state, or unknown or ineligible signers. Null or empty recipientIds arrays,
             duplicate IDs, and null, blank, or non-string entries are rejected.
             The singular recipientId field is not accepted. Draft and terminal
-            envelopes cannot be reminded.
+            envelopes cannot be reminded. Blank, unconfigured, or inaccessible accountId
+            selections are rejected without falling back to another account.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
+              examples:
+                unconfiguredAccount:
+                  summary: Account is not configured for the site
+                  value:
+                    errors:
+                      - key: accountId
+                        error: DocuSign account is not configured for this site
         '401':
           description: Authentication required
         '403':
@@ -491,6 +556,11 @@ paths:
         callback updates the stored FormKiQ status. After a timeout, the
         outcome is unknown; check the existing GET envelope status endpoint
         before attempting the operation again.
+        An explicit accountId selects the matching docusign or additionalDocusignAccounts
+        configuration, its credentials, and the provider account for this request only.
+        When omitted, uses the existing default docusign configuration and the first
+        account returned for that identity. Use the account that owns the envelope;
+        DocuSign validates envelope access within the selected account.
       externalDocs:
         description: DocuSign Envelopes update API
         url: https://developers.docusign.com/docs/esign-rest-api/reference/envelopes/envelopes/update/
@@ -502,13 +572,15 @@ paths:
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - $ref: '#/components/parameters/docusignAccountIdParam'
         - name: environment
           in: query
           required: false
           description: >-
-            DocuSign environment. Defaults to the site's docusignEnvironment;
-            required when the site has no default. Use the environment in which
-            the envelope was created.
+            DocuSign environment. When omitted, defaults to the matching account's
+            configuration when accountId is supplied, otherwise to the default
+            docusign configuration. Required when the selected configuration has
+            no default environment. Use the environment in which the envelope was created.
           schema:
             $ref: '#/components/schemas/DocusignEnvironment'
       requestBody:
@@ -539,11 +611,19 @@ paths:
         '400':
           description: >-
             Invalid parameters, missing, blank, or overlong voidedReason, missing DocuSign
-            configuration, or an envelope that is not eligible to be voided.
+            configuration, blank, unconfigured, or inaccessible accountId, or an envelope
+            that is not eligible to be voided.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
+              examples:
+                unconfiguredAccount:
+                  summary: Account is not configured for the site
+                  value:
+                    errors:
+                      - key: accountId
+                        error: DocuSign account is not configured for this site
         '401':
           description: Authentication required
         '403':
@@ -566,7 +646,13 @@ paths:
     post:
       operationId: AddDocusignRecipientView
       summary: Create Docusign Recipient View request
-      description: DocuSign create Docusign Recipient View request; available as an Add-On Module
+      description: >-
+        Creates a DocuSign recipient view for the selected document or artifact;
+        available as an Add-On Module. An explicit accountId selects the matching
+        site configuration and provider account for this request. When omitted,
+        retains the default docusign configuration and first-account behavior.
+        Supply the account that owns the envelope; DocuSign validates envelope access
+        within that account. The returned view URL is not modified to switch accounts.
       x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
@@ -575,6 +661,7 @@ paths:
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - $ref: '#/components/parameters/docusignAccountIdParam'
       requestBody:
         required: true
         content:
@@ -596,11 +683,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/AddDocusignRecipientViewResponse'
         '400':
-          description: 400 OK
+          description: >-
+            Invalid view request, blank, unconfigured, or inaccessible accountId,
+            missing configuration, or a provider rejection of envelope access.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
+              examples:
+                unconfiguredAccount:
+                  summary: Requested account is not configured for this site
+                  value:
+                    errors:
+                      - key: accountId
+                        error: DocuSign account is not configured for this site
+        '403':
+          description: Access to the selected document, artifact, or configured DocuSign account is denied
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -611,7 +709,13 @@ paths:
     post:
       operationId: AddDocusignSenderView
       summary: Create Docusign Sender View request
-      description: DocuSign create Docusign Sender View request; available as an Add-On Module
+      description: >-
+        Creates a DocuSign sender view for the selected document or artifact;
+        available as an Add-On Module. An explicit accountId selects the matching
+        site configuration and provider account for this request. When omitted,
+        retains the default docusign configuration and first-account behavior.
+        Supply the account that owns the envelope; DocuSign validates envelope access
+        within that account. The returned view URL is not modified to switch accounts.
       x-formkiq-required-permission: WRITE_E_SIGNATURE
       tags:
         - E-Signature
@@ -620,6 +724,7 @@ paths:
         - $ref: '#/components/parameters/documentIdParam'
         - $ref: '#/components/parameters/artifactIdParam'
         - $ref: '#/components/parameters/docusignEnvelopeIdParam'
+        - $ref: '#/components/parameters/docusignAccountIdParam'
       requestBody:
         required: true
         content:
@@ -645,11 +750,22 @@ paths:
               example:
                 viewUrl: https://...
         '400':
-          description: 400 OK
+          description: >-
+            Invalid view request, blank, unconfigured, or inaccessible accountId,
+            missing configuration, or a provider rejection of envelope access.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorsResponse'
+              examples:
+                unconfiguredAccount:
+                  summary: Requested account is not configured for this site
+                  value:
+                    errors:
+                      - key: accountId
+                        error: DocuSign account is not configured for this site
+        '403':
+          description: Access to the selected document, artifact, or configured DocuSign account is denied
       security:
       - ApiAuthorization: []
       x-amazon-apigateway-integration:
@@ -660,7 +776,9 @@ paths:
     post:
       operationId: AddEsignatureDocusignEvents
       summary: Add E-signature event
-      description: DocuSign callback URL handler; available as an Add-On Module
+      description: >-
+        DocuSign callback URL handler; available as an Add-On Module.
+        Uses the site's existing docusign configuration and HMAC verification behavior.
       tags:
         - E-Signature
       responses:
@@ -685,7 +803,11 @@ components:
     #@overlay/match missing_ok=True
     DocusignEnvironment:
       type: string
-      description: "Docusign environment. When omitted from an E-Signature request, defaults to docusignEnvironment in the site configuration."
+      description: >-
+        DocuSign environment. An explicit request value retains existing behavior.
+        When omitted, defaults to the selected configuration's environment: the matching
+        configuration when accountId is explicitly supplied, otherwise the site's
+        default docusign configuration.
       enum:
         - PRODUCTION
         - DEVELOPMENT

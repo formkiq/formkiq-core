@@ -48,12 +48,26 @@ public class AddDocusignRecipientViewRequestBuilder
   /** Request parameter. */
   private String artifactId;
 
+  /** DocuSign account selection. */
+  private String accountId;
+
   @Override
   public ApiHttpResponse<AddDocusignRecipientViewResponse> submit(final ApiClient apiClient,
       final String siteId) {
-    return executeApiCall(
-        () -> new ESignatureApi(apiClient).addDocusignRecipientView(this.documentId,
-            this.envelopeId, this.addDocusignRecipientViewRequest, siteId, this.artifactId));
+    return executeApiCall(() -> new ESignatureApi(apiClient).addDocusignRecipientView(
+        this.documentId, this.envelopeId, this.addDocusignRecipientViewRequest, siteId,
+        this.artifactId, this.accountId));
+  }
+
+  /**
+   * Set the DocuSign account ID.
+   *
+   * @param value DocuSign account ID
+   * @return this builder
+   */
+  public AddDocusignRecipientViewRequestBuilder withAccountId(final String value) {
+    this.accountId = value;
+    return this;
   }
 
   /**

@@ -28,6 +28,8 @@ import static com.formkiq.aws.dynamodb.objects.Strings.isEmpty;
 import static com.formkiq.strings.Strings.getNotNullOrDefault;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -93,6 +95,23 @@ public class ConfigurationRequestHandler
    */
   public ConfigurationRequestHandler() {}
 
+  private void addDefaultDocusignAccountId(final SiteConfiguration config,
+      final SiteConfiguration oldConfig, final ValidationBuilder vb, final Set<String> accountIds) {
+    SiteConfigurationDocusign docusign = config.docusign();
+    String defaultAccountId = docusign != null ? docusign.accountId() : null;
+    if (defaultAccountId == null && oldConfig.docusign() != null) {
+      defaultAccountId = oldConfig.docusign().accountId();
+    }
+    if (defaultAccountId != null) {
+      if (defaultAccountId.isBlank()) {
+        vb.addError("docusign.accountId", "Account ID must not be blank");
+      } else {
+        accountIds.add(defaultAccountId.trim());
+      }
+    }
+
+  }
+
   @Override
   public void beforePatch(final ApiGatewayRequestEvent event, final ApiAuthorization authorization,
       final AwsServiceCache awsServices) throws Exception {
@@ -114,12 +133,10 @@ public class ConfigurationRequestHandler
     SiteConfiguration obj = configService.get(siteId);
     String chatApiKey = mask(obj.chatGptApiKey(), CHAT_GPT_MASK);
 
-    SiteConfigurationDocusign docusign = obj.docusign();
-    if (docusign != null) {
-      docusign = new SiteConfigurationDocusign(docusign.environment(), docusign.userId(),
-          docusign.integrationKey(), mask(docusign.rsaPrivateKey(), RSA_PRIVATE_KEY_MASK),
-          mask(docusign.hmacSignature(), HMAC_SIG_KEY_MASK), docusign.connectUrl());
-    }
+    SiteConfigurationDocusign docusign = maskDocusign(obj.docusign());
+    List<SiteConfigurationDocusign> additionalAccounts = obj.additionalDocusignAccounts() != null
+        ? obj.additionalDocusignAccounts().stream().map(this::maskDocusign).toList()
+        : null;
 
     obj = new SiteConfiguration(null, getNotNullOrDefault(chatApiKey, ""),
         getNotNullOrDefault(obj.maxContentLengthBytes(), ""),
@@ -130,7 +147,7 @@ public class ConfigurationRequestHandler
         Objects.getNotNullOrDefault(obj.google(), new SiteConfigurationGoogle(null, null)),
         Objects.getNotNullOrDefault(docusign,
             new SiteConfigurationDocusign(null, null, null, null, null, null)),
-        null, null, null, obj.branding());
+        null, null, null, obj.branding(), additionalAccounts);
 
     Gson gson = GsonUtil.getInstance();
     String json = gson.toJson(obj);
@@ -143,7 +160,8 @@ public class ConfigurationRequestHandler
     return Arrays.asList(config.chatGptApiKey(), config.maxContentLengthBytes(),
         config.maxDocuments(), config.maxWebhooks(), config.notificationEmail(),
         config.notification(), config.document(), config.ocr(), config.google(), config.docusign(),
-        config.documentTimeToLive(), config.webhookTimeToLive(), config.branding());
+        config.documentTimeToLive(), config.webhookTimeToLive(), config.branding(),
+        config.additionalDocusignAccounts());
   }
 
   @Override
@@ -183,6 +201,14 @@ public class ConfigurationRequestHandler
     return !isEmpty(s) ? s.subSequence(0, m) + "*******" + s.substring(s.length() - m) : s;
   }
 
+  private SiteConfigurationDocusign maskDocusign(final SiteConfigurationDocusign docusign) {
+    return docusign == null ? null
+        : new SiteConfigurationDocusign(docusign.environment(), docusign.userId(),
+            docusign.integrationKey(), mask(docusign.rsaPrivateKey(), RSA_PRIVATE_KEY_MASK),
+            mask(docusign.hmacSignature(), HMAC_SIG_KEY_MASK), docusign.connectUrl(),
+            docusign.accountId());
+  }
+
   private SiteConfigurationDocument normalizeDocument(final SiteConfigurationDocument document) {
     if (document != null) {
       return document.withDefaults();
@@ -199,10 +225,9 @@ public class ConfigurationRequestHandler
     String siteId = getPathParameterSiteId(event);
     SiteConfiguration config = JsonToObject.fromJson(awsservice, event, SiteConfiguration.class);
     config = SiteConfiguration.builder().configuration(config).build(siteId);
-    validate(awsservice, config);
-
     ConfigService configService = awsservice.getExtension(ConfigService.class);
     SiteConfiguration oldConfig = configService.get(siteId);
+    validate(awsservice, config, oldConfig);
     if (configService.save(siteId, config)) {
       Map<String, Object> properties = Map.of("siteId", siteId);
       if (oldConfig.key() == null) {
@@ -219,8 +244,8 @@ public class ConfigurationRequestHandler
     throw new BadException("missing required body parameters");
   }
 
-  private void validate(final AwsServiceCache awsservice, final SiteConfiguration config)
-      throws ValidationException {
+  private void validate(final AwsServiceCache awsservice, final SiteConfiguration config,
+      final SiteConfiguration oldConfig) throws ValidationException {
 
     ValidationBuilder vb = new ValidationBuilder();
     vb.isRequired(null, getConfigValues(config), "missing required body parameters");
@@ -235,9 +260,53 @@ public class ConfigurationRequestHandler
     validateGoogle(config, vb);
     validateDocument(config, vb);
     validateDocusign(config, vb);
+    validateAdditionalDocusignAccounts(config, oldConfig, vb);
 
     vb.check();
 
+  }
+
+  private void validateAdditionalDocusignAccount(final SiteConfigurationDocusign account,
+      final String key, final ValidationBuilder vb) {
+    if (account == null) {
+      vb.addError(key, "Account configuration must not be null");
+      return;
+    }
+    String[] required = {account.accountId(), account.environment(), account.userId(),
+        account.integrationKey(), account.rsaPrivateKey()};
+    if (Arrays.stream(required).anyMatch(value -> value == null || value.isBlank())) {
+      vb.addError(key,
+          "accountId, environment, userId, integrationKey and rsaPrivateKey are required");
+    }
+    if (account.environment() != null
+        && !Set.of("PRODUCTION", "DEVELOPMENT").contains(account.environment())) {
+      vb.addError(key + ".environment", "Environment must be PRODUCTION or DEVELOPMENT");
+    }
+    if (account.rsaPrivateKey() != null && !isValidRsaPrivateKey(account.rsaPrivateKey())) {
+      vb.addError(key + ".rsaPrivateKey", "invalid RSA Private Key");
+    }
+  }
+
+  private void validateAdditionalDocusignAccounts(final SiteConfiguration config,
+      final SiteConfiguration oldConfig, final ValidationBuilder vb) {
+    Set<String> accountIds = new HashSet<>();
+    addDefaultDocusignAccountId(config, oldConfig, vb, accountIds);
+
+    List<SiteConfigurationDocusign> accounts =
+        config.additionalDocusignAccounts() != null ? config.additionalDocusignAccounts()
+            : oldConfig.additionalDocusignAccounts();
+    for (int i = 0; i < notNull(accounts).size(); i++) {
+      SiteConfigurationDocusign account = accounts.get(i);
+      String key = "additionalDocusignAccounts[" + i + "]";
+      if (config.additionalDocusignAccounts() != null) {
+        validateAdditionalDocusignAccount(account, key, vb);
+      }
+      if (account != null && account.accountId() != null
+          && !accountIds.add(account.accountId().trim())) {
+        vb.addError(key + ".accountId",
+            "Account IDs must be unique across DocuSign configurations");
+      }
+    }
   }
 
   private void validateDocument(final SiteConfiguration config, final ValidationBuilder vb) {

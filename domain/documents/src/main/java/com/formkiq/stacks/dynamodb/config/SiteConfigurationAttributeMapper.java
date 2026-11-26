@@ -24,21 +24,15 @@
 package com.formkiq.stacks.dynamodb.config;
 
 import static com.formkiq.aws.dynamodb.objects.Objects.notNull;
+import static com.formkiq.stacks.dynamodb.config.ConfigService.ADDITIONAL_DOCUSIGN_ACCOUNTS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.CHATGPT_API_KEY;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUMENT_TIME_TO_LIVE;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.DOCUSIGN_ENVIRONMENT;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_CONNECT_URL;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_HMAC_SIGNATURE;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_INTEGRATION_KEY;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_RSA_PRIVATE_KEY;
-import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_DOCUSIGN_USER_ID;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.KEY_WEBUI_SSO_LOGIN_REDIRECT_ENABLED;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENTS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_DOCUMENT_SIZE_BYTES;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.MAX_WEBHOOKS;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.NOTIFICATION_EMAIL;
 import static com.formkiq.stacks.dynamodb.config.ConfigService.WEBHOOK_TIME_TO_LIVE;
-import static com.formkiq.strings.Strings.trim;
 
 import java.util.Map;
 
@@ -109,12 +103,12 @@ final class SiteConfigurationAttributeMapper {
 
     SiteConfigurationDocusign docusign = config.docusign();
     if (docusign != null) {
-      map.withString(DOCUSIGN_ENVIRONMENT, docusign.environment())
-          .withString(KEY_DOCUSIGN_USER_ID, trim(docusign.userId()))
-          .withString(KEY_DOCUSIGN_INTEGRATION_KEY, trim(docusign.integrationKey()))
-          .withString(KEY_DOCUSIGN_RSA_PRIVATE_KEY, trim(docusign.rsaPrivateKey()))
-          .withString(KEY_DOCUSIGN_HMAC_SIGNATURE, trim(docusign.hmacSignature()))
-          .withString(KEY_DOCUSIGN_CONNECT_URL, trim(docusign.connectUrl()));
+      map.withMap(docusign.getAttributes());
+    }
+    if (config.additionalDocusignAccounts() != null) {
+      map.withAttributeValue(ADDITIONAL_DOCUSIGN_ACCOUNTS,
+          AttributeValue.fromL(config.additionalDocusignAccounts().stream()
+              .map(account -> AttributeValue.fromM(account.getAttributes())).toList()));
     }
 
     SiteConfigurationNotification.addConfigurationAttributes(map, config.notification(),

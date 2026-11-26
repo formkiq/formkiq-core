@@ -33,6 +33,7 @@ import com.formkiq.aws.ssm.SsmService;
 import com.formkiq.client.invoker.ApiException;
 import com.formkiq.client.model.AddNotificationTestRequest;
 import com.formkiq.client.model.AddNotificationTestResponse;
+import com.formkiq.client.model.AdditionalDocusignConfig;
 import com.formkiq.client.model.BrandingConfig;
 import com.formkiq.client.model.DocumentConfig;
 import com.formkiq.client.model.DocumentConfigContentTypes;
@@ -76,6 +77,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 
 import static com.formkiq.aws.dynamodb.SiteIdKeyGenerator.DEFAULT_SITE_ID;
@@ -124,6 +126,12 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
       -----END RSA PRIVATE KEY-----
            \s""";
 
+  /** Masked representation of the test RSA private key. */
+  private static final String MASKED_RSA_PRIVATE_KEY = """
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEvQIB*******qFT4Ofeyc=
+      -----END RSA PRIVATE KEY-----""";
+
   private static void assertRententionAndDisposition(final GetConfigurationResponse config,
       final DocumentConfigDispositionAction action) {
     assertNotNull(config);
@@ -143,6 +151,26 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
 
   /** {@link ConfigService}. */
   private ConfigService config;
+
+  private AdditionalDocusignConfig additionalDocusignAccount(final String accountId) {
+    return new AdditionalDocusignConfig().accountId(accountId)
+        .environment(DocusignEnvironment.PRODUCTION).userId("additional-user")
+        .integrationKey("additional-integration-key").rsaPrivateKey(RSA_PRIVATE_KEY);
+  }
+
+  private AdditionalDocusignConfig assertAdditionalDocusignAccount(
+      final AdditionalDocusignConfig expected, final GetConfigurationResponse configuration) {
+    assertNotNull(configuration.getAdditionalDocusignAccounts());
+    assertEquals(1, configuration.getAdditionalDocusignAccounts().size());
+    AdditionalDocusignConfig saved = configuration.getAdditionalDocusignAccounts().getFirst();
+    assertEquals(expected.getAccountId(), saved.getAccountId());
+    assertEquals(expected.getEnvironment(), saved.getEnvironment());
+    assertEquals(expected.getUserId(), saved.getUserId());
+    assertEquals(expected.getIntegrationKey(), saved.getIntegrationKey());
+    assertEquals(expected.getConnectUrl(), saved.getConnectUrl());
+    assertEquals(MASKED_RSA_PRIVATE_KEY, saved.getRsaPrivateKey());
+    return saved;
+  }
 
   private GetConfigurationResponse assertContentTypeAllowed(
       final UpdateConfigurationResponse response, final String contentType, final String expected)
@@ -171,6 +199,15 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     this.config = awsServices.getExtension(ConfigService.class);
   }
 
+  private DocusignConfig docusignAccount() {
+    return new DocusignConfig().userId("default-user").integrationKey("default-integration-key")
+        .rsaPrivateKey(RSA_PRIVATE_KEY);
+  }
+
+  private GetConfigurationResponse getConfiguration() throws ApiException {
+    return new GetConfigurationRequestBuilder().submitOk(this.client, DEFAULT_SITE_ID).response();
+  }
+
   private boolean getSsoLoginRedirectEnabled(final S3Service s3) {
     Map<String, Object> consoleConfig = GsonUtil.getInstance()
         .fromJson(s3.getContentAsString(BUCKET_NAME, "1.0/assets/config.json", null), Map.class);
@@ -191,6 +228,93 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     NotificationConfig notification = new NotificationConfig().email("notifications@example.com")
         .provider(NotificationEmailProvider.SMTP).smtp(smtp);
     return new UpdateConfigurationRequest().notification(notification);
+  }
+
+  /**
+   * Unrelated updates preserve additional accounts, and an empty list clears them.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testAdditionalDocusignAccountsPreservedAndCleared() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    updateConfiguration(new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().accountId("docusign")).additionalDocusignAccounts(
+            List.of(additionalDocusignAccount("first"), additionalDocusignAccount("second"))));
+
+    // when
+    updateConfiguration(new UpdateConfigurationRequest().maxDocuments("100"));
+    GetConfigurationResponse preserved = getConfiguration();
+
+    // then
+    assertEquals(List.of("first", "second"), preserved.getAdditionalDocusignAccounts().stream()
+        .map(AdditionalDocusignConfig::getAccountId).toList());
+    assertEquals("docusign", preserved.getDocusign().getAccountId());
+
+    // when
+    updateConfiguration(new UpdateConfigurationRequest().additionalDocusignAccounts(List.of()));
+    GetConfigurationResponse cleared = getConfiguration();
+
+    // then
+    assertNotNull(cleared.getAdditionalDocusignAccounts());
+    assertTrue(cleared.getAdditionalDocusignAccounts().isEmpty());
+    assertEquals("docusign", cleared.getDocusign().getAccountId());
+    assertEquals("100", cleared.getMaxDocuments());
+  }
+
+  /**
+   * Replacing additional accounts leaves the default configuration and stored secrets intact.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testAdditionalDocusignAccountsReplacement() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    updateConfiguration(new UpdateConfigurationRequest()
+        .docusign(new DocusignConfig().accountId("docusign")).additionalDocusignAccounts(
+            List.of(additionalDocusignAccount("first"), additionalDocusignAccount("second"))));
+
+    // when
+    updateConfiguration(new UpdateConfigurationRequest()
+        .additionalDocusignAccounts(List.of(additionalDocusignAccount("replacement"))));
+    GetConfigurationResponse configuration = getConfiguration();
+
+    // then
+    assertEquals("docusign", configuration.getDocusign().getAccountId());
+    assertEquals(List.of("replacement"), configuration.getAdditionalDocusignAccounts().stream()
+        .map(AdditionalDocusignConfig::getAccountId).toList());
+    assertEquals(RSA_PRIVATE_KEY.trim(),
+        this.config.get(DEFAULT_SITE_ID).additionalDocusignAccounts().getFirst().rsaPrivateKey());
+    assertEquals(MASKED_RSA_PRIVATE_KEY,
+        configuration.getAdditionalDocusignAccounts().getFirst().getRsaPrivateKey());
+  }
+
+  /**
+   * Additional DocuSign accounts can be configured without a default account.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testAdditionalDocusignAccountsWithoutDefault() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    AdditionalDocusignConfig additional = additionalDocusignAccount("additional-docusign");
+    UpdateConfigurationRequest request =
+        new UpdateConfigurationRequest().additionalDocusignAccounts(List.of(additional));
+
+    // when
+    UpdateConfigurationResponse update = updateConfiguration(request);
+    final GetConfigurationResponse configuration = getConfiguration();
+    SiteConfiguration stored = this.config.get(DEFAULT_SITE_ID);
+
+    // then
+    assertEquals("Config saved", update.getMessage());
+    assertNull(stored.docusign());
+    assertEquals(1, stored.additionalDocusignAccounts().size());
+    assertEquals("additional-docusign", stored.additionalDocusignAccounts().getFirst().accountId());
+    assertAdditionalDocusignAccount(additional, configuration);
   }
 
   /**
@@ -226,6 +350,61 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .submitOk(this.client, "site1").response().getBranding()).getTheme());
     assertEquals("global-theme", requireNonNull(new GetSystemConfigurationRequestBuilder()
         .submitOk(this.client, null).response().getBranding()).getTheme());
+  }
+
+  /**
+   * Updating only the default account ID preserves its connection settings.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testDocusignAccountIdOnlyUpdate() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    updateConfiguration(new UpdateConfigurationRequest().docusign(docusignAccount()));
+
+    // when
+    updateConfiguration(
+        new UpdateConfigurationRequest().docusign(new DocusignConfig().accountId("docusign")));
+    GetConfigurationResponse configuration = getConfiguration();
+
+    // then
+    assertEquals("docusign", configuration.getDocusign().getAccountId());
+    assertEquals("default-user", configuration.getDocusign().getUserId());
+    assertEquals("default-integration-key", configuration.getDocusign().getIntegrationKey());
+    assertEquals(RSA_PRIVATE_KEY.trim(),
+        this.config.get(DEFAULT_SITE_ID).docusign().rsaPrivateKey());
+  }
+
+  /**
+   * Reject duplicate IDs across saved and newly updated default or additional accounts.
+   *
+   * @param changeDefault update the default account rather than the additional accounts
+   * @throws ApiException an API error has occurred
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void testDuplicateDocusignAccountIds(final boolean changeDefault) throws ApiException {
+    // given
+    setBearerToken("Admins");
+    updateConfiguration(
+        new UpdateConfigurationRequest().docusign(new DocusignConfig().accountId("docusign"))
+            .additionalDocusignAccounts(List.of(additionalDocusignAccount("additional"))));
+    UpdateConfigurationRequest request = changeDefault
+        ? new UpdateConfigurationRequest().docusign(new DocusignConfig().accountId("additional"))
+        : new UpdateConfigurationRequest()
+            .additionalDocusignAccounts(List.of(additionalDocusignAccount("docusign")));
+
+    // when
+    ApiException error = updateConfigurationError(request);
+    GetConfigurationResponse configuration = getConfiguration();
+
+    // then
+    assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), error.getCode());
+    assertTrue(error.getResponseBody().contains("Account IDs must be unique"));
+    assertEquals("docusign", configuration.getDocusign().getAccountId());
+    assertEquals("additional",
+        configuration.getAdditionalDocusignAccounts().getFirst().getAccountId());
   }
 
   /**
@@ -531,10 +710,7 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("222l*******dlsa", configuration.getDocusign().getHmacSignature());
     assertEquals(URI.create("https://api.example.com/esignature/docusign/events"),
         configuration.getDocusign().getConnectUrl());
-    assertEquals("""
-        -----BEGIN RSA PRIVATE KEY-----
-        MIIEvQIB*******qFT4Ofeyc=
-        -----END RSA PRIVATE KEY-----""", configuration.getDocusign().getRsaPrivateKey());
+    assertEquals(MASKED_RSA_PRIVATE_KEY, configuration.getDocusign().getRsaPrivateKey());
   }
 
   /**
@@ -649,6 +825,63 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals("53f03e69-a56c-4d6b-bde4-a8bf235a7e75e", docusign.getUserId());
     assertEquals("\"-----BEGIN RSA PRIVATE KEY-----\\nMIIEow*******OAMrFWnb"
         + "\\n-----END RSA PRIVATE KEY-----\"", docusign.getRsaPrivateKey());
+  }
+
+  /**
+   * PATCH additional DocuSign accounts preserves the default configuration.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testHandlePatchConfigurationAdditionalDocusignAccounts() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    DocusignConfig docusign = docusignAccount();
+    updateConfiguration(new UpdateConfigurationRequest().docusign(docusign));
+    String accountId = "additional-docusign";
+    URI connectUrl = URI.create("https://api.example.com/esignature/docusign/events");
+    AdditionalDocusignConfig additional = additionalDocusignAccount(accountId)
+        .hmacSignature("222ljasdlksjakldjsadlsa").connectUrl(connectUrl);
+    UpdateConfigurationRequest request =
+        new UpdateConfigurationRequest().additionalDocusignAccounts(List.of(additional));
+
+    // when
+    UpdateConfigurationResponse update = updateConfiguration(request);
+    GetConfigurationResponse configuration = getConfiguration();
+
+    // then
+    assertEquals("Config saved", update.getMessage());
+    assertNotNull(configuration.getDocusign());
+    assertEquals("default-user", configuration.getDocusign().getUserId());
+    assertEquals("default-integration-key", configuration.getDocusign().getIntegrationKey());
+    AdditionalDocusignConfig saved = assertAdditionalDocusignAccount(additional, configuration);
+    assertEquals("222l*******dlsa", saved.getHmacSignature());
+  }
+
+  /**
+   * PATCH the default DocuSign configuration retains its account ID.
+   *
+   * @throws ApiException an API error has occurred
+   */
+  @Test
+  public void testHandlePatchConfigurationDocusignAccountId() throws ApiException {
+    // given
+    setBearerToken("Admins");
+    DocusignConfig docusign =
+        docusignAccount().accountId("docusign").environment(DocusignEnvironment.DEVELOPMENT);
+    UpdateConfigurationRequest request = new UpdateConfigurationRequest().docusign(docusign);
+
+    // when
+    UpdateConfigurationResponse update = updateConfiguration(request);
+    GetConfigurationResponse configuration = getConfiguration();
+
+    // then
+    assertEquals("Config saved", update.getMessage());
+    assertNotNull(configuration.getDocusign());
+    assertEquals("docusign", configuration.getDocusign().getAccountId());
+    assertEquals(DocusignEnvironment.DEVELOPMENT, configuration.getDocusign().getEnvironment());
+    assertEquals("default-user", configuration.getDocusign().getUserId());
+    assertEquals("default-integration-key", configuration.getDocusign().getIntegrationKey());
   }
 
   /** PATCH and GET Docusign environment configuration. */
@@ -843,6 +1076,51 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
         .formatDouble(requireNonNull(response.getOcr().getMaxPagesPerTransaction()).doubleValue()));
     assertEquals("-1",
         Objects.formatDouble(requireNonNull(response.getOcr().getMaxTransactions()).doubleValue()));
+  }
+
+  /**
+   * Reject invalid additional configurations without overwriting saved accounts.
+   *
+   * @param invalidField invalid account field or entry
+   * @throws ApiException an API error has occurred
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"accountId", "environment", "userId", "integrationKey", "rsaPrivateKey",
+      "blankAccountId", "invalidRsa", "duplicate", "nullEntry"})
+  public void testInvalidAdditionalDocusignAccounts(final String invalidField) throws ApiException {
+    // given
+    setBearerToken("Admins");
+    updateConfiguration(new UpdateConfigurationRequest()
+        .additionalDocusignAccounts(List.of(additionalDocusignAccount("saved"))));
+    AdditionalDocusignConfig account = additionalDocusignAccount("replacement");
+    switch (invalidField) {
+      case "accountId" -> account.setAccountId(null);
+      case "environment" -> account.setEnvironment(null);
+      case "userId" -> account.setUserId(null);
+      case "integrationKey" -> account.setIntegrationKey(null);
+      case "rsaPrivateKey" -> account.setRsaPrivateKey(null);
+      case "blankAccountId" -> account.setAccountId("   ");
+      case "invalidRsa" -> account.setRsaPrivateKey("invalid-private-key");
+      default -> {
+      }
+    }
+    List<AdditionalDocusignConfig> accounts = switch (invalidField) {
+      case "duplicate" -> List.of(account, additionalDocusignAccount("replacement"));
+      case "nullEntry" -> Collections.singletonList(null);
+      default -> List.of(account);
+    };
+    UpdateConfigurationRequest request =
+        new UpdateConfigurationRequest().additionalDocusignAccounts(accounts);
+
+    // when
+    ApiException error = updateConfigurationError(request);
+    GetConfigurationResponse configuration = getConfiguration();
+
+    // then
+    assertEquals(ApiResponseStatus.SC_BAD_REQUEST.getStatusCode(), error.getCode());
+    assertTrue(error.getResponseBody().contains("additionalDocusignAccounts["));
+    assertEquals(List.of("saved"), configuration.getAdditionalDocusignAccounts().stream()
+        .map(AdditionalDocusignConfig::getAccountId).toList());
   }
 
   /**
@@ -1203,5 +1481,17 @@ public class ConfigurationRequestTest extends AbstractApiClientRequestTest {
     assertEquals(
         "{\"message\":\"fkq access denied (groups: " + DEFAULT_SITE_ID + " (DELETE,READ,WRITE))\"}",
         update.exception().getResponseBody());
+  }
+
+  private UpdateConfigurationResponse updateConfiguration(final UpdateConfigurationRequest request)
+      throws ApiException {
+    return new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(request)
+        .submitOk(this.client, DEFAULT_SITE_ID).response();
+  }
+
+  private ApiException updateConfigurationError(final UpdateConfigurationRequest request)
+      throws ApiException {
+    return new UpdateConfigurationRequestBuilder().withUpdateConfigurationRequest(request)
+        .submitError(this.client, DEFAULT_SITE_ID).exception();
   }
 }

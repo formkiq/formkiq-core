@@ -59,6 +59,10 @@ public interface ConfigService {
       "NotificationEmailSmtpCredentialsSecretArn";
   /** Docusign User Id. */
   String KEY_DOCUSIGN_USER_ID = "docusignUserId";
+  /** DocuSign API account ID. */
+  String KEY_DOCUSIGN_ACCOUNT_ID = "docusignAccountId";
+  /** Additional DocuSign account configurations. */
+  String ADDITIONAL_DOCUSIGN_ACCOUNTS = "additionalDocusignAccounts";
   /** Docusign Integration Key / Client Id. */
   String KEY_DOCUSIGN_INTEGRATION_KEY = "docusignIntegrationKey";
   /** Docusign Rsa Private Key. */

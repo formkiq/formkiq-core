@@ -46,15 +46,29 @@ public class GetDocusignEnvelopeAuditEventsRequestBuilder
   /** Request parameter. */
   private String artifactId;
 
+  /** Optional DocuSign account override. */
+  private String accountId;
+
   /** Request parameter. */
   private DocusignEnvironment environment;
 
   @Override
   public ApiHttpResponse<ApiResponse<GetDocusignEnvelopeAuditEventsResponse>> submit(
       final ApiClient apiClient, final String siteId) {
-    return executeApiCall(
-        () -> new ESignatureApi(apiClient).getDocusignEnvelopeAuditEventsWithHttpInfo(
-            this.documentId, this.envelopeId, siteId, this.artifactId, this.environment));
+    return executeApiCall(() -> new ESignatureApi(apiClient)
+        .getDocusignEnvelopeAuditEventsWithHttpInfo(this.documentId, this.envelopeId, siteId,
+            this.artifactId, this.accountId, this.environment));
+  }
+
+  /**
+   * Select the DocuSign account for this request.
+   *
+   * @param value optional account ID
+   * @return this builder
+   */
+  public GetDocusignEnvelopeAuditEventsRequestBuilder withAccountId(final String value) {
+    this.accountId = value;
+    return this;
   }
 
   /**

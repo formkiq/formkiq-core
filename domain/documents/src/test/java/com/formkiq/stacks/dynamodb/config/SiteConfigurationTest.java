@@ -38,21 +38,60 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class SiteConfigurationTest {
 
   @Test
+  public void testDocusignAccountIdWithoutCredentialsIsPersisted() {
+    // given
+    SiteConfiguration config = SiteConfiguration.builder()
+        .docusign(new SiteConfigurationDocusign(null, null, null, null, null, null, "docusign"))
+        .additionalDocusignAccounts(List.of()).build("default");
+
+    // when
+    SiteConfiguration result = SiteConfiguration.fromAttributeMap(config.getAttributes());
+
+    // then
+    assertEquals(config, result);
+  }
+
+  @Test
+  public void testDocusignAccountsRetainExistingStorageFormat() {
+    // given
+    SiteConfigurationDocusign docusign =
+        new SiteConfigurationDocusign("DEVELOPMENT", "default-user", "default-key", "private-key",
+            "hmac", "https://default.example.com", "docusign");
+    SiteConfigurationDocusign additional = new SiteConfigurationDocusign("PRODUCTION", "other-user",
+        "other-key", "other-private-key", null, null, "additional-docusign");
+    SiteConfiguration config = SiteConfiguration.builder().docusign(docusign)
+        .additionalDocusignAccounts(List.of(additional)).build("default");
+
+    // when
+    Map<String, AttributeValue> attributes = config.getAttributes();
+    final SiteConfiguration result = SiteConfiguration.fromAttributeMap(attributes);
+
+    // then
+    assertEquals("default-user", attributes.get(ConfigService.KEY_DOCUSIGN_USER_ID).s());
+    assertEquals("docusign", attributes.get(ConfigService.KEY_DOCUSIGN_ACCOUNT_ID).s());
+    assertEquals(1, attributes.get(ConfigService.ADDITIONAL_DOCUSIGN_ACCOUNTS).l().size());
+    assertEquals(config, result);
+  }
+
+  @Test
   public void testDocusignEnvironmentIsNestedAndPersisted() {
+    // given
     SiteConfiguration config = SiteConfiguration.builder()
         .docusign(new SiteConfigurationDocusign("PRODUCTION", null, null, null, null, null))
         .build("default");
 
+    // when
     Map<String, AttributeValue> attributes = config.getAttributes();
     SiteConfiguration result = SiteConfiguration.fromAttributeMap(attributes);
 
+    // then
     assertEquals("PRODUCTION", attributes.get(ConfigService.DOCUSIGN_ENVIRONMENT).s());
-    assertNotNull(result.docusign());
-    assertEquals("PRODUCTION", result.docusign().environment());
+    assertEquals(config, result);
   }
 
   @Test
   public void testFromAttributeMapDefaultsDispositionAction() {
+    // given
     SiteConfiguration config = SiteConfiguration.builder()
         .document(new SiteConfigurationDocument(
             new SiteConfigurationDocumentContentTypes(List.of("text/plain"), null), null))
@@ -61,29 +100,31 @@ public class SiteConfigurationTest {
     Map<String, AttributeValue> attributes = new HashMap<>(config.getAttributes());
     attributes.remove("documentDispositionAction");
 
+    // when
     SiteConfiguration result = SiteConfiguration.fromAttributeMap(attributes);
 
+    // then
     assertNotNull(result.document());
-    assertNotNull(result.document().retentionAndDisposition());
+    var retention = result.document().retentionAndDisposition();
+    assertNotNull(retention);
     assertEquals(SiteConfigurationDocumentDispositionAction.SOFT_DELETE,
-        result.document().retentionAndDisposition().dispositionAction());
-    assertEquals(-1L, result.document().retentionAndDisposition().softDeleteRetentionInDays());
+        retention.dispositionAction());
+    assertEquals(-1L, retention.softDeleteRetentionInDays());
   }
 
   @Test
   public void testGetAttributesPersistsRetentionAndDisposition() {
+    // given
     SiteConfiguration config = SiteConfiguration.builder()
         .document(new SiteConfigurationDocument(null,
             new SiteConfigurationDocumentRetentionAndDisposition(
                 SiteConfigurationDocumentDispositionAction.DELETE, 30L)))
         .build("default");
 
+    // when
     SiteConfiguration result = SiteConfiguration.fromAttributeMap(config.getAttributes());
 
-    assertNotNull(result.document());
-    assertNotNull(result.document().retentionAndDisposition());
-    assertEquals(SiteConfigurationDocumentDispositionAction.DELETE,
-        result.document().retentionAndDisposition().dispositionAction());
-    assertEquals(30L, result.document().retentionAndDisposition().softDeleteRetentionInDays());
+    // then
+    assertEquals(config, result);
   }
 }

@@ -633,6 +633,23 @@ components:
       required: true
       schema:
         type: string
+    docusignAccountIdParam:
+      name: accountId
+      in: query
+      required: false
+      description: >-
+        Optional DocuSign account override for this request. When supplied, selects
+        the matching docusign or additionalDocusignAccounts configuration, authenticates
+        with its credentials, and uses the exact provider account and matching API
+        base URI returned by DocuSign. When omitted, retains existing behavior:
+        use the default docusign configuration and the first account returned for
+        its identity. A configured docusign.accountId does not implicitly set this
+        parameter. Supply accountId separately on each supported request that
+        needs an override. Blank, unconfigured, or inaccessible selections
+        fail without falling back to another account.
+      schema:
+        type: string
+      example: a1111111-b222-4333-8444-e55555555555
     mappingIdParam:
       name: mappingId
       in: path
