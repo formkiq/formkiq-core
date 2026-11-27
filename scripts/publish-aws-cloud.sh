@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Package one architecture for one or more regions without overwriting the other.
+# Package one architecture for one or more regional distribution buckets.
 set -euo pipefail
 
 if [[ "$#" -lt 3 ]]; then
@@ -17,14 +17,17 @@ if [[ ! "$version" =~ ^[a-zA-Z0-9][a-zA-Z0-9._+-]*$ ]]; then
 fi
 
 case "$architecture" in
-  x86_64|arm64) ;;
+  arm64)
+    release_prefix="$version"
+    ;;
+  x86_64)
+    release_prefix="$version/$architecture"
+    ;;
   *)
     echo "Unsupported architecture: $architecture" >&2
     exit 2
     ;;
 esac
-architecture_path="$architecture/"
-release_prefix="$version/$architecture"
 for region in "$@"; do
   if [[ ! "$region" =~ ^[a-z]{2}(-[a-z]+)+-[0-9]+$ ]]; then
     echo "Invalid AWS region: $region" >&2
@@ -35,7 +38,7 @@ done
 package_workdir="$(mktemp -d)"
 trap 'rm -rf -- "$package_workdir"' EXIT
 archive="formkiq-core-$version-$architecture.zip"
-aws s3 cp "s3://$S3_BUCKET/formkiq-core/$architecture_path$archive" "$package_workdir/$archive"
+aws s3 cp "s3://$S3_BUCKET/formkiq-core/$architecture/$archive" "$package_workdir/$archive"
 unzip -q "$package_workdir/$archive" -d "$package_workdir/unpacked"
 cd "$package_workdir/unpacked"
 
