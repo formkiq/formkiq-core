@@ -879,15 +879,46 @@ Resources:
       VpcId:
         Ref: Vpc
 
+  SsmInterfaceEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: IsEnableVpcEndpoints
+    Properties:
+      GroupDescription: HTTPS access to the SSM interface endpoint from private subnets
+      VpcId:
+        Ref: Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp:
+            Ref: PrivateSubnet1Cidr
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp:
+            Ref: PrivateSubnet2Cidr
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp:
+            Ref: PrivateSubnet3Cidr
+
   SsmInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
     Condition: IsEnableVpcEndpoints
     Properties:
       VpcEndpointType: Interface
+      PrivateDnsEnabled: true
       ServiceName:
         Fn::Sub: 'com.amazonaws.${AWS::Region}.ssm'
       VpcId:
         Ref: Vpc
+      SubnetIds:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+        - Ref: PrivateSubnet3
+      SecurityGroupIds:
+        - Ref: SsmInterfaceEndpointSecurityGroup
 
   ExecuteApiInterfaceEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
