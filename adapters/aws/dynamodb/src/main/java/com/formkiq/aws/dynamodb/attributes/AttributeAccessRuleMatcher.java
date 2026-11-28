@@ -95,7 +95,7 @@ public class AttributeAccessRuleMatcher {
       case GTE -> !values.isEmpty() && values.stream()
           .allMatch(value -> compare(value, criterion.value(), result -> result >= 0));
       case IN -> !values.isEmpty()
-          && values.stream().allMatch(value -> containedIn(value, criterion.value()));
+          && values.stream().anyMatch(value -> containedIn(value, criterion.value()));
       case LT -> !values.isEmpty() && values.stream()
           .allMatch(value -> compare(value, criterion.value(), result -> result < 0));
       case LTE -> !values.isEmpty() && values.stream()
