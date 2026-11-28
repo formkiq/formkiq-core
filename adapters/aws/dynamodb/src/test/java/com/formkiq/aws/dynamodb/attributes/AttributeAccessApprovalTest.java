@@ -64,12 +64,12 @@ public class AttributeAccessApprovalTest {
         Map.of(key, AttributeValidationAccess.ADMIN_CREATE));
   }
 
-  /** IN permits multiple effective values when every value belongs to the permitted set. */
+  /** IN permits mixed effective values when any value belongs to the permitted set. */
   @Test
-  public void testConditionalRuleInPermitsMultipleEffectiveValues() {
+  public void testConditionalRuleInPermitsAnyMatchingEffectiveValue() {
     // given
     DocumentAttributeRecord student = attribute("MyRole", "student");
-    DocumentAttributeRecord teacher = attribute("MyRole", "teacher");
+    DocumentAttributeRecord administrator = attribute("MyRole", "administrator");
     AttributeAccessRule rule =
         new AttributeAccessRule(
             List.of(new AttributeAccessCriterion("MyRole", List.of("student", "teacher"),
@@ -79,10 +79,32 @@ public class AttributeAccessApprovalTest {
         List.of(rule), "denied");
 
     // when
-    var resolved = approval.resolve(List.of(student, teacher));
+    var resolved = approval.resolve(List.of(student, administrator));
 
     // then
     assertTrue(resolved.isPresent());
+  }
+
+  /** IN denies access when none of the stored values match, or the attribute is absent. */
+  @Test
+  public void testConditionalRuleInRequiresAMatchingEffectiveValue() {
+    // given
+    var rule =
+        new AttributeAccessRule(
+            List.of(new AttributeAccessCriterion("MyRole", List.of("student", "teacher"),
+                AttributeAccessOperator.IN)),
+            Map.of("MyRole", AttributeValidationAccess.ADMIN_UPDATE));
+    var approval = new AttributeAccessApproval(AttributeValidationAccess.UPDATE, Map.of(),
+        List.of(rule), "denied");
+
+    // when
+    var noMatch = approval
+        .resolve(List.of(attribute("MyRole", "administrator"), attribute("MyRole", "guest")));
+    var missing = approval.resolve(List.of(attribute("Department", "Science")));
+
+    // then
+    assertFalse(noMatch.isPresent());
+    assertFalse(missing.isPresent());
   }
 
   /** A matching conditional rule grants its key access. */
@@ -198,12 +220,12 @@ public class AttributeAccessApprovalTest {
   }
 
   /**
-   * Every effective value for an elevated key must satisfy that key's criteria.
+   * Non-IN criteria retain their existing all-values rejection behavior.
    *
    * @param operator {@link AttributeAccessOperator}
    */
   @ParameterizedTest
-  @EnumSource(AttributeAccessOperator.class)
+  @EnumSource(value = AttributeAccessOperator.class, names = "IN", mode = EnumSource.Mode.EXCLUDE)
   public void testConditionalRuleRejectsForbiddenEffectiveValue(
       final AttributeAccessOperator operator) {
     // given
